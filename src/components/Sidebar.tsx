@@ -32,7 +32,7 @@ export default function Sidebar() {
       <div className="sidebar-logo">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, overflow: 'hidden' }}>
           <div style={{ position: 'relative', width: '32px', height: '32px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden' }}>
-            <Image src="/logo.png" alt="Logo" fill style={{ objectFit: 'cover' }} />
+            <Image src="/icon.png" alt="Logo" fill style={{ objectFit: 'cover' }} />
           </div>
           <div>
             <h2>Online Marketing</h2>
