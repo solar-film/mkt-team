@@ -5,9 +5,23 @@ import Sidebar from '@/components/Sidebar'
 
 const inter = Inter({ subsets: ['latin'] })
 
+import { Viewport } from 'next'
+
+export const viewport: Viewport = {
+  themeColor: '#6366f1',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export const metadata: Metadata = {
   title: 'TeamTracker - ระบบติดตามทีมการตลาดและคอนเท้น',
   description: 'ระบบติดตามงาน ผลงาน KPI และคอนเท้นของพนักงานในทีมการตลาด',
+  appleWebApp: {
+    capable: true,
+    title: 'TeamTracker',
+    statusBarStyle: 'default',
+  },
 }
 
 export default function RootLayout({
