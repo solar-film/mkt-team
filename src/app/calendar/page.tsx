@@ -15,6 +15,8 @@ interface UnifiedItem {
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [items, setItems] = useState<UnifiedItem[]>([]);
+  const [membersList, setMembersList] = useState<TeamMember[]>([]);
+  const [filterMemberId, setFilterMemberId] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export default function CalendarPage() {
         const tasks = await resTasks.json();
         const contents = await resContent.json();
         const members: TeamMember[] = await resMembers.json();
+        setMembersList(members);
 
         const unified: UnifiedItem[] = [];
         
@@ -91,9 +94,11 @@ export default function CalendarPage() {
 
   // Days
   const todayStr = new Date().toISOString().split('T')[0];
+  const filteredItems = filterMemberId ? items.filter(i => i.memberId === filterMemberId) : items;
+
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-    const dayItems = items.filter(item => item.date === dateStr);
+    const dayItems = filteredItems.filter(item => item.date === dateStr);
     
     gridCells.push(
       <div key={`day-${i}`} className={`calendar-cell ${dateStr === todayStr ? 'today' : ''}`}>
@@ -132,9 +137,22 @@ export default function CalendarPage() {
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <div className="calendar-controls">
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)' }}>
-            {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)' }}>
+              {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </h2>
+            <select 
+              className="form-select" 
+              style={{ width: '200px', marginLeft: '1rem' }}
+              value={filterMemberId}
+              onChange={(e) => setFilterMemberId(e.target.value)}
+            >
+              <option value="">-- พนักงานทั้งหมด --</option>
+              {membersList.filter(m => m.status !== 'inactive').map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-secondary" style={{ padding: '0.5rem' }} onClick={prevMonth}>
               <HiChevronLeft />
