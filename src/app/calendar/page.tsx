@@ -34,55 +34,57 @@ export default function CalendarPage() {
     title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [resTasks, resContent, resMembers, resKpis] = await Promise.all([
-          fetch('/api/tasks'),
-          fetch('/api/content'),
-          fetch('/api/members'),
-          fetch('/api/kpis')
-        ]);
-        const tasks = await resTasks.json();
-        const contents = await resContent.json();
-        const members: TeamMember[] = await resMembers.json();
-        const kpisData = await resKpis.json();
-        setMembersList(members);
-        setKpis(kpisData);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resTasks, resContent, resMembers, resKpis] = await Promise.all([
+        fetch('/api/tasks'),
+        fetch('/api/content'),
+        fetch('/api/members'),
+        fetch('/api/kpis')
+      ]);
+      const tasks = await resTasks.json();
+      const contents = await resContent.json();
+      const members: TeamMember[] = await resMembers.json();
+      const kpisData = await resKpis.json();
+      setMembersList(members);
+      setKpis(kpisData);
 
-        const unified: UnifiedItem[] = [];
-        
-        tasks.forEach((t: any) => {
-          if (t.deadline) {
-            unified.push({
-              id: t.id, title: t.title, status: t.status, memberId: t.memberId,
-              date: t.deadline.split('T')[0], type: 'task',
-              member: members.find(m => m.id === t.memberId),
-              fullItem: t
-            });
-          }
-        });
+      const unified: UnifiedItem[] = [];
+      
+      tasks.forEach((t: any) => {
+        if (t.deadline) {
+          unified.push({
+            id: t.id, title: t.title, status: t.status, memberId: t.memberId,
+            date: t.deadline.split('T')[0], type: 'task',
+            member: members.find(m => m.id === t.memberId),
+            fullItem: t
+          });
+        }
+      });
 
-        contents.forEach((c: any) => {
-          if (c.publishDate) {
-            unified.push({
-              id: c.id, title: c.title, status: c.status, memberId: c.memberId,
-              date: c.publishDate.split('T')[0], type: 'content',
-              member: members.find(m => m.id === c.memberId),
-              fullItem: c
-            });
-          }
-        });
+      contents.forEach((c: any) => {
+        if (c.publishDate) {
+          unified.push({
+            id: c.id, title: c.title, status: c.status, memberId: c.memberId,
+            date: c.publishDate.split('T')[0], type: 'content',
+            member: members.find(m => m.id === c.memberId),
+            fullItem: c
+          });
+        }
+      });
 
-        setItems(unified);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    fetchData();
+      setItems(unified);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleCellClick = (dateStr: string) => {
     setIsEditing(false);
