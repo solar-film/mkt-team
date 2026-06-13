@@ -314,15 +314,15 @@ export default function CalendarPage() {
         
         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', borderLeft: '3px solid var(--color-success)', backgroundColor: 'white', border: '1px solid var(--color-border)' }}></div>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)' }}></div>
             <span>เสร็จแล้ว</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', borderLeft: '3px solid var(--color-warning)', backgroundColor: 'white', border: '1px solid var(--color-border)' }}></div>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-warning)' }}></div>
             <span>กำลังทำ</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', borderLeft: '3px solid var(--color-border)', backgroundColor: 'white', border: '1px solid var(--color-border)' }}></div>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-border)' }}></div>
             <span>รอดำเนินการ</span>
           </div>
         </div>
