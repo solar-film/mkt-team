@@ -213,7 +213,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column', alignItems: 'flex-end' }}>
-                      {task.itemType === 'task' ? getPriorityBadge(task.priority) : <span className="badge badge-secondary">คอนเท้น</span>}
+                      {task.itemType === 'task' ? getPriorityBadge((task as any).priority) : <span className="badge badge-secondary">คอนเท้น</span>}
                       {getStatusBadge(task.status)}
                     </div>
                   </div>
