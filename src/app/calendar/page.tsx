@@ -11,6 +11,7 @@ interface TeamMember {
 interface UnifiedItem {
   id: string; title: string; status: string; memberId: string; date: string; type: 'task' | 'content';
   member?: { name: string; avatar: string | null; };
+  fullItem?: any;
 }
 
 export default function CalendarPage() {
@@ -22,6 +23,13 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [newItemType, setNewItemType] = useState<'task' | 'content'>('content');
+
+  const [taskForm, setTaskForm] = useState({
+    title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: ''
+  });
   const [contentForm, setContentForm] = useState({
     title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
   });
@@ -50,7 +58,8 @@ export default function CalendarPage() {
             unified.push({
               id: t.id, title: t.title, status: t.status, memberId: t.memberId,
               date: t.deadline.split('T')[0], type: 'task',
-              member: members.find(m => m.id === t.memberId)
+              member: members.find(m => m.id === t.memberId),
+              fullItem: t
             });
           }
         });
@@ -60,7 +69,8 @@ export default function CalendarPage() {
             unified.push({
               id: c.id, title: c.title, status: c.status, memberId: c.memberId,
               date: c.publishDate.split('T')[0], type: 'content',
-              member: members.find(m => m.id === c.memberId)
+              member: members.find(m => m.id === c.memberId),
+              fullItem: c
             });
           }
         });
@@ -75,10 +85,75 @@ export default function CalendarPage() {
   };
 
   const handleCellClick = (dateStr: string) => {
+    setIsEditing(false);
+    setEditingItemId(null);
+    setNewItemType('content');
     setContentForm({
       title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleItemClick = (e: React.MouseEvent, item: UnifiedItem) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditingItemId(item.id);
+    setNewItemType(item.type);
+    
+    if (item.type === 'task') {
+      const fullItem = item.fullItem || item;
+      setTaskForm({
+        title: item.title || '',
+        description: fullItem.description || '',
+        memberId: item.memberId || '',
+        priority: fullItem.priority || 'medium',
+        deadline: item.date || '',
+        kpiId: fullItem.kpiId || '',
+        link: fullItem.link || ''
+      });
+    } else {
+      const fullItem = item.fullItem || item;
+      setContentForm({
+        title: item.title || '',
+        type: fullItem.type || 'post',
+        platform: fullItem.platform || 'Facebook',
+        memberId: item.memberId || '',
+        company: fullItem.company || 'GFS',
+        publishDate: item.date || '',
+        kpiId: fullItem.kpiId || '',
+        link: fullItem.link || ''
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const body = {
+        ...taskForm,
+        deadline: taskForm.deadline ? new Date(taskForm.deadline).toISOString() : null
+      };
+      
+      if (isEditing && editingItemId) {
+        await fetch('/api/tasks', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingItemId, ...body })
+        });
+      } else {
+        await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+      setIsModalOpen(false);
+      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleContentSubmit = async (e: React.FormEvent) => {
@@ -86,15 +161,23 @@ export default function CalendarPage() {
     try {
       const body = {
         ...contentForm,
-        status: 'todo',
+        status: isEditing ? undefined : 'todo',
         publishDate: contentForm.publishDate ? new Date(contentForm.publishDate).toISOString() : null
       };
       
-      await fetch('/api/content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      if (isEditing && editingItemId) {
+        await fetch('/api/content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingItemId, ...body })
+        });
+      } else {
+        await fetch('/api/content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
       setIsModalOpen(false);
       setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
       fetchData();
@@ -156,7 +239,7 @@ export default function CalendarPage() {
               key={`${item.type}-${item.id}`} 
               className={`calendar-task-item status-${item.status}`} 
               title={`${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => handleItemClick(e, item)}
             >
               {item.member && (
                 <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', flexShrink: 0 }}>
@@ -245,74 +328,127 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="เพิ่มคอนเท้นใหม่">
-        <form onSubmit={handleContentSubmit}>
-          <div className="form-group">
-            <label className="form-label">ชื่อคอนเท้น *</label>
-            <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
+        {newItemType === 'task' ? (
+          <form onSubmit={handleTaskSubmit}>
             <div className="form-group">
-              <label className="form-label">ประเภท</label>
-              <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
-                <option value="article">บทความ</option>
-                <option value="post">โพสต์</option>
-                <option value="video">วิดีโอ</option>
-                <option value="graphic">กราฟิก</option>
-              </select>
+              <label className="form-label">ชื่องาน *</label>
+              <input type="text" className="form-input" required value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
             </div>
             <div className="form-group">
-              <label className="form-label">แพลตฟอร์ม</label>
-              <select className="form-select" value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
-                <option value="Facebook">Facebook</option>
-                <option value="Instagram">Instagram</option>
-                <option value="TikTok">TikTok</option>
-                <option value="Blog">Blog</option>
-                <option value="YouTube">YouTube</option>
-              </select>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">บริษัท *</label>
-              <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
-                <option value="GFS">GFS</option>
-                <option value="MHL">MHL</option>
-                <option value="CAR">CAR</option>
-              </select>
+              <label className="form-label">รายละเอียด</label>
+              <textarea className="form-textarea" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})}></textarea>
             </div>
             <div className="form-group">
-              <label className="form-label">ผู้สร้าง *</label>
-              <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
+              <label className="form-label">ลิงก์ตรวจสอบงาน (ถ้ามี)</label>
+              <input type="text" className="form-input" placeholder="เช่น https://docs.google.com/..." value={taskForm.link} onChange={e => setTaskForm({...taskForm, link: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">ผู้รับผิดชอบ *</label>
+              <select className="form-select" required value={taskForm.memberId} onChange={e => setTaskForm({...taskForm, memberId: e.target.value, kpiId: ''})}>
                 <option value="">-- เลือกผู้รับผิดชอบ --</option>
                 {membersList.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
-          </div>
-          {contentForm.memberId && kpis.filter(k => k.memberId === contentForm.memberId).length > 0 && (
-            <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-              <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (เพื่ออัปเดตอัตโนมัติ)</label>
-              <select className="form-select" value={contentForm.kpiId} onChange={e => setContentForm({...contentForm, kpiId: e.target.value})}>
-                <option value="">-- ไม่เชื่อมโยง --</option>
-                {kpis.filter(k => k.memberId === contentForm.memberId).sort((a, b) => a.name.length - b.name.length).map(k => (
-                  <option key={k.id} value={k.id}>{k.name}</option>
-                ))}
-              </select>
+            {taskForm.memberId && kpis.filter(k => k.memberId === taskForm.memberId).length > 0 && (
+              <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px' }}>
+                <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (เพื่ออัปเดตอัตโนมัติ)</label>
+                <select className="form-select" value={taskForm.kpiId} onChange={e => setTaskForm({...taskForm, kpiId: e.target.value})}>
+                  <option value="">-- ไม่เชื่อมโยง --</option>
+                  {kpis.filter(k => k.memberId === taskForm.memberId).sort((a, b) => a.name.length - b.name.length).map(k => (
+                    <option key={k.id} value={k.id}>{k.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">ลำดับความสำคัญ</label>
+                <select className="form-select" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value})}>
+                  <option value="low">ต่ำ</option>
+                  <option value="medium">กลาง</option>
+                  <option value="high">สูง</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">กำหนดส่ง</label>
+                <input type="date" className="form-input" value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value})} />
+              </div>
             </div>
-          )}
-          <div className="form-group" style={{ marginTop: '1rem' }}>
-            <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>
-            <input type="text" className="form-input" placeholder="เช่น https://facebook.com/..." value={contentForm.link} onChange={e => setContentForm({...contentForm, link: e.target.value})} />
-          </div>
-          <div className="form-group" style={{ marginTop: '1rem' }}>
-            <label className="form-label">วันที่เผยแพร่</label>
-            <input type="date" className="form-input" value={contentForm.publishDate} onChange={e => setContentForm({...contentForm, publishDate: e.target.value})} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-            <button type="submit" className="btn btn-primary">บันทึกคอนเท้น</button>
-          </div>
-        </form>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
+              <button type="submit" className="btn btn-primary">บันทึกงาน</button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleContentSubmit}>
+            <div className="form-group">
+              <label className="form-label">ชื่อคอนเท้น *</label>
+              <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">ประเภท</label>
+                <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
+                  <option value="article">บทความ</option>
+                  <option value="post">โพสต์</option>
+                  <option value="video">วิดีโอ</option>
+                  <option value="graphic">กราฟิก</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">แพลตฟอร์ม</label>
+                <select className="form-select" value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
+                  <option value="Facebook">Facebook</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="Blog">Blog</option>
+                  <option value="YouTube">YouTube</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">บริษัท *</label>
+                <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                  <option value="GFS">GFS</option>
+                  <option value="MHL">MHL</option>
+                  <option value="CAR">CAR</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">ผู้สร้าง *</label>
+                <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
+                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                  {membersList.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
+            </div>
+            {contentForm.memberId && kpis.filter(k => k.memberId === contentForm.memberId).length > 0 && (
+              <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+                <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (เพื่ออัปเดตอัตโนมัติ)</label>
+                <select className="form-select" value={contentForm.kpiId} onChange={e => setContentForm({...contentForm, kpiId: e.target.value})}>
+                  <option value="">-- ไม่เชื่อมโยง --</option>
+                  {kpis.filter(k => k.memberId === contentForm.memberId).sort((a, b) => a.name.length - b.name.length).map(k => (
+                    <option key={k.id} value={k.id}>{k.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>
+              <input type="text" className="form-input" placeholder="เช่น https://facebook.com/..." value={contentForm.link} onChange={e => setContentForm({...contentForm, link: e.target.value})} />
+            </div>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">วันที่เผยแพร่</label>
+              <input type="date" className="form-input" value={contentForm.publishDate} onChange={e => setContentForm({...contentForm, publishDate: e.target.value})} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
+              <button type="submit" className="btn btn-primary">บันทึก</button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
