@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       publishDate: row.get('publishDate') || null,
       memberId: row.get('memberId'),
       link: row.get('link') || '',
+      kpiId: row.get('kpiId') || '',
       createdAt: row.get('createdAt')
     }))
 

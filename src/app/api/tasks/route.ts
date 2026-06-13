@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       company: row.get('company'),
       memberId: row.get('memberId'),
       link: row.get('link') || '',
+      kpiId: row.get('kpiId') || '',
       createdAt: row.get('createdAt'),
     }))
 
