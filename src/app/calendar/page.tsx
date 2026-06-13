@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
+import Modal from '@/components/Modal';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -16,22 +17,31 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [membersList, setMembersList] = useState<TeamMember[]>([]);
+  const [kpis, setKpis] = useState<any[]>([]);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [contentForm, setContentForm] = useState({
+    title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [resTasks, resContent, resMembers] = await Promise.all([
+        const [resTasks, resContent, resMembers, resKpis] = await Promise.all([
           fetch('/api/tasks'),
           fetch('/api/content'),
-          fetch('/api/members')
+          fetch('/api/members'),
+          fetch('/api/kpis')
         ]);
         const tasks = await resTasks.json();
         const contents = await resContent.json();
         const members: TeamMember[] = await resMembers.json();
+        const kpisData = await resKpis.json();
         setMembersList(members);
+        setKpis(kpisData);
 
         const unified: UnifiedItem[] = [];
         
@@ -61,7 +71,39 @@ export default function CalendarPage() {
       } finally {
         setLoading(false);
       }
-    };
+    fetchData();
+  };
+
+  const handleCellClick = (dateStr: string) => {
+    setContentForm({
+      title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleContentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const body = {
+        ...contentForm,
+        status: 'todo',
+        publishDate: contentForm.publishDate ? new Date(contentForm.publishDate).toISOString() : null
+      };
+      
+      await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      setIsModalOpen(false);
+      setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -101,11 +143,21 @@ export default function CalendarPage() {
     const dayItems = filteredItems.filter(item => item.date === dateStr);
     
     gridCells.push(
-      <div key={`day-${i}`} className={`calendar-cell ${dateStr === todayStr ? 'today' : ''}`}>
+      <div 
+        key={`day-${i}`} 
+        className={`calendar-cell ${dateStr === todayStr ? 'today' : ''}`}
+        style={{ cursor: 'pointer' }}
+        onClick={() => handleCellClick(dateStr)}
+      >
         <div className="calendar-date-number">{i}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {dayItems.map(item => (
-            <div key={`${item.type}-${item.id}`} className={`calendar-task-item status-${item.status}`} title={`${item.title} (${item.member?.name || 'ไม่ระบุ'})`}>
+            <div 
+              key={`${item.type}-${item.id}`} 
+              className={`calendar-task-item status-${item.status}`} 
+              title={`${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
+              onClick={(e) => e.stopPropagation()}
+            >
               {item.member && (
                 <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', flexShrink: 0 }}>
                   {item.member.name.charAt(0)}
@@ -192,6 +244,76 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="เพิ่มคอนเท้นใหม่">
+        <form onSubmit={handleContentSubmit}>
+          <div className="form-group">
+            <label className="form-label">ชื่อคอนเท้น *</label>
+            <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">ประเภท</label>
+              <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
+                <option value="article">บทความ</option>
+                <option value="post">โพสต์</option>
+                <option value="video">วิดีโอ</option>
+                <option value="graphic">กราฟิก</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">แพลตฟอร์ม</label>
+              <select className="form-select" value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
+                <option value="Facebook">Facebook</option>
+                <option value="Instagram">Instagram</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Blog">Blog</option>
+                <option value="YouTube">YouTube</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">บริษัท *</label>
+              <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="CAR">CAR</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">ผู้สร้าง *</label>
+              <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
+                <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                {membersList.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          </div>
+          {contentForm.memberId && kpis.filter(k => k.memberId === contentForm.memberId).length > 0 && (
+            <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+              <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (เพื่ออัปเดตอัตโนมัติ)</label>
+              <select className="form-select" value={contentForm.kpiId} onChange={e => setContentForm({...contentForm, kpiId: e.target.value})}>
+                <option value="">-- ไม่เชื่อมโยง --</option>
+                {kpis.filter(k => k.memberId === contentForm.memberId).sort((a, b) => a.name.length - b.name.length).map(k => (
+                  <option key={k.id} value={k.id}>{k.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>
+            <input type="text" className="form-input" placeholder="เช่น https://facebook.com/..." value={contentForm.link} onChange={e => setContentForm({...contentForm, link: e.target.value})} />
+          </div>
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <label className="form-label">วันที่เผยแพร่</label>
+            <input type="date" className="form-input" value={contentForm.publishDate} onChange={e => setContentForm({...contentForm, publishDate: e.target.value})} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
+            <button type="submit" className="btn btn-primary">บันทึกคอนเท้น</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
