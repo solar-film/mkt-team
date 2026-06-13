@@ -921,5 +921,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }

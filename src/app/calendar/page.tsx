@@ -274,13 +274,13 @@ export default function CalendarPage() {
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <div className="calendar-controls">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
               {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
             <select 
               className="form-select" 
-              style={{ width: '200px', marginLeft: '1rem' }}
+              style={{ minWidth: '180px', flex: 1, maxWidth: '300px' }}
               value={filterMemberId}
               onChange={(e) => setFilterMemberId(e.target.value)}
             >
