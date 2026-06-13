@@ -13,12 +13,14 @@ import {
   HiMegaphone,
   HiGlobeAlt,
   HiChevronLeft,
-  HiChevronRight
+  HiChevronRight,
+  HiCalendarDays
 } from 'react-icons/hi2';
 
 const navLinks = [
   { path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
   { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
+  { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
 ];
