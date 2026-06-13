@@ -10,6 +10,7 @@ import {
   HiDocumentText,
   HiUserGroup,
   HiMegaphone,
+  HiGlobeAlt,
   HiChevronLeft,
   HiChevronRight
 } from 'react-icons/hi2';
@@ -29,9 +30,9 @@ export default function Sidebar() {
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-logo">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, overflow: 'hidden' }}>
-          <HiMegaphone style={{ flexShrink: 0 }} />
+          <HiGlobeAlt style={{ flexShrink: 0 }} />
           <div>
-            <h2>MKT-GFS</h2>
+            <h2>Online Marketing</h2>
             <p>ระบบติดตามทีม</p>
           </div>
         </div>
