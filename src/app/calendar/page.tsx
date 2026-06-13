@@ -306,11 +306,13 @@ export default function CalendarPage() {
         {loading ? (
           <div className="loading-container" style={{ minHeight: '400px' }}><div className="loading-spinner"></div></div>
         ) : (
-          <div className="calendar-grid">
-            {daysOfWeek.map(day => (
-              <div key={day} className="calendar-header-cell">{day}</div>
-            ))}
-            {gridCells}
+          <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+            <div className="calendar-grid" style={{ minWidth: '800px' }}>
+              {daysOfWeek.map(day => (
+                <div key={day} className="calendar-header-cell">{day}</div>
+              ))}
+              {gridCells}
+            </div>
           </div>
         )}
         
