@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiPlus, HiOutlineTrash, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
+import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -44,6 +44,9 @@ export default function TaskBoard() {
   const [newItemType, setNewItemType] = useState<'task' | 'content'>('task');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'task' | 'content' } | null>(null);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   const [taskForm, setTaskForm] = useState({
     title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: ''
@@ -136,6 +139,36 @@ export default function TaskBoard() {
     }
   };
 
+  const handleEditClick = (item: UnifiedItem) => {
+    setIsEditing(true);
+    setEditingItemId(item.id);
+    setNewItemType(item.itemType);
+    
+    if (item.itemType === 'task') {
+      setTaskForm({
+        title: item.title || '',
+        description: item.description || '',
+        memberId: item.memberId || '',
+        priority: item.priority || 'medium',
+        deadline: item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '',
+        kpiId: (item as any).kpiId || '',
+        link: item.link || ''
+      });
+    } else {
+      setContentForm({
+        title: item.title || '',
+        type: item.contentType || 'post',
+        platform: item.platform || 'Facebook',
+        memberId: item.memberId || '',
+        company: item.company || 'GFS',
+        publishDate: item.publishDate ? new Date(item.publishDate).toISOString().split('T')[0] : '',
+        kpiId: (item as any).kpiId || '',
+        link: item.link || ''
+      });
+    }
+    setIsModalOpen(true);
+  };
+
   const handleTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -143,11 +176,20 @@ export default function TaskBoard() {
         ...taskForm,
         deadline: taskForm.deadline ? new Date(taskForm.deadline).toISOString() : null
       };
-      await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      
+      if (isEditing && editingItemId) {
+        await fetch('/api/tasks', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingItemId, ...body })
+        });
+      } else {
+        await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
       setIsModalOpen(false);
       setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' });
       fetchData();
@@ -161,14 +203,23 @@ export default function TaskBoard() {
     try {
       const body = {
         ...contentForm,
-        status: 'todo', // initial status
+        status: isEditing ? undefined : 'todo', // initial status only on create
         publishDate: contentForm.publishDate ? new Date(contentForm.publishDate).toISOString() : null
       };
-      await fetch('/api/content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      
+      if (isEditing && editingItemId) {
+        await fetch('/api/content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingItemId, ...body })
+        });
+      } else {
+        await fetch('/api/content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
       setIsModalOpen(false);
       setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
       fetchData();
@@ -247,9 +298,14 @@ export default function TaskBoard() {
               </div>
               
               <div className="task-footer">
-                <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={() => handleDeleteClick(item.id, item.itemType)}>
-                  <HiOutlineTrash />
-                </button>
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-secondary)', backgroundColor: 'transparent' }} onClick={() => handleEditClick(item)} title="แก้ไข">
+                    <HiOutlinePencilSquare />
+                  </button>
+                  <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={() => handleDeleteClick(item.id, item.itemType)} title="ลบ">
+                    <HiOutlineTrash />
+                  </button>
+                </div>
                 <div className="task-actions">
                   {status === 'in_progress' || status === 'done' ? (
                     <button className="btn btn-sm btn-secondary" onClick={() => handleStatusChange(item, status === 'done' ? 'in_progress' : 'todo')}>
@@ -309,10 +365,10 @@ export default function TaskBoard() {
           </select>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-secondary" onClick={() => { setNewItemType('task'); setIsModalOpen(true); }}>
+          <button className="btn btn-secondary" onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
-          <button className="btn btn-primary" onClick={() => { setNewItemType('content'); setIsModalOpen(true); }}>
+          <button className="btn btn-primary" onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มคอนเท้น
           </button>
         </div>
@@ -324,7 +380,7 @@ export default function TaskBoard() {
         {renderColumn('done', 'เสร็จแล้ว')}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
         {newItemType === 'task' ? (
           <form onSubmit={handleTaskSubmit}>
             <div className="form-group">
