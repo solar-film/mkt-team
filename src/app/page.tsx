@@ -24,7 +24,7 @@ interface Content {
   status: string; publishDate: string | null; memberId: string;
 }
 interface TeamMember {
-  id: string; name: string; role: string; avatar: string | null;
+  id: string; name: string; role: string; avatar: string | null; status: string;
   tasks: Task[]; kpis: KPI[]; contents: Content[];
 }
 

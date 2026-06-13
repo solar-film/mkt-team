@@ -28,7 +28,7 @@ interface UnifiedItem {
 }
 
 interface TeamMember {
-  id: string; name: string; role: string; avatar: string | null;
+  id: string; name: string; role: string; avatar: string | null; status: string;
 }
 
 export default function TaskBoard() {
