@@ -1,0 +1,209 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { initDoc, generateId } from '@/lib/google-sheets'
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const memberId = searchParams.get('memberId')
+    const type = searchParams.get('type')
+    const platform = searchParams.get('platform')
+    const status = searchParams.get('status')
+    const company = searchParams.get('company')
+
+    const doc = await initDoc()
+    const sheet = doc.sheetsByTitle['Content']
+    const membersSheet = doc.sheetsByTitle['TeamMember']
+    
+    if (!sheet) return NextResponse.json([])
+
+    const rows = await sheet.getRows()
+    let contents = rows.map(row => ({
+      id: row.get('id'),
+      title: row.get('title'),
+      type: row.get('type'),
+      platform: row.get('platform'),
+      status: row.get('status'),
+      company: row.get('company'),
+      publishDate: row.get('publishDate') || null,
+      memberId: row.get('memberId'),
+      link: row.get('link') || '',
+      createdAt: row.get('createdAt')
+    }))
+
+    if (memberId) contents = contents.filter(c => c.memberId === memberId)
+    if (type) contents = contents.filter(c => c.type === type)
+    if (platform) contents = contents.filter(c => c.platform === platform)
+    if (status) contents = contents.filter(c => c.status === status)
+    if (company) contents = contents.filter(c => c.company === company)
+
+    if (membersSheet) {
+      const memberRows = await membersSheet.getRows()
+      contents.forEach(content => {
+        const mRow = memberRows.find(m => m.get('id') === content.memberId)
+        if (mRow) {
+          (content as any).member = {
+            id: mRow.get('id'),
+            name: mRow.get('name'),
+            role: mRow.get('role'),
+            avatar: mRow.get('avatar')
+          }
+        }
+      })
+    }
+
+    // Sort by created at descending
+    contents.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+
+    return NextResponse.json(contents)
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: 'Failed to fetch content' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { title, type, platform, status, publishDate, memberId, company } = body
+
+    if (!title || !memberId) {
+      return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
+    }
+
+    const doc = await initDoc()
+    const sheet = doc.sheetsByTitle['Content']
+    if (!sheet) return NextResponse.json({ error: 'Sheet Content not found' }, { status: 404 })
+
+    await sheet.loadHeaderRow()
+    let newHeaders = [...sheet.headerValues]
+    let headerChanged = false
+    if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
+    if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+
+    if (headerChanged) {
+      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
+      await sheet.setHeaderRow(newHeaders)
+    }
+
+    const newContent = {
+      id: generateId(),
+      title,
+      type: type || 'post',
+      platform: platform || 'Facebook',
+      status: status || 'draft',
+      publishDate: publishDate || '',
+      memberId,
+      company: company || 'GFS',
+      kpiId: body.kpiId || '',
+      link: body.link || '',
+      createdAt: new Date().toISOString()
+    }
+
+    await sheet.addRow(newContent)
+    return NextResponse.json(newContent, { status: 201 })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: 'Failed to create content' }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, status, ...data } = body
+
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+    const doc = await initDoc()
+    const sheet = doc.sheetsByTitle['Content']
+    if (!sheet) return NextResponse.json({ error: 'Sheet Content not found' }, { status: 404 })
+
+    const rows = await sheet.getRows()
+    const row = rows.find(r => r.get('id') === id)
+    if (!row) return NextResponse.json({ error: 'Content not found' }, { status: 404 })
+
+    const oldStatus = row.get('status')
+    const kpiId = row.get('kpiId')
+
+    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link']
+    fields.forEach(f => {
+      if (data[f] !== undefined) row.assign({ [f]: data[f] })
+    })
+
+    if (data.publishDate !== undefined) {
+      row.assign({ publishDate: data.publishDate ? new Date(data.publishDate).toISOString() : '' })
+    }
+
+    if (status && status !== oldStatus) {
+      row.assign({ status })
+      await row.save()
+
+      if (kpiId) {
+        const kpiSheet = doc.sheetsByTitle['KPI']
+        if (kpiSheet) {
+          const kpiRows = await kpiSheet.getRows()
+          const kpiRow = kpiRows.find(r => r.get('id') === kpiId)
+          if (kpiRow) {
+            let currentVal = parseFloat(kpiRow.get('current')) || 0
+            if (status === 'done' && oldStatus !== 'done') {
+              currentVal += 1
+            } else if (oldStatus === 'done' && status !== 'done') {
+              currentVal -= 1
+              if (currentVal < 0) currentVal = 0
+            }
+            kpiRow.assign({ current: currentVal.toString() })
+            await kpiRow.save()
+          }
+        }
+      }
+    } else {
+      await row.save()
+    }
+
+    return NextResponse.json({ id, status, ...data })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: 'Failed to update content' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+    const doc = await initDoc()
+    const sheet = doc.sheetsByTitle['Content']
+    if (!sheet) return NextResponse.json({ error: 'Sheet Content not found' }, { status: 404 })
+
+    const rows = await sheet.getRows()
+    const row = rows.find(r => r.get('id') === id)
+    if (row) {
+      const kpiId = row.get('kpiId')
+      const status = row.get('status')
+      await row.delete()
+
+      if (kpiId && status === 'done') {
+        const kpiSheet = doc.sheetsByTitle['KPI']
+        if (kpiSheet) {
+          const kpiRows = await kpiSheet.getRows()
+          const kpiRow = kpiRows.find(r => r.get('id') === kpiId)
+          if (kpiRow) {
+            let currentVal = parseFloat(kpiRow.get('current')) || 0
+            currentVal -= 1
+            if (currentVal < 0) currentVal = 0
+            kpiRow.assign({ current: currentVal.toString() })
+            await kpiRow.save()
+          }
+        }
+      }
+
+      return NextResponse.json({ success: true })
+    }
+    return NextResponse.json({ error: 'Content not found' }, { status: 404 })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: 'Failed to delete content' }, { status: 500 })
+  }
+}

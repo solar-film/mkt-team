@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  company   String   @default("GFS")
+  avatar    String?
+  tasks     Task[]
+  kpis      KPI[]
+  contents  Content[]
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      String     @default("todo")
+  priority    String     @default("medium")
+  deadline    DateTime?
+  memberId    String
+  member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model KPI {
+  id          String     @id @default(cuid())
+  name        String
+  target      Float
+  current     Float      @default(0)
+  unit        String
+  month       Int
+  year        Int
+  memberId    String
+  member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Content {
+  id          String     @id @default(cuid())
+  title       String
+  type        String
+  platform    String
+  company     String     @default("GFS")
+  status      String     @default("draft")
+  publishDate DateTime?
+  memberId    String
+  member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
