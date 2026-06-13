@@ -36,7 +36,7 @@ export default function Sidebar() {
           </div>
           <div>
             <h2>Online Marketing</h2>
-            <p>ระบบติดตามทีม</p>
+            <p>ระบบติดตามทีม GFS&amp;MHL</p>
           </div>
         </div>
         <button 
