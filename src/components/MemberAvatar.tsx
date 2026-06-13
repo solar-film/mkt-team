@@ -5,6 +5,8 @@ const GRADIENT_COLORS = [
   'linear-gradient(135deg, #f59e0b, #d97706)',
   'linear-gradient(135deg, #ef4444, #dc2626)',
   'linear-gradient(135deg, #ec4899, #db2777)',
+  'linear-gradient(135deg, #3b82f6, #2563eb)',
+  'linear-gradient(135deg, #14b8a6, #0d9488)',
 ];
 
 function hashName(name: string): number {
