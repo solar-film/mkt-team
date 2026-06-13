@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   HiChartBarSquare,
@@ -30,7 +31,9 @@ export default function Sidebar() {
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-logo">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, overflow: 'hidden' }}>
-          <HiGlobeAlt style={{ flexShrink: 0 }} />
+          <div style={{ position: 'relative', width: '32px', height: '32px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden' }}>
+            <Image src="/logo.png" alt="Logo" fill style={{ objectFit: 'cover' }} />
+          </div>
           <div>
             <h2>Online Marketing</h2>
             <p>ระบบติดตามทีม</p>
