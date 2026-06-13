@@ -1,29 +1,34 @@
 export async function sendLineNotify(message: string) {
-  const token = process.env.LINE_NOTIFY_TOKEN;
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const groupId = process.env.LINE_GROUP_ID;
   
-  if (!token) {
-    console.log('LINE_NOTIFY_TOKEN is not set, skipping notification.');
+  if (!token || !groupId) {
+    console.log('LINE credentials missing, skipping notification.');
     return;
   }
 
   try {
-    const response = await fetch('https://notify-api.line.me/api/notify', {
+    const response = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: new URLSearchParams({
-        message: message
+      body: JSON.stringify({
+        to: groupId,
+        messages: [{
+          type: 'text',
+          text: message
+        }]
       })
     });
 
     if (!response.ok) {
-      console.error('Failed to send LINE Notify:', await response.text());
+      console.error('Failed to send LINE Message:', await response.text());
     } else {
-      console.log('LINE Notify sent successfully.');
+      console.log('LINE Message sent successfully.');
     }
   } catch (error) {
-    console.error('Error sending LINE Notify:', error);
+    console.error('Error sending LINE Message:', error);
   }
 }
