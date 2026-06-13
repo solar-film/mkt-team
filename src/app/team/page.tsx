@@ -186,14 +186,6 @@ export default function TeamPage() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  <span>ภาพรวม KPI</span>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{kpisMet}/{kpis.length} สำเร็จ</span>
-                </div>
-                <ProgressBar value={avgKPI || 0} />
-              </div>
-
               <div style={{ flex: 1 }}>
                 <h4 style={{ fontSize: '0.875rem', marginBottom: '0.75rem', color: 'var(--color-text-secondary)' }}>งานล่าสุด</h4>
                 {recentTasks.length > 0 ? (
