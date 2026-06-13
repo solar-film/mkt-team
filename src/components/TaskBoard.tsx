@@ -407,7 +407,7 @@ export default function TaskBoard() {
                 <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (เพื่ออัปเดตอัตโนมัติ)</label>
                 <select className="form-select" value={taskForm.kpiId} onChange={e => setTaskForm({...taskForm, kpiId: e.target.value})}>
                   <option value="">-- ไม่เชื่อมโยง --</option>
-                  {kpis.filter(k => k.memberId === taskForm.memberId).map(k => (
+                  {kpis.filter(k => k.memberId === taskForm.memberId).sort((a, b) => a.name.length - b.name.length).map(k => (
                     <option key={k.id} value={k.id}>{k.name}</option>
                   ))}
                 </select>
@@ -481,7 +481,7 @@ export default function TaskBoard() {
                 <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (เพื่ออัปเดตอัตโนมัติ)</label>
                 <select className="form-select" value={contentForm.kpiId} onChange={e => setContentForm({...contentForm, kpiId: e.target.value})}>
                   <option value="">-- ไม่เชื่อมโยง --</option>
-                  {kpis.filter(k => k.memberId === contentForm.memberId).map(k => (
+                  {kpis.filter(k => k.memberId === contentForm.memberId).sort((a, b) => a.name.length - b.name.length).map(k => (
                     <option key={k.id} value={k.id}>{k.name}</option>
                   ))}
                 </select>
