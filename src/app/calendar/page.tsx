@@ -404,7 +404,7 @@ export default function CalendarPage() {
                   <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram</option>
                   <option value="TikTok">TikTok</option>
-                  <option value="Blog">Blog</option>
+                  <option value="Website">Website</option>
                   <option value="YouTube">YouTube</option>
                 </select>
               </div>
