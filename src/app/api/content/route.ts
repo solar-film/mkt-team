@@ -137,14 +137,25 @@ export async function PUT(request: NextRequest) {
     const sheet = doc.sheetsByTitle['Content']
     if (!sheet) return NextResponse.json({ error: 'Sheet Content not found' }, { status: 404 })
 
+    await sheet.loadHeaderRow()
+    let newHeaders = [...sheet.headerValues]
+    let headerChanged = false
+    if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
+    if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+
+    if (headerChanged) {
+      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
+      await sheet.setHeaderRow(newHeaders)
+    }
+
     const rows = await sheet.getRows()
     const row = rows.find(r => r.get('id') === id)
     if (!row) return NextResponse.json({ error: 'Content not found' }, { status: 404 })
 
     const oldStatus = row.get('status')
-    const kpiId = row.get('kpiId')
+    const oldKpiId = row.get('kpiId')
 
-    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link']
+    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link', 'kpiId']
     fields.forEach(f => {
       if (data[f] !== undefined) row.assign({ [f]: data[f] })
     })
@@ -153,30 +164,36 @@ export async function PUT(request: NextRequest) {
       row.assign({ publishDate: data.publishDate ? new Date(data.publishDate).toISOString() : '' })
     }
 
-    if (status && status !== oldStatus) {
-      row.assign({ status })
-      await row.save()
+    if (status !== undefined) row.assign({ status })
 
-      if (kpiId) {
-        const kpiSheet = doc.sheetsByTitle['KPI']
-        if (kpiSheet) {
-          const kpiRows = await kpiSheet.getRows()
-          const kpiRow = kpiRows.find(r => r.get('id') === kpiId)
-          if (kpiRow) {
-            let currentVal = parseFloat(kpiRow.get('current')) || 0
-            if (status === 'done' && oldStatus !== 'done') {
-              currentVal += 1
-            } else if (oldStatus === 'done' && status !== 'done') {
-              currentVal -= 1
-              if (currentVal < 0) currentVal = 0
-            }
-            kpiRow.assign({ current: currentVal.toString() })
-            await kpiRow.save()
-          }
+    await row.save()
+
+    const newStatus = status !== undefined ? status : oldStatus;
+    const newKpiId = data.kpiId !== undefined ? data.kpiId : oldKpiId;
+
+    const updateKpi = async (kpiId: string, delta: number) => {
+      if (!kpiId) return;
+      const kpiSheet = doc.sheetsByTitle['KPI']
+      if (kpiSheet) {
+        const kpiRows = await kpiSheet.getRows()
+        const kpiRow = kpiRows.find(r => r.get('id') === kpiId)
+        if (kpiRow) {
+          let currentVal = parseFloat(kpiRow.get('current')) || 0
+          currentVal += delta
+          if (currentVal < 0) currentVal = 0
+          kpiRow.assign({ current: currentVal.toString() })
+          await kpiRow.save()
         }
       }
-    } else {
-      await row.save()
+    };
+
+    if (newStatus === 'done' && oldStatus !== 'done') {
+      await updateKpi(newKpiId, 1);
+    } else if (oldStatus === 'done' && newStatus !== 'done') {
+      await updateKpi(oldKpiId, -1);
+    } else if (oldStatus === 'done' && newStatus === 'done' && oldKpiId !== newKpiId) {
+      await updateKpi(oldKpiId, -1);
+      await updateKpi(newKpiId, 1);
     }
 
     return NextResponse.json({ id, status, ...data })

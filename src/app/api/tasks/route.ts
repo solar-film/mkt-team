@@ -131,11 +131,23 @@ export async function PUT(request: NextRequest) {
     const sheet = doc.sheetsByTitle['Task']
     if (!sheet) return NextResponse.json({ error: 'Sheet Task not found' }, { status: 404 })
 
+    await sheet.loadHeaderRow()
+    let newHeaders = [...sheet.headerValues]
+    let headerChanged = false
+    if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
+    if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+
+    if (headerChanged) {
+      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
+      await sheet.setHeaderRow(newHeaders)
+    }
+
     const rows = await sheet.getRows()
     const row = rows.find(r => r.get('id') === id)
     if (!row) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
 
     const oldStatus = row.get('status')
+    const oldKpiId = row.get('kpiId')
     
     const fields = ['title', 'description', 'status', 'priority', 'company', 'memberId', 'kpiId', 'link']
     fields.forEach(f => {
@@ -150,24 +162,32 @@ export async function PUT(request: NextRequest) {
 
     await row.save()
 
-    const kpiId = row.get('kpiId')
-    if (status && status !== oldStatus && kpiId) {
+    const newStatus = status !== undefined ? status : oldStatus;
+    const newKpiId = data.kpiId !== undefined ? data.kpiId : oldKpiId;
+
+    const updateKpi = async (kpiId: string, delta: number) => {
+      if (!kpiId) return;
       const kpiSheet = doc.sheetsByTitle['KPI']
       if (kpiSheet) {
         const kpiRows = await kpiSheet.getRows()
         const kpiRow = kpiRows.find(r => r.get('id') === kpiId)
         if (kpiRow) {
           let currentVal = parseFloat(kpiRow.get('current')) || 0
-          if (status === 'done' && oldStatus !== 'done') {
-            currentVal += 1
-          } else if (oldStatus === 'done' && status !== 'done') {
-            currentVal -= 1
-            if (currentVal < 0) currentVal = 0
-          }
+          currentVal += delta
+          if (currentVal < 0) currentVal = 0
           kpiRow.assign({ current: currentVal.toString() })
           await kpiRow.save()
         }
       }
+    };
+
+    if (newStatus === 'done' && oldStatus !== 'done') {
+      await updateKpi(newKpiId, 1);
+    } else if (oldStatus === 'done' && newStatus !== 'done') {
+      await updateKpi(oldKpiId, -1);
+    } else if (oldStatus === 'done' && newStatus === 'done' && oldKpiId !== newKpiId) {
+      await updateKpi(oldKpiId, -1);
+      await updateKpi(newKpiId, 1);
     }
 
     return NextResponse.json({ id, ...body })
