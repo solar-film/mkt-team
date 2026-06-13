@@ -131,13 +131,16 @@ export default function TeamPage() {
 
       <div className="team-grid">
         {members.filter(m => showInactive ? true : m.status !== 'inactive').map(member => {
-          const totalTasks = member.tasks.length;
           const completedTasks = member.tasks.filter(t => t.status === 'done').length;
           const totalContent = member.contents.length;
+          const totalTasks = completedTasks + totalContent;
           
           const kpis = member.kpis;
           const avgKPI = kpis.length > 0 
-            ? kpis.reduce((sum, k) => sum + Math.min((k.current / k.target) * 100, 100), 0) / kpis.length 
+            ? kpis.reduce((sum, k) => {
+                const target = k.target > 0 ? k.target : 1;
+                return sum + Math.min((k.current / target) * 100, 100);
+              }, 0) / kpis.length 
             : 0;
           const kpisMet = kpis.filter(k => k.current >= k.target).length;
 
@@ -188,7 +191,7 @@ export default function TeamPage() {
                   <span>ภาพรวม KPI</span>
                   <span style={{ color: 'var(--color-text-secondary)' }}>{kpisMet}/{kpis.length} สำเร็จ</span>
                 </div>
-                <ProgressBar value={avgKPI} />
+                <ProgressBar value={avgKPI || 0} />
               </div>
 
               <div style={{ flex: 1 }}>

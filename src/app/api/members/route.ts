@@ -99,6 +99,16 @@ export async function POST(request: NextRequest) {
     const sheet = doc.sheetsByTitle['TeamMember']
     if (!sheet) return NextResponse.json({ error: 'Sheet TeamMember not found' }, { status: 404 })
 
+    await sheet.loadHeaderRow()
+    let newHeaders = [...sheet.headerValues]
+    let headerChanged = false
+    if (!newHeaders.includes('status')) { newHeaders.push('status'); headerChanged = true; }
+
+    if (headerChanged) {
+      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
+      await sheet.setHeaderRow(newHeaders)
+    }
+
     const newMember = {
       id: generateId(),
       name: body.name,
@@ -126,6 +136,16 @@ export async function PUT(request: NextRequest) {
     const doc = await initDoc()
     const sheet = doc.sheetsByTitle['TeamMember']
     if (!sheet) return NextResponse.json({ error: 'Sheet TeamMember not found' }, { status: 404 })
+
+    await sheet.loadHeaderRow()
+    let newHeaders = [...sheet.headerValues]
+    let headerChanged = false
+    if (!newHeaders.includes('status')) { newHeaders.push('status'); headerChanged = true; }
+
+    if (headerChanged) {
+      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
+      await sheet.setHeaderRow(newHeaders)
+    }
 
     const rows = await sheet.getRows()
     const row = rows.find(r => r.get('id') === id)
