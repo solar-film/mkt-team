@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description: 'ระบบติดตามงาน ผลงาน KPI และคอนเท้นของพนักงานในทีมการตลาด',
   appleWebApp: {
     capable: true,
-    title: 'TeamTracker',
+    title: 'MKT-GFS',
     statusBarStyle: 'default',
   },
 }

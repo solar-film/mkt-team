@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TeamTracker',
-    short_name: 'TeamTracker',
+    name: 'MKT-GFS',
+    short_name: 'MKT-GFS',
     description: 'ระบบติดตามทีมการตลาดและคอนเท้น',
     start_url: '/',
     display: 'standalone',
