@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'TeamTracker - ระบบติดตามทีมการตลาดและคอนเท้น',
+  title: 'MKT-GFS - ระบบติดตามทีมการตลาดและคอนเท้น',
   description: 'ระบบติดตามงาน ผลงาน KPI และคอนเท้นของพนักงานในทีมการตลาด',
   appleWebApp: {
     capable: true,
