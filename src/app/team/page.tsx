@@ -144,9 +144,18 @@ export default function TeamPage() {
             : 0;
           const kpisMet = kpis.filter(k => k.current >= k.target).length;
 
-          // Get latest 3 tasks
-          const recentTasks = [...member.tasks]
-            .sort((a, b) => new Date(b.deadline || 0).getTime() - new Date(a.deadline || 0).getTime())
+          // Get latest 3 items (combined tasks and content)
+          const allItems = [
+            ...member.tasks.map((t: any) => ({ ...t, itemType: 'task' })),
+            ...member.contents.map((c: any) => ({ ...c, itemType: 'content' }))
+          ];
+          
+          const recentTasks = allItems
+            .sort((a, b) => {
+              const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return timeB - timeA;
+            })
             .slice(0, 3);
 
           return (
@@ -190,10 +199,11 @@ export default function TeamPage() {
                 <h4 style={{ fontSize: '0.875rem', marginBottom: '0.75rem', color: 'var(--color-text-secondary)' }}>งานล่าสุด</h4>
                 {recentTasks.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {recentTasks.map(task => (
-                      <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', padding: '0.5rem', backgroundColor: 'var(--color-surface-hover)', borderRadius: 'var(--radius-sm)' }}>
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{task.title}</span>
-                        {task.status === 'done' && <span className="badge badge-published">เสร็จ</span>}
+                    {recentTasks.map((task, idx) => (
+                      <div key={`${task.itemType}-${task.id || idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', padding: '0.5rem', backgroundColor: 'var(--color-surface-hover)', borderRadius: 'var(--radius-sm)' }}>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={task.title}>{task.title}</span>
+                        {(task.status === 'done' || task.status === 'published') && <span className="badge badge-published">เสร็จ</span>}
+                        {task.status === 'review' && <span className="badge badge-video">รอตรวจ</span>}
                         {task.status === 'in_progress' && <span className="badge badge-article">กำลังทำ</span>}
                         {task.status === 'todo' && <span className="badge badge-draft">รอดำเนินการ</span>}
                       </div>
