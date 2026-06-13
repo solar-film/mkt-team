@@ -31,7 +31,7 @@ export default function Sidebar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, overflow: 'hidden' }}>
           <HiMegaphone style={{ flexShrink: 0 }} />
           <div>
-            <h2>TeamTracker</h2>
+            <h2>MKT-GFS</h2>
             <p>ระบบติดตามทีม</p>
           </div>
         </div>
