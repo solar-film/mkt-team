@@ -261,7 +261,7 @@ export default function DashboardPage() {
                   }, 0) / memberKpis.length 
                 : 0;
               const doneTasks = member.tasks.filter(t => t.status === 'done').length;
-              const doneContents = member.contents.filter(c => c.status === 'published').length;
+              const doneContents = member.contents.filter(c => c.status === 'done').length;
 
               return (
                 <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 0', borderBottom: index < members.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
