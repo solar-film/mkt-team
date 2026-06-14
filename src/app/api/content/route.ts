@@ -88,6 +88,10 @@ export async function POST(request: NextRequest) {
       await sheet.setHeaderRow(newHeaders)
     }
 
+    const mRows = doc.sheetsByTitle['TeamMember'] ? await doc.sheetsByTitle['TeamMember'].getRows() : []
+    const mRow = mRows.find(r => r.get('id') === memberId)
+    const memberName = mRow ? mRow.get('name') : 'ไม่ระบุ'
+
     const newContent = {
       id: generateId(),
       title,
@@ -103,6 +107,14 @@ export async function POST(request: NextRequest) {
     }
 
     await sheet.addRow(newContent)
+
+    try {
+      const message = `\n🆕 [เพิ่มคอนเทนต์] ${title}\n👤 รับผิดชอบ: ${memberName}\n📅 เผยแพร่: ${publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'}`
+      const { sendLineNotify } = await import('@/lib/line-notify')
+      await sendLineNotify(message)
+    } catch (e) {
+      console.error('Error sending line notify:', e)
+    }
 
     return NextResponse.json(newContent, { status: 201 })
   } catch (error) {
@@ -179,6 +191,22 @@ export async function PUT(request: NextRequest) {
     } else if (oldStatus === 'done' && newStatus === 'done' && oldKpiId !== newKpiId) {
       await updateKpi(oldKpiId, -1);
       await updateKpi(newKpiId, 1);
+    }
+
+    if (Object.keys(data).length > 0) {
+      try {
+        const title = data.title || row.get('title')
+        const memberId = data.memberId || row.get('memberId')
+        const mRows = doc.sheetsByTitle['TeamMember'] ? await doc.sheetsByTitle['TeamMember'].getRows() : []
+        const mRow = mRows.find(r => r.get('id') === memberId)
+        const memberName = mRow ? mRow.get('name') : 'ไม่ระบุ'
+        const pDate = data.publishDate !== undefined ? data.publishDate : row.get('publishDate')
+        const message = `\n✏️ [แก้ไขคอนเทนต์] ${title}\n👤 รับผิดชอบ: ${memberName}\n📅 เผยแพร่: ${pDate ? new Date(pDate).toLocaleDateString('th-TH') : '-'}`
+        const { sendLineNotify } = await import('@/lib/line-notify')
+        await sendLineNotify(message)
+      } catch (e) {
+        console.error('Error sending line notify:', e)
+      }
     }
 
     return NextResponse.json({ id, status, ...data })

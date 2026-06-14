@@ -52,13 +52,44 @@ export async function GET(request: Request) {
         const memberName = member ? member.name : 'ไม่ระบุ';
         
         upcomingTasks.push({
-          title: row.get('title') || '',
+          title: `[งาน] ${row.get('title') || ''}`,
           deadline: deadlineDate,
           memberName: memberName,
           diffDays
         });
       }
     });
+
+    // Fetch contents
+    const contentsSheet = doc.sheetsByTitle['Content'];
+    if (contentsSheet) {
+      const cRows = await contentsSheet.getRows();
+      cRows.forEach(row => {
+        const status = row.get('status');
+        if (status === 'done' || status === 'published') return; // skip done
+
+        const deadlineStr = row.get('publishDate');
+        if (!deadlineStr) return;
+
+        const deadline = new Date(deadlineStr);
+        const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+        const diffTime = deadlineDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= 2) {
+          const memberId = row.get('memberId');
+          const member = members.find(m => m.id === memberId);
+          const memberName = member ? member.name : 'ไม่ระบุ';
+          
+          upcomingTasks.push({
+            title: `[คอนเทนต์] ${row.get('title') || ''}`,
+            deadline: deadlineDate,
+            memberName: memberName,
+            diffDays
+          });
+        }
+      });
+    }
 
     if (upcomingTasks.length > 0) {
       // Sort by overdue first
