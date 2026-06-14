@@ -59,7 +59,7 @@ export default function Sidebar() {
   };
 
   const visibleLinks = navLinks.filter(link => {
-    if ((link.path === '/kpis' || link.path === '/team') && !isAdmin) {
+    if (link.path === '/team' && !isAdmin) {
       return false;
     }
     return true;

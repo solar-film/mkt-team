@@ -39,10 +39,31 @@ export default function KPIsPage() {
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: ''
   });
+
+  const openAddModal = () => {
+    setEditingId(null);
+    setFormData({ name: '', target: '', current: '0', unit: '', month: filterMonth.toString(), year: filterYear.toString(), memberId: '' });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (kpi: KPI) => {
+    setEditingId(kpi.id);
+    setFormData({
+      name: kpi.name,
+      target: kpi.target.toString(),
+      current: kpi.current.toString(),
+      unit: kpi.unit,
+      month: kpi.month.toString(),
+      year: kpi.year.toString(),
+      memberId: kpi.memberId
+    });
+    setIsModalOpen(true);
+  };
 
   const fetchMembers = async () => {
     try {
@@ -64,6 +85,7 @@ export default function KPIsPage() {
     e.preventDefault();
     try {
       const body = {
+        id: editingId,
         ...formData,
         target: parseFloat(formData.target),
         current: parseFloat(formData.current),
@@ -71,12 +93,12 @@ export default function KPIsPage() {
         year: parseInt(formData.year, 10)
       };
       await fetch('/api/kpis', {
-        method: 'POST',
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
       setIsModalOpen(false);
-      setFormData({ name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
+      setFormData({ name: '', target: '', current: '0', unit: '', month: filterMonth.toString(), year: filterYear.toString(), memberId: '' });
       fetchMembers();
     } catch (err) {
       console.error(err);
@@ -97,16 +119,6 @@ export default function KPIsPage() {
     : members;
 
   if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
-  
-  if (isAdmin === false) {
-    return (
-      <div className="empty-state" style={{ height: '70vh' }}>
-        <HiLockClosed style={{ fontSize: '4rem', color: 'var(--color-text-secondary)', opacity: 0.5, marginBottom: '1rem' }} />
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
-        <p>หน้านี้สงวนไว้สำหรับผู้ดูแลระบบเท่านั้น</p>
-      </div>
-    );
-  }
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
@@ -122,9 +134,11 @@ export default function KPIsPage() {
           <h1>เป้าหมาย KPI</h1>
           <p>ติดตามผลงานและเป้าหมายของทีม</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-          <HiPlus /> ตั้งเป้าหมาย
-        </button>
+        {isAdmin && (
+          <button className="btn btn-primary" onClick={openAddModal}>
+            <HiPlus /> ตั้งเป้าหมาย
+          </button>
+        )}
       </div>
 
       <div className="filter-bar">
@@ -193,7 +207,14 @@ export default function KPIsPage() {
                     return (
                       <div key={kpi.id} className="kpi-item">
                         <div className="kpi-meta">
-                          <span style={{ fontWeight: 500 }}>{kpi.name}</span>
+                          <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {kpi.name}
+                            {isAdmin && (
+                              <button onClick={() => openEditModal(kpi)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                                <HiPencilSquare size={14} />
+                              </button>
+                            )}
+                          </span>
                           <span>{kpi.current} / {kpi.target} {kpi.unit}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -215,8 +236,8 @@ export default function KPIsPage() {
         ))}
       </div>
 
-      {/* Add KPI Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="ตั้งเป้าหมาย KPI">
+      {/* Add/Edit KPI Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">ชื่อ KPI *</label>
