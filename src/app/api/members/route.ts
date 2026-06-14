@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
               status: row.get('status'),
               priority: row.get('priority'),
               deadline: row.get('deadline'),
+              link: row.get('link'),
               createdAt: row.get('createdAt')
             })
             member._count.tasks++
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
               status: row.get('status'),
               publishDate: row.get('publishDate'),
               platform: row.get('platform'),
+              link: row.get('link'),
               createdAt: row.get('createdAt')
             })
             member._count.contents++

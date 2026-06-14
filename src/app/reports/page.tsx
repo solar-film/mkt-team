@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
+import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare } from 'react-icons/hi2';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
   priority: string; deadline: string | null; memberId: string;
+  link?: string;
+  createdAt?: string | null;
 }
 interface KPI {
   id: string; name: string; target: number; current: number;
@@ -14,6 +16,8 @@ interface KPI {
 interface Content {
   id: string; title: string; type: string; platform: string;
   status: string; publishDate: string | null; memberId: string; company: string;
+  link?: string;
+  createdAt?: string | null;
 }
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -233,7 +237,16 @@ export default function ReportsPage() {
                       {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                     </span>
                   </td>
-                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</td>
+                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {item.title}
+                      {item.link && (
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center' }}>
+                          <HiArrowTopRightOnSquare size={14} />
+                        </a>
+                      )}
+                    </div>
+                  </td>
                   <td style={{ padding: '0.75rem' }}>{item.memberName}</td>
                   <td style={{ padding: '0.75rem' }}>{item.itemType === 'content' ? item.platform : item.priority}</td>
                   <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
@@ -256,7 +269,14 @@ export default function ReportsPage() {
                     {item.itemType === 'task' ? <HiClipboardDocumentList size={16} /> : <HiDocumentText size={16} />}
                   </div>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.title}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.title}</h4>
+                      {item.link && (
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center' }}>
+                          <HiArrowTopRightOnSquare size={14} />
+                        </a>
+                      )}
+                    </div>
                     <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.memberName}</span>
                   </div>
                 </div>
