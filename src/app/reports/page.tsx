@@ -5,8 +5,9 @@ import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentLis
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
-  priority: string; deadline: string | null; memberId: string;
+  priority: string; deadline: string | null; platform?: string;
   link?: string;
+  kpiId?: string;
   createdAt?: string | null;
 }
 interface KPI {
@@ -15,8 +16,9 @@ interface KPI {
 }
 interface Content {
   id: string; title: string; type: string; platform: string;
-  status: string; publishDate: string | null; memberId: string; company: string;
+  status: string; publishDate: string | null; memberId: string; priority: string;
   link?: string;
+  kpiId?: string;
   createdAt?: string | null;
 }
 interface TeamMember {
@@ -31,6 +33,7 @@ export default function ReportsPage() {
   const [memberFilter, setMemberFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
+  const [kpiFilter, setKpiFilter] = useState('all');
   
   const currentDate = new Date();
   const [dateFilterType, setDateFilterType] = useState('month'); // 'month' or 'day' or 'all'
@@ -66,6 +69,7 @@ export default function ReportsPage() {
         memberName: m.name,
         memberId: m.id,
         itemType: 'task',
+        kpiId: t.kpiId,
         date: t.deadline
       });
     });
@@ -76,10 +80,15 @@ export default function ReportsPage() {
         memberName: m.name,
         memberId: m.id,
         itemType: 'content',
+        kpiId: c.kpiId,
         date: c.publishDate
       });
     });
   });
+
+  const availableKpis = members
+    .filter(m => memberFilter === 'all' || m.id === memberFilter)
+    .flatMap(m => m.kpis.map(k => ({ ...k, memberId: m.id, memberName: m.name })));
 
   // Apply filters
   let filteredItems = allItems.filter(item => {
@@ -103,10 +112,12 @@ export default function ReportsPage() {
       } else if (dateFilterType === 'day') {
         if (item.date.split('T')[0] !== dateDay) return false;
       }
-    } else if (dateFilterType !== 'all' && !item.date) {
-        // If they filter by date, but item has no date, probably hide it, except if dateFilterType is 'all'
-        return false;
+    } else if (dateFilterType !== 'all') {
+      return false; // No date but date filter is active
     }
+    
+    // 5. KPI Filter
+    if (kpiFilter !== 'all' && item.kpiId !== kpiFilter) return false;
     
     return true;
   });
@@ -147,7 +158,7 @@ export default function ReportsPage() {
           
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontSize: '0.75rem' }}><HiUser /> พนักงาน</label>
-            <select className="form-input" value={memberFilter} onChange={e => setMemberFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+            <select className="form-input" value={memberFilter} onChange={e => { setMemberFilter(e.target.value); setKpiFilter('all'); }} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
               <option value="all">ทุกคน</option>
               {members.filter(m => m.status !== 'inactive').map(m => (
                 <option key={m.id} value={m.id}>{m.name}</option>
@@ -164,19 +175,30 @@ export default function ReportsPage() {
             </select>
           </div>
 
-          <div className="form-group" style={{ marginBottom: 0, opacity: typeFilter === 'task' ? 0.5 : 1, pointerEvents: typeFilter === 'task' ? 'none' : 'auto' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontSize: '0.75rem' }}>แพลตฟอร์ม</label>
-            <select className="form-input" value={platformFilter} onChange={e => setPlatformFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+            <select className="form-input" value={platformFilter} onChange={e => setPlatformFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }} disabled={typeFilter === 'task'}>
               <option value="all">ทุกแพลตฟอร์ม</option>
               <option value="Facebook">Facebook</option>
-              <option value="TikTok">TikTok</option>
               <option value="Instagram">Instagram</option>
-              <option value="YouTube">YouTube</option>
+              <option value="TikTok">TikTok</option>
               <option value="Website">Website</option>
+              <option value="YouTube">YouTube</option>
+              <option value="Google Map">Google Map</option>
             </select>
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}><HiTag /> เป้าหมาย KPI</label>
+            <select className="form-input" value={kpiFilter} onChange={e => setKpiFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="all">ทุกเป้าหมาย KPI</option>
+              {availableKpis.map(k => (
+                <option key={k.id} value={k.id}>{k.name}{memberFilter === 'all' ? ` (${k.memberName})` : ''} - ด. {k.month}/{k.year}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0, flex: 2 }}>
             <label className="form-label" style={{ fontSize: '0.75rem' }}><HiCalendar /> ช่วงเวลา</label>
             <select className="form-input" value={dateFilterType} onChange={e => setDateFilterType(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
               <option value="month">รายเดือน</option>

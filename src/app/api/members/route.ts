@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
               priority: row.get('priority'),
               deadline: row.get('deadline'),
               link: row.get('link'),
+              kpiId: row.get('kpiId'),
               createdAt: row.get('createdAt')
             })
             member._count.tasks++
@@ -97,6 +98,7 @@ export async function GET(request: NextRequest) {
               publishDate: row.get('publishDate'),
               platform: row.get('platform'),
               link: row.get('link'),
+              kpiId: row.get('kpiId'),
               createdAt: row.get('createdAt')
             })
             member._count.contents++
