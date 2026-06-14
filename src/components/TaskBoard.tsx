@@ -103,10 +103,10 @@ export default function TaskBoard() {
   useEffect(() => {
     fetchData();
     
-    // Auto-refresh data every 30 seconds
+    // Auto-refresh data every 2 minutes (120,000 ms)
     const interval = setInterval(() => {
       fetchData();
-    }, 30000);
+    }, 120000);
     
     return () => clearInterval(interval);
   }, [filterMemberId]);
