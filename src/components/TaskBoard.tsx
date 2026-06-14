@@ -534,7 +534,21 @@ export default function TaskBoard() {
                 <input type="date" className="form-input" required style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box' }} value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value, kpiId: ''})} />
               </div>
             </div>
-            {/* KPI selection removed from tasks as per user request */}
+            {!isEditing && taskForm.memberId ? (
+              taskForm.deadline ? (
+                kpis.filter(k => k.memberId === taskForm.memberId && k.month === new Date(taskForm.deadline).getMonth() + 1 && k.year === new Date(taskForm.deadline).getFullYear()).length > 0 ? (
+                  <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+                    <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (ถ้ามี)</label>
+                    <select className="form-select" value={taskForm.kpiId} onChange={e => setTaskForm({...taskForm, kpiId: e.target.value})}>
+                      <option value="">-- ไม่เชื่อมโยง --</option>
+                      {kpis.filter(k => k.memberId === taskForm.memberId && k.month === new Date(taskForm.deadline).getMonth() + 1 && k.year === new Date(taskForm.deadline).getFullYear()).sort((a, b) => a.name.length - b.name.length).map(k => (
+                        <option key={k.id} value={k.id}>{k.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null
+              ) : null
+            ) : null}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
               <button type="submit" className="btn btn-primary">บันทึกงาน</button>
@@ -588,7 +602,7 @@ export default function TaskBoard() {
               contentForm.publishDate ? (
                 kpis.filter(k => k.memberId === contentForm.memberId && k.month === new Date(contentForm.publishDate).getMonth() + 1 && k.year === new Date(contentForm.publishDate).getFullYear()).length > 0 ? (
                   <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-                    <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI ประจำเดือนที่เผยแพร่</label>
+                    <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI (ถ้ามี)</label>
                     <select className="form-select" value={contentForm.kpiId} onChange={e => setContentForm({...contentForm, kpiId: e.target.value})}>
                       <option value="">-- ไม่เชื่อมโยง --</option>
                       {kpis.filter(k => k.memberId === contentForm.memberId && k.month === new Date(contentForm.publishDate).getMonth() + 1 && k.year === new Date(contentForm.publishDate).getFullYear()).sort((a, b) => a.name.length - b.name.length).map(k => (
