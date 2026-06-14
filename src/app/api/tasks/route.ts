@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       description: row.get('description'),
       status: row.get('status'),
       priority: row.get('priority'),
+      startDate: row.get('startDate') || null,
       deadline: row.get('deadline') || null,
       company: row.get('company'),
       memberId: row.get('memberId'),
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, status, priority, deadline, memberId, company } = body
+    const { title, description, status, priority, startDate, deadline, memberId, company } = body
 
     if (!title || !memberId) {
       return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
     await sheet.loadHeaderRow()
     let newHeaders = [...sheet.headerValues]
     let headerChanged = false
+    if (!newHeaders.includes('startDate')) { newHeaders.push('startDate'); headerChanged = true; }
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
 
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
       status: status || 'todo',
       priority: priority || 'medium',
       company: company || 'GFS',
+      startDate: startDate ? new Date(startDate).toISOString() : '',
       deadline: deadline ? new Date(deadline).toISOString() : '',
       memberId,
       kpiId: body.kpiId || '',
@@ -135,6 +138,7 @@ export async function PUT(request: NextRequest) {
     await sheet.loadHeaderRow()
     let newHeaders = [...sheet.headerValues]
     let headerChanged = false
+    if (!newHeaders.includes('startDate')) { newHeaders.push('startDate'); headerChanged = true; }
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
 
@@ -156,6 +160,10 @@ export async function PUT(request: NextRequest) {
     })
     
     if (status !== undefined) row.assign({ status })
+    
+    if (data.startDate !== undefined) {
+      row.assign({ startDate: data.startDate ? new Date(data.startDate).toISOString() : '' })
+    }
     
     if (data.deadline !== undefined) {
       row.assign({ deadline: data.deadline ? new Date(data.deadline).toISOString() : '' })

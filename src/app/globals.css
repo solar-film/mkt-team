@@ -923,6 +923,38 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   border-left: 3px solid var(--color-warning);
 }
 
+.calendar-task-item.task-span-start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-right: -0.6rem;
+  padding-right: 0.6rem;
+  border-right: none;
+  position: relative;
+  z-index: 10;
+}
+
+.calendar-task-item.task-span-middle {
+  border-radius: 0;
+  margin-left: -0.6rem;
+  margin-right: -0.6rem;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+  border-left: none;
+  border-right: none;
+  position: relative;
+  z-index: 10;
+}
+
+.calendar-task-item.task-span-end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -0.6rem;
+  padding-left: 0.6rem;
+  border-left: none;
+  position: relative;
+  z-index: 10;
+}
+
 .calendar-controls {
   display: flex;
   align-items: center;

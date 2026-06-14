@@ -11,6 +11,7 @@ interface TeamMember {
 
 interface UnifiedItem {
   id: string; title: string; status: string; memberId: string; date: string; type: 'task' | 'content' | 'event';
+  startDate?: string;
   member?: { name: string; avatar: string | null; };
   fullItem?: any;
 }
@@ -34,7 +35,7 @@ export default function CalendarPage() {
   });
 
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: ''
+    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: ''
   });
   const [contentForm, setContentForm] = useState({
     title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
@@ -66,6 +67,7 @@ export default function CalendarPage() {
             unified.push({
               id: t.id, title: t.title, status: t.status, memberId: t.memberId,
               date: t.deadline.split('T')[0], type: 'task',
+              startDate: t.startDate ? t.startDate.split('T')[0] : t.deadline.split('T')[0],
               member: Array.isArray(members) ? members.find(m => m.id === t.memberId) : undefined,
               fullItem: t
             });
@@ -125,7 +127,7 @@ export default function CalendarPage() {
       title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
     });
     setTaskForm({
-      title: '', description: '', memberId: '', priority: 'medium', deadline: dateStr, kpiId: '', link: ''
+      title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: dateStr, kpiId: '', link: ''
     });
     setEventForm({ title: '', date: dateStr, time: '', type: 'event' });
     setIsModalOpen(true);
@@ -144,6 +146,7 @@ export default function CalendarPage() {
         description: fullItem.description || '',
         memberId: item.memberId || '',
         priority: fullItem.priority || 'medium',
+        startDate: fullItem.startDate ? fullItem.startDate.split('T')[0] : '',
         deadline: item.date || '',
         kpiId: fullItem.kpiId || '',
         link: fullItem.link || ''
@@ -194,7 +197,7 @@ export default function CalendarPage() {
         });
       }
       setIsModalOpen(false);
-      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' });
+      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -290,7 +293,11 @@ export default function CalendarPage() {
 
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-    const dayItems = filteredItems.filter(item => item.date === dateStr);
+    const dayItems = filteredItems.filter(item => {
+      const start = item.startDate || item.date;
+      const end = item.date;
+      return dateStr >= start && dateStr <= end;
+    });
     
     gridCells.push(
       <div 
@@ -301,10 +308,21 @@ export default function CalendarPage() {
       >
         <div className="calendar-date-number">{i}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {dayItems.map(item => (
+          {dayItems.map(item => {
+            const start = item.startDate || item.date;
+            const end = item.date;
+            const isStart = dateStr === start;
+            const isEnd = dateStr === end;
+            let spanClass = '';
+            if (start !== end) {
+              if (isStart) spanClass = 'task-span-start';
+              else if (isEnd) spanClass = 'task-span-end';
+              else spanClass = 'task-span-middle';
+            }
+            return (
             <div 
               key={`${item.type}-${item.id}`} 
-              className={item.type === 'event' ? 'calendar-task-item status-event' : `calendar-task-item status-${item.status}`} 
+              className={item.type === 'event' ? 'calendar-task-item status-event' : `calendar-task-item status-${item.status} ${spanClass}`} 
               title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
               onClick={(e) => handleItemClick(e, item)}
               style={item.type === 'event' ? { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#b45309', fontWeight: 600 } : {}}
@@ -317,10 +335,10 @@ export default function CalendarPage() {
               )}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {item.type === 'event' && item.fullItem?.time ? <span style={{ marginRight: '4px', opacity: 0.8 }}>{item.fullItem.time}</span> : null}
-                {item.title}
+                {(spanClass === '' || spanClass === 'task-span-start') ? item.title : '\u00A0'}
               </span>
             </div>
-          ))}
+          )})}
         </div>
       </div>
     );
@@ -591,12 +609,8 @@ export default function CalendarPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">ลำดับความสำคัญ</label>
-                <select className="form-select" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value})}>
-                  <option value="low">ต่ำ</option>
-                  <option value="medium">กลาง</option>
-                  <option value="high">สูง</option>
-                </select>
+                <label className="form-label">วันเริ่มต้น (ถ้ามี)</label>
+                <input type="date" className="form-input" value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
               </div>
               <div className="form-group">
                 <label className="form-label">กำหนดส่ง *</label>

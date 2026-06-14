@@ -17,6 +17,7 @@ interface UnifiedItem {
   // Task specific
   description?: string | null;
   priority?: string;
+  startDate?: string | null;
   deadline?: string | null;
 
   // Content specific
@@ -50,7 +51,7 @@ export default function TaskBoard() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: ''
+    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: ''
   });
   
   const [contentForm, setContentForm] = useState({
@@ -158,7 +159,8 @@ export default function TaskBoard() {
         description: item.description || '',
         memberId: item.memberId || '',
         priority: item.priority || 'medium',
-        deadline: item.deadline ? new Date(item.deadline).toISOString().split('T')[0] : '',
+        startDate: item.startDate ? item.startDate.split('T')[0] : '',
+        deadline: item.deadline ? item.deadline.split('T')[0] : '',
         kpiId: (item as any).kpiId || '',
         link: item.link || ''
       });
@@ -199,7 +201,7 @@ export default function TaskBoard() {
         });
       }
       setIsModalOpen(false);
-      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' });
+      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -373,7 +375,7 @@ export default function TaskBoard() {
           </select>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 auto' }}>
-          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
           <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
@@ -492,12 +494,8 @@ export default function TaskBoard() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">ลำดับความสำคัญ</label>
-                <select className="form-select" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value})}>
-                  <option value="low">ต่ำ</option>
-                  <option value="medium">กลาง</option>
-                  <option value="high">สูง</option>
-                </select>
+                <label className="form-label">วันเริ่มต้น (ถ้ามี)</label>
+                <input type="date" className="form-input" value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
               </div>
               <div className="form-group">
                 <label className="form-label">กำหนดส่ง *</label>
