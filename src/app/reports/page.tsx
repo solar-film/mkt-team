@@ -33,7 +33,6 @@ export default function ReportsPage() {
   const [memberFilter, setMemberFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
-  const [kpiFilter, setKpiFilter] = useState('all');
   
   const currentDate = new Date();
   const [dateFilterType, setDateFilterType] = useState('month'); // 'month' or 'day' or 'all'
@@ -86,10 +85,6 @@ export default function ReportsPage() {
     });
   });
 
-  const availableKpis = members
-    .filter(m => memberFilter === 'all' || m.id === memberFilter)
-    .flatMap(m => m.kpis.map(k => ({ ...k, memberId: m.id, memberName: m.name })));
-
   // Apply filters
   let filteredItems = allItems.filter(item => {
     // 1. Member Filter
@@ -115,9 +110,6 @@ export default function ReportsPage() {
     } else if (dateFilterType !== 'all') {
       return false; // No date but date filter is active
     }
-    
-    // 5. KPI Filter
-    if (kpiFilter !== 'all' && item.kpiId !== kpiFilter) return false;
     
     return true;
   });
@@ -158,7 +150,7 @@ export default function ReportsPage() {
           
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontSize: '0.75rem' }}><HiUser /> พนักงาน</label>
-            <select className="form-input" value={memberFilter} onChange={e => { setMemberFilter(e.target.value); setKpiFilter('all'); }} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+            <select className="form-input" value={memberFilter} onChange={e => setMemberFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
               <option value="all">ทุกคน</option>
               {members.filter(m => m.status !== 'inactive').map(m => (
                 <option key={m.id} value={m.id}>{m.name}</option>
@@ -185,16 +177,6 @@ export default function ReportsPage() {
               <option value="Website">Website</option>
               <option value="YouTube">YouTube</option>
               <option value="Google Map">Google Map</option>
-            </select>
-          </div>
-
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" style={{ fontSize: '0.75rem' }}><HiTag /> เป้าหมาย KPI</label>
-            <select className="form-input" value={kpiFilter} onChange={e => setKpiFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
-              <option value="all">ทุกเป้าหมาย KPI</option>
-              {availableKpis.map(k => (
-                <option key={k.id} value={k.id}>{k.name}{memberFilter === 'all' ? ` (${k.memberName})` : ''} - ด. {k.month}/{k.year}</option>
-              ))}
             </select>
           </div>
 
