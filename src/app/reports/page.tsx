@@ -64,6 +64,7 @@ export default function ReportsPage() {
       allItems.push({
         ...t,
         memberName: m.name,
+        memberId: m.id,
         itemType: 'task',
         date: t.deadline
       });
@@ -73,6 +74,7 @@ export default function ReportsPage() {
       allItems.push({
         ...c,
         memberName: m.name,
+        memberId: m.id,
         itemType: 'content',
         date: c.publishDate
       });
