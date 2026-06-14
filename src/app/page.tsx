@@ -151,16 +151,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Pending Contents */}
+        {/* Card 2: Total Content */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', display: 'flex', flexDirection: 'column', position: 'relative', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-          <h3 style={{ fontSize: '0.85rem', color: '#1e293b', margin: '0 0 1rem 0', fontWeight: 700 }}>แคมเปญที่รัน</h3>
+          <h3 style={{ fontSize: '0.85rem', color: '#1e293b', margin: '0 0 1rem 0', fontWeight: 700 }}>คอนเท้นที่ผลิต</h3>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#3b82f6' }}>{totalContent - members.reduce((sum, m) => sum + m.contents.filter(c => c.status === 'published').length, 0)}</span>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>แคมเปญ</span>
+            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#3b82f6' }}>{totalContent}</span>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>คอนเท้น</span>
           </div>
-          <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>รันอยู่ในขณะนี้</p>
+          <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>จากทั้งหมดในระบบ</p>
           <div style={{ position: 'absolute', top: '1rem', right: '1rem', width: '32px', height: '32px', backgroundColor: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0"><path d="M4 11H2v2h2v-2zm15-4.14V5h-2v1.86A5.996 5.996 0 0012 2C8.69 2 6 4.69 6 8v4l-2 2v2h16v-2l-2-2V8c0-1.86-.88-3.49-2-4.14zM12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"></path></svg>
+            <HiDocumentText size={18} />
           </div>
         </div>
 
