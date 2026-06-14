@@ -8,7 +8,7 @@ export default function UnifiedTasksPage() {
       <div className="page-header" style={{ marginBottom: '1.5rem' }}>
         <div className="page-header-content">
           <h1>จัดการงาน & คอนเท้น</h1>
-          <p>ติดตามสถานะงานของทุกคนในทีมและวางแผนการตลาดในบอร์ดเดียว</p>
+          <p className="desktop-only">ติดตามสถานะงานของทุกคนในทีมและวางแผนการตลาดในบอร์ดเดียว</p>
         </div>
       </div>
 

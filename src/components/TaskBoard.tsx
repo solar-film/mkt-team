@@ -350,26 +350,26 @@ export default function TaskBoard() {
 
   return (
     <div style={{ padding: '0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <label className="form-label" style={{ marginBottom: 0 }}>กรองตามพนักงาน:</label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto' }}>
+          <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>กรองตามพนักงาน:</label>
           <select 
             className="form-select" 
-            style={{ width: '200px' }}
+            style={{ width: '100%', minWidth: '150px', maxWidth: '250px' }}
             value={filterMemberId}
             onChange={(e) => setFilterMemberId(e.target.value)}
           >
-            <option value="">-- ทั้งหมด --</option>
+            <option value="">-- พนักงานทั้งหมด --</option>
             {members.map(m => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-secondary" onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 auto' }}>
+          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
-          <button className="btn btn-primary" onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มคอนเท้น
           </button>
         </div>
@@ -440,13 +440,7 @@ export default function TaskBoard() {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       {item.member && (
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
-                          {item.member.avatar ? (
-                            <img src={item.member.avatar} alt={item.member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6' }}>{item.member.name.substring(0,1)}</div>
-                          )}
-                        </div>
+                        <MemberAvatar name={item.member.name} size="sm" />
                       )}
                       
                       <span style={{ backgroundColor: item.status === 'todo' ? '#fffbeb' : item.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: iconColor, padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600, whiteSpace: 'nowrap' }}>

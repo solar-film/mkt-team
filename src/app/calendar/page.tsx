@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
+import MemberAvatar from '@/components/MemberAvatar';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -421,12 +422,12 @@ export default function CalendarPage() {
                 const isContent = item.type === 'content';
                 const timeStr = item.type === 'task' ? '10:00' : '14:00'; 
                 
-                // Color mapping based on status or type
+                // Color mapping based on status
                 let borderColor = '#3b82f6';
                 let bgColor = '#f0f9ff';
-                if (item.status === 'in_progress') { borderColor = '#f59e0b'; bgColor = '#fffbeb'; }
+                if (item.status === 'todo') { borderColor = '#f97316'; bgColor = '#fffbeb'; }
+                else if (item.status === 'in_progress') { borderColor = '#3b82f6'; bgColor = '#eff6ff'; }
                 else if (item.status === 'done') { borderColor = '#10b981'; bgColor = '#ecfdf5'; }
-                else if (isContent) { borderColor = '#8b5cf6'; bgColor = '#f5f3ff'; }
                 
                 return (
                   <div key={item.id} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1, cursor: 'pointer' }}>
@@ -441,12 +442,8 @@ export default function CalendarPage() {
                         </span>
                       </div>
                       {item.member && (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#ffffff', border: '2px solid white', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                          {item.member.avatar ? (
-                            <img src={item.member.avatar} alt={item.member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#3b82f6' }}>{item.member.name.substring(0,1)}</div>
-                          )}
+                        <div style={{ flexShrink: 0 }}>
+                          <MemberAvatar name={item.member.name} size="sm" />
                         </div>
                       )}
                     </div>
