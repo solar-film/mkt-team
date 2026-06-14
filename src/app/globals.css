@@ -940,12 +940,28 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 
 .calendar-cell {
   background-color: var(--color-surface);
-  min-height: 120px;
+  height: 140px; /* Fixed height to guarantee uniformity */
+  min-height: 140px;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   transition: all 0.2s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.calendar-cell::-webkit-scrollbar {
+  width: 4px;
+}
+
+.calendar-cell::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.calendar-cell::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
 }
 
 .calendar-cell:hover {
@@ -986,6 +1002,9 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   gap: 0.25rem;
   cursor: pointer;
   white-space: nowrap;
+  height: 28px !important;
+  max-height: 28px !important;
+  overflow: hidden;
   overflow: hidden;
   text-overflow: ellipsis;
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
