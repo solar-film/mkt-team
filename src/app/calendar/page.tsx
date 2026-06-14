@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
+import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 
 interface TeamMember {
@@ -16,6 +16,7 @@ interface UnifiedItem {
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [membersList, setMembersList] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
@@ -47,32 +48,36 @@ export default function CalendarPage() {
       const contents = await resContent.json();
       const members: TeamMember[] = await resMembers.json();
       const kpisData = await resKpis.json();
-      setMembersList(members);
-      setKpis(kpisData);
+      setMembersList(Array.isArray(members) ? members : []);
+      setKpis(Array.isArray(kpisData) ? kpisData : []);
 
       const unified: UnifiedItem[] = [];
       
-      tasks.forEach((t: any) => {
-        if (t.deadline) {
-          unified.push({
-            id: t.id, title: t.title, status: t.status, memberId: t.memberId,
-            date: t.deadline.split('T')[0], type: 'task',
-            member: members.find(m => m.id === t.memberId),
-            fullItem: t
-          });
-        }
-      });
+      if (Array.isArray(tasks)) {
+        tasks.forEach((t: any) => {
+          if (t.deadline) {
+            unified.push({
+              id: t.id, title: t.title, status: t.status, memberId: t.memberId,
+              date: t.deadline.split('T')[0], type: 'task',
+              member: Array.isArray(members) ? members.find(m => m.id === t.memberId) : undefined,
+              fullItem: t
+            });
+          }
+        });
+      }
 
-      contents.forEach((c: any) => {
-        if (c.publishDate) {
-          unified.push({
-            id: c.id, title: c.title, status: c.status, memberId: c.memberId,
-            date: c.publishDate.split('T')[0], type: 'content',
-            member: members.find(m => m.id === c.memberId),
-            fullItem: c
-          });
-        }
-      });
+      if (Array.isArray(contents)) {
+        contents.forEach((c: any) => {
+          if (c.publishDate) {
+            unified.push({
+              id: c.id, title: c.title, status: c.status, memberId: c.memberId,
+              date: c.publishDate.split('T')[0], type: 'content',
+              member: Array.isArray(members) ? members.find(m => m.id === c.memberId) : undefined,
+              fullItem: c
+            });
+          }
+        });
+      }
 
       setItems(unified);
     } catch (err) {
@@ -188,24 +193,12 @@ export default function CalendarPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  };
-
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
-
-  const thaiMonths = [
-    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-  ];
+  // --- Desktop Calendar Grid Logic ---
+  const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   const daysOfWeek = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
@@ -213,13 +206,10 @@ export default function CalendarPage() {
   const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
 
   const gridCells = [];
-  
-  // Pad beginning
   for (let i = 0; i < firstDay; i++) {
     gridCells.push(<div key={`empty-start-${i}`} className="calendar-cell empty-cell"></div>);
   }
 
-  // Days
   const todayStr = new Date().toISOString().split('T')[0];
   const filteredItems = filterMemberId ? items.filter(i => i.memberId === filterMemberId) : items;
 
@@ -256,82 +246,226 @@ export default function CalendarPage() {
     );
   }
 
-  // Pad end to complete the grid (usually 35 or 42 cells total)
   const totalCells = gridCells.length;
   const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
   for (let i = 0; i < remainingCells; i++) {
     gridCells.push(<div key={`empty-end-${i}`} className="calendar-cell empty-cell"></div>);
   }
 
+  // --- Mobile Calendar Slider Logic ---
+  const getWeekDays = (date: Date) => {
+    const current = new Date(date);
+    const week = [];
+    current.setDate((current.getDate() - current.getDay())); 
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return week;
+  };
+
+  const mobileWeekDays = getWeekDays(currentDate);
+  const thaiShortDays = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+
+  const handleMobilePrevWeek = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setCurrentDate(newDate);
+  };
+
+  const handleMobileNextWeek = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setCurrentDate(newDate);
+  };
+
+  const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  const mobileDayItems = filteredItems.filter(item => item.date === selectedDateStr).sort((a, b) => a.title.localeCompare(b.title));
+
   return (
     <div>
-      <div className="page-header" style={{ marginBottom: '1rem' }}>
-        <div className="page-header-content">
-          <h1>ปฏิทินงาน</h1>
-          <p>ดูภาพรวมงานและกำหนดส่งทั้งหมดในแต่ละเดือน</p>
-        </div>
-      </div>
-
-      <div className="card" style={{ padding: '1.5rem' }}>
-        <div className="calendar-controls">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
-              {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
-            <select 
-              className="form-select" 
-              style={{ minWidth: '180px', flex: 1, maxWidth: '300px' }}
-              value={filterMemberId}
-              onChange={(e) => setFilterMemberId(e.target.value)}
-            >
-              <option value="">-- พนักงานทั้งหมด --</option>
-              {membersList.filter(m => m.status !== 'inactive').map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem' }} onClick={prevMonth}>
-              <HiChevronLeft />
-            </button>
-            <button className="btn btn-secondary" onClick={() => setCurrentDate(new Date())}>
-              เดือนนี้
-            </button>
-            <button className="btn btn-secondary" style={{ padding: '0.5rem' }} onClick={nextMonth}>
-              <HiChevronRight />
-            </button>
+      {/* -------------------- DESKTOP VIEW -------------------- */}
+      <div className="desktop-only">
+        <div className="page-header" style={{ marginBottom: '1rem' }}>
+          <div className="page-header-content">
+            <h1>ปฏิทินงาน</h1>
+            <p>ดูภาพรวมงานและกำหนดส่งทั้งหมดในแต่ละเดือน</p>
           </div>
         </div>
 
-        {loading ? (
-          <div className="loading-container" style={{ minHeight: '400px' }}><div className="loading-spinner"></div></div>
-        ) : (
-          <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
-            <div className="calendar-grid" style={{ minWidth: '800px' }}>
-              {daysOfWeek.map(day => (
-                <div key={day} className="calendar-header-cell">{day}</div>
-              ))}
-              {gridCells}
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div className="calendar-controls">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
+                {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear() + 543}
+              </h2>
+              <select 
+                className="form-select" 
+                style={{ minWidth: '180px', flex: 1, maxWidth: '300px' }}
+                value={filterMemberId}
+                onChange={(e) => setFilterMemberId(e.target.value)}
+              >
+                <option value="">-- พนักงานทั้งหมด --</option>
+                {membersList.filter(m => m.status !== 'inactive').map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-secondary" style={{ padding: '0.5rem' }} onClick={prevMonth}>
+                <HiChevronLeft />
+              </button>
+              <button className="btn btn-secondary" onClick={() => setCurrentDate(new Date())}>
+                เดือนนี้
+              </button>
+              <button className="btn btn-secondary" style={{ padding: '0.5rem' }} onClick={nextMonth}>
+                <HiChevronRight />
+              </button>
             </div>
           </div>
-        )}
-        
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)' }}></div>
-            <span>เสร็จแล้ว</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-warning)' }}></div>
-            <span>กำลังทำ</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-border)' }}></div>
-            <span>รอดำเนินการ</span>
+
+          {loading ? (
+            <div className="loading-container" style={{ minHeight: '400px' }}><div className="loading-spinner"></div></div>
+          ) : (
+            <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+              <div className="calendar-grid" style={{ minWidth: '800px' }}>
+                {daysOfWeek.map(day => (
+                  <div key={day} className="calendar-header-cell">{day}</div>
+                ))}
+                {gridCells}
+              </div>
+            </div>
+          )}
+          
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)' }}></div>
+              <span>เสร็จแล้ว</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-warning)' }}></div>
+              <span>กำลังทำ</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-border)' }}></div>
+              <span>รอดำเนินการ</span>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* -------------------- MOBILE VIEW -------------------- */}
+      <div className="mobile-only" style={{ paddingBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#1e293b' }}>ปฏิทินงาน</h1>
+          <button 
+            onClick={() => handleCellClick(selectedDateStr)}
+            style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.75rem', fontWeight: 600, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+          >
+            <HiPlus /> เพิ่มกิจกรรม
+          </button>
+        </div>
+
+        {/* Calendar Slider */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '1rem', marginBottom: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <button onClick={handleMobilePrevWeek} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><HiChevronLeft size={20} /></button>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: '#1e293b' }}>
+              {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear() + 543}
+            </h2>
+            <button onClick={handleMobileNextWeek} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><HiChevronRight size={20} /></button>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {mobileWeekDays.map((day, i) => {
+              const isSelected = day.toDateString() === selectedDate.toDateString();
+              const isToday = day.toDateString() === new Date().toDateString();
+              const hasItems = filteredItems.some(item => item.date === `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`);
+              
+              return (
+                <div key={i} onClick={() => setSelectedDate(day)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: isSelected ? '#3b82f6' : '#94a3b8', fontWeight: isSelected ? 600 : 400 }}>{thaiShortDays[i]}</span>
+                  <div style={{ 
+                    width: '32px', height: '32px', borderRadius: '50%', 
+                    backgroundColor: isSelected ? '#3b82f6' : 'transparent', 
+                    color: isSelected ? '#ffffff' : (isToday ? '#f97316' : '#1e293b'),
+                    fontWeight: isSelected || isToday ? 700 : 500,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.9rem',
+                    position: 'relative'
+                  }}>
+                    {day.getDate()}
+                    {hasItems && !isSelected && <div style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#f97316' }}></div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Agenda List */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: '#1e293b' }}>
+            {selectedDate.getDate()} {thaiMonths[selectedDate.getMonth()]} {selectedDate.getFullYear() + 543}
+          </h3>
+          
+          {loading ? (
+             <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+               <div className="loading-spinner"></div>
+             </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+              {mobileDayItems.length > 0 && <div style={{ position: 'absolute', left: '19px', top: '20px', bottom: '20px', width: '2px', backgroundColor: '#e2e8f0', zIndex: 0 }}></div>}
+              
+              {mobileDayItems.map((item, index) => {
+                const isContent = item.type === 'content';
+                const timeStr = item.type === 'task' ? '10:00' : '14:00'; 
+                
+                // Color mapping based on status or type
+                let borderColor = '#3b82f6';
+                let bgColor = '#f0f9ff';
+                if (item.status === 'in_progress') { borderColor = '#f59e0b'; bgColor = '#fffbeb'; }
+                else if (item.status === 'done') { borderColor = '#10b981'; bgColor = '#ecfdf5'; }
+                else if (isContent) { borderColor = '#8b5cf6'; bgColor = '#f5f3ff'; }
+                
+                return (
+                  <div key={item.id} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1, cursor: 'pointer' }}>
+                    <div style={{ width: '40px', fontSize: '0.8rem', fontWeight: 600, color: '#64748b', paddingTop: '0.75rem', textAlign: 'right' }}>
+                      {timeStr}
+                    </div>
+                    <div style={{ flex: 1, backgroundColor: bgColor, borderLeft: `4px solid ${borderColor}`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>{item.title}</h4>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {item.type === 'task' ? item.fullItem?.description || 'งานทั่วไป' : `${item.fullItem?.type} - ${item.fullItem?.platform}`}
+                        </span>
+                      </div>
+                      {item.member && (
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#ffffff', border: '2px solid white', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                          {item.member.avatar ? (
+                            <img src={item.member.avatar} alt={item.member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#3b82f6' }}>{item.member.name.substring(0,1)}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {mobileDayItems.length === 0 && (
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                  <HiOutlineCalendar size={32} style={{ color: '#cbd5e1', marginBottom: '0.5rem' }} />
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>ไม่มีงานหรือกิจกรรมในวันนี้</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* --- Shared Modal --- */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
         {newItemType === 'task' ? (
           <form onSubmit={handleTaskSubmit}>

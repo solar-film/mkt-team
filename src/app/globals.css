@@ -925,3 +925,12 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   flex-wrap: wrap;
   gap: 1rem;
 }
+
+/* --- Responsive Utilities --- */
+.desktop-only { display: none !important; }
+.mobile-only { display: block !important; }
+
+@media (min-width: 768px) {
+  .desktop-only { display: block !important; }
+  .mobile-only { display: none !important; }
+}
