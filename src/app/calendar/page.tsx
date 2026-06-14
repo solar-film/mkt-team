@@ -739,6 +739,7 @@ export default function CalendarPage() {
                   <option value="TikTok">TikTok</option>
                   <option value="Website">Website</option>
                   <option value="YouTube">YouTube</option>
+                  <option value="Google Map">Google Map</option>
                 </select>
               </div>
             </div>
