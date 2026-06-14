@@ -799,6 +799,16 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   opacity: 0.3;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-row.mt-4 {
+  margin-top: 1rem;
+}
+
 /* Animations */
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -861,6 +871,11 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   .sidebar-link.active::before { display: none; }
   
   .sidebar-footer { display: none !important; }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
   
   .main-content { 
     padding: 1rem; 

@@ -252,7 +252,7 @@ export default function KPIsPage() {
               ))}
             </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">เป้าหมาย *</label>
               <input type="number" step="0.01" className="form-input" required value={formData.target} onChange={e => setFormData({...formData, target: e.target.value})} />
@@ -262,7 +262,7 @@ export default function KPIsPage() {
               <input type="text" className="form-input" required value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} placeholder="เช่น ครั้ง, คน, %" />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">เดือน *</label>
               <select className="form-select" required value={formData.month} onChange={e => setFormData({...formData, month: e.target.value})}>

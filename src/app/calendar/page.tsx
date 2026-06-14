@@ -677,7 +677,7 @@ export default function CalendarPage() {
               </select>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="form-row mt-4">
               <div className="form-group">
                 <label className="form-label">วันเริ่มต้น (ถ้ามี)</label>
                 <input type="date" className="form-input" value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
@@ -721,7 +721,7 @@ export default function CalendarPage() {
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label">ประเภท</label>
                 <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
@@ -743,7 +743,7 @@ export default function CalendarPage() {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="form-row mt-4">
               <div className="form-group">
                 <label className="form-label">บริษัท *</label>
                 <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
@@ -814,7 +814,7 @@ export default function CalendarPage() {
               <label className="form-label">ชื่อกิจกรรม / เรื่องที่แจ้งให้ทราบ *</label>
               <input type="text" className="form-input" required placeholder="เช่น วันนี้ประชุม 10 โมง" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label">วันที่ *</label>
                 <input type="date" className="form-input" required value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} />
