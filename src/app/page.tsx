@@ -34,7 +34,7 @@ export default function DashboardPage() {
 
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchData = () => {
     fetch('/api/members?includeRelations=true')
       .then(res => res.json())
       .then(data => {
@@ -53,6 +53,17 @@ export default function DashboardPage() {
         setError('ไม่สามารถเชื่อมต่อฐานข้อมูลได้');
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchData();
+    
+    // Auto-refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

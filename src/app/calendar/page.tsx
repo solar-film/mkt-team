@@ -90,6 +90,13 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchData();
+    
+    // Auto-refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleCellClick = (dateStr: string) => {

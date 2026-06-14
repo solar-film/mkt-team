@@ -102,6 +102,13 @@ export default function TaskBoard() {
 
   useEffect(() => {
     fetchData();
+    
+    // Auto-refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, [filterMemberId]);
 
   const handleStatusChange = async (item: UnifiedItem, newStatus: string) => {
