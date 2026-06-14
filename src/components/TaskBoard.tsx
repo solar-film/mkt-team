@@ -38,6 +38,7 @@ export default function TaskBoard() {
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [showAllDone, setShowAllDone] = useState(false);
+  const [mobileTab, setMobileTab] = useState('todo');
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -374,10 +375,95 @@ export default function TaskBoard() {
         </div>
       </div>
 
-      <div className="kanban-board">
-        {renderColumn('todo', 'รอดำเนินการ')}
-        {renderColumn('in_progress', 'กำลังทำ')}
-        {renderColumn('done', 'เสร็จแล้ว')}
+      <div className="desktop-only">
+        <div className="kanban-board">
+          {renderColumn('todo', 'รอดำเนินการ')}
+          {renderColumn('in_progress', 'กำลังทำ')}
+          {renderColumn('done', 'เสร็จแล้ว')}
+        </div>
+      </div>
+
+      <div className="mobile-only" style={{ paddingBottom: '2rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+          <button 
+            onClick={() => setMobileTab('todo')}
+            style={{ flex: 1, padding: '0.75rem 0', borderRadius: '12px', border: 'none', backgroundColor: mobileTab === 'todo' ? '#fffbeb' : '#f8fafc', color: mobileTab === 'todo' ? '#f97316' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
+          >
+            รอดำเนินการ
+            <span style={{ backgroundColor: mobileTab === 'todo' ? '#f97316' : '#e2e8f0', color: mobileTab === 'todo' ? 'white' : '#64748b', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{items.filter(i => i.status === 'todo').length}</span>
+          </button>
+          <button 
+            onClick={() => setMobileTab('in_progress')}
+            style={{ flex: 1, padding: '0.75rem 0', borderRadius: '12px', border: 'none', backgroundColor: mobileTab === 'in_progress' ? '#eff6ff' : '#f8fafc', color: mobileTab === 'in_progress' ? '#3b82f6' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
+          >
+            กำลังทำ
+            <span style={{ backgroundColor: mobileTab === 'in_progress' ? '#3b82f6' : '#e2e8f0', color: mobileTab === 'in_progress' ? 'white' : '#64748b', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{items.filter(i => i.status === 'in_progress').length}</span>
+          </button>
+          <button 
+            onClick={() => setMobileTab('done')}
+            style={{ flex: 1, padding: '0.75rem 0', borderRadius: '12px', border: 'none', backgroundColor: mobileTab === 'done' ? '#ecfdf5' : '#f8fafc', color: mobileTab === 'done' ? '#10b981' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
+          >
+            เสร็จแล้ว
+            <span style={{ backgroundColor: mobileTab === 'done' ? '#10b981' : '#e2e8f0', color: mobileTab === 'done' ? 'white' : '#64748b', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{items.filter(i => i.status === 'done').length}</span>
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {items.filter(i => i.status === mobileTab).map(item => {
+            const isTask = item.itemType === 'task';
+            const iconColor = item.status === 'todo' ? '#f97316' : item.status === 'in_progress' ? '#3b82f6' : '#10b981';
+            
+            return (
+              <div key={item.id} onClick={() => handleEditClick(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
+                <div 
+                  onClick={(e) => { e.stopPropagation(); handleStatusChange(item, item.status === 'done' ? 'todo' : 'done'); }}
+                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: `2px solid ${item.status === 'done' ? '#10b981' : '#cbd5e1'}`, backgroundColor: item.status === 'done' ? '#10b981' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.2rem' }}
+                >
+                  {item.status === 'done' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                </div>
+                
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</h3>
+                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiOutlineTrash size={18} /></button>
+                  </div>
+                  
+                  <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : 'โพสต์'} - ${item.company}`}
+                  </p>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem', color: '#64748b' }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      {item.deadline || item.publishDate ? new Date(item.deadline || item.publishDate || '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'ไม่ระบุ'}
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {item.member && (
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#f1f5f9', overflow: 'hidden' }}>
+                          {item.member.avatar ? (
+                            <img src={item.member.avatar} alt={item.member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: '#3b82f6' }}>{item.member.name.substring(0,1)}</div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <span style={{ backgroundColor: item.status === 'todo' ? '#fffbeb' : item.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: iconColor, padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {item.status === 'todo' ? 'รอดำเนินการ' : item.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จแล้ว'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {items.filter(i => i.status === mobileTab).length === 0 && (
+             <div style={{ padding: '3rem 1rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+               <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>ไม่มีงานในหมวดหมู่นี้</p>
+             </div>
+          )}
+        </div>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
