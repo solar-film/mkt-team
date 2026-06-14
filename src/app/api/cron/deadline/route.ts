@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDoc } from '@/lib/google-sheets';
+import { initDoc } from '@/lib/google-sheets';
 import { sendLineNotify } from '@/lib/line-notify';
 
 // Vercel cron uses GET
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const doc = await getDoc();
+    const doc = await initDoc();
     
     // Fetch members for names
     const membersSheet = doc.sheetsByTitle['TeamMember'];
