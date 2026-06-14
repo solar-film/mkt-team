@@ -22,6 +22,10 @@ export const metadata: Metadata = {
     title: 'MKT-GFS',
     statusBarStyle: 'default',
   },
+  icons: {
+    icon: '/icon.png?v=3',
+    apple: '/icon.png?v=3',
+  },
 }
 
 export default function RootLayout({

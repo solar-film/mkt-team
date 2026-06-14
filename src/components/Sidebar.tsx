@@ -71,7 +71,7 @@ export default function Sidebar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, overflow: 'hidden' }}>
           <div className="sidebar-logo-img" style={{ position: 'relative', flexShrink: 0, borderRadius: '6px', overflow: 'hidden' }}>
             {/* Use standard img to avoid Next.js aggressive caching for the overwritten icon, or add query string */}
-            <img src="/icon.png?v=2" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="/icon.png?v=3" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
             <h2>Online Marketing</h2>
