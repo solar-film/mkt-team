@@ -204,7 +204,7 @@ export default function DashboardPage() {
         {/* Important Tasks */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>งานสำคัญวันนี้</h2>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>งานที่ใกล้ถึงกำหนดส่ง</h2>
             <span style={{ backgroundColor: '#fff7ed', color: '#f97316', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
               {upcomingTasks.length} งาน
             </span>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                 </div>
               );
             }) : (
-              <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', fontSize: '0.85rem' }}>ไม่มีงานสำคัญวันนี้ 🎉</div>
+              <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', fontSize: '0.85rem' }}>ไม่มีงานที่ใกล้ถึงกำหนดส่ง 🎉</div>
             )}
           </div>
         </div>
