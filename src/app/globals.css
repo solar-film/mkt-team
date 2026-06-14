@@ -149,6 +149,11 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   flex-direction: column;
 }
 
+.sidebar-logo-img {
+  width: 32px;
+  height: 32px;
+}
+
 .sidebar-logo h2 {
   font-size: 1.25rem;
   color: var(--color-text-primary);
@@ -801,12 +806,13 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 
 @media (max-width: 768px) {
   .app-layout { flex-direction: column; }
-  .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 0.75rem 1rem; justify-content: space-between; border-right: none; border-bottom: 1px solid var(--color-border); height: auto; }
+  .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 0.5rem 1rem; justify-content: space-between; border-right: none; border-bottom: 1px solid var(--color-border); height: auto; }
   .sidebar.collapsed { width: 100%; }
   
   .sidebar-logo { padding: 0; margin: 0; flex: 1; min-width: 0; }
   .sidebar-logo > div { display: flex !important; align-items: center; gap: 0.5rem; flex: 1; min-width: 0; }
-  .sidebar-logo h2 { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+  .sidebar-logo-img { width: 24px !important; height: 24px !important; }
+  .sidebar-logo h2 { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
   .sidebar-logo p { display: none; }
   .toggle-sidebar-btn { display: none; } /* Hide toggle on mobile */
   
@@ -816,9 +822,9 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   .sidebar-link svg { font-size: 1.25rem; margin: 0; }
   .sidebar-footer { display: none; }
   
-  .main-content { padding: 1.25rem; height: calc(100vh - 65px); }
+  .main-content { padding: 1rem; height: calc(100vh - 55px); }
   
-  .page-header { flex-direction: column; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; margin-bottom: 1rem; }
   .page-header-content { width: 100%; }
   .page-header > div:last-child { display: flex; gap: 0.5rem; width: 100%; flex-wrap: wrap; }
   
