@@ -100,8 +100,8 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="sidebar-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <small>© 2026 Marketing Team</small>
+      <div className="sidebar-footer" style={{ display: 'flex', justifyContent: isCollapsed ? 'center' : 'space-between', alignItems: 'center' }}>
+        {!isCollapsed && <small>© 2026 Marketing Team</small>}
         <button 
           onClick={handleLockClick}
           style={{ background: 'none', border: 'none', color: isAdmin ? 'var(--color-success)' : 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.5, transition: 'opacity 0.2s' }}
