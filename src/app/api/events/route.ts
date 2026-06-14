@@ -59,14 +59,6 @@ export async function POST(request: NextRequest) {
 
     await sheet.addRow(newEvent)
     
-    try {
-      const message = `\n📢 [กิจกรรม/ประกาศ] ${title}\n📅 วันที่: ${new Date(date).toLocaleDateString('th-TH')}${time ? ` เวลา: ${time}` : ''}`
-      const { sendLineNotify } = await import('@/lib/line-notify')
-      await sendLineNotify(message)
-    } catch (e) {
-      console.error('Error sending line notify:', e)
-    }
-
     return NextResponse.json(newEvent, { status: 201 })
   } catch (error) {
     console.error('API Error:', error)

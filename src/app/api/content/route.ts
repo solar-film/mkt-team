@@ -104,22 +104,6 @@ export async function POST(request: NextRequest) {
 
     await sheet.addRow(newContent)
 
-    try {
-      const membersSheet = doc.sheetsByTitle['TeamMember']
-      let memberName = 'ทีมงาน'
-      if (membersSheet) {
-        const mRows = await membersSheet.getRows()
-        const mRow = mRows.find(r => r.get('id') === memberId)
-        if (mRow) memberName = mRow.get('name') || memberName
-      }
-      
-      const message = `\n📢 [แผนคอนเทนต์ใหม่] ${title}\n📍 แพลตฟอร์ม: ${platform || 'ไม่ระบุ'}\n👤 รับผิดชอบ: ${memberName}\n🗓 วันโพสต์: ${publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'}`
-      const { sendLineNotify } = await import('@/lib/line-notify')
-      await sendLineNotify(message)
-    } catch (e) {
-      console.error('Error sending line notify:', e)
-    }
-
     return NextResponse.json(newContent, { status: 201 })
   } catch (error) {
     console.error('API Error:', error)
