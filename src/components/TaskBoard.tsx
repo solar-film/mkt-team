@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList, HiDotsVertical } from 'react-icons/hi2';
+import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList, HiEllipsisVertical } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -455,7 +455,7 @@ export default function TaskBoard() {
                         {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : 'โพสต์'} - ${item.company}`}
                       </p>
                     </div>
-                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiDotsVertical size={20} /></button>
+                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiEllipsisVertical size={20} /></button>
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
