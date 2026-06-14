@@ -328,10 +328,8 @@ export default function CalendarPage() {
               style={item.type === 'event' ? { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#b45309', fontWeight: 600 } : {}}
             >
               {item.type === 'event' && <span style={{ marginRight: '4px' }}>📢</span>}
-              {item.type !== 'event' && item.member && (
-                <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', flexShrink: 0 }}>
-                  {item.member.name.charAt(0)}
-                </div>
+              {item.type !== 'event' && item.member && (spanClass === '' || spanClass === 'task-span-start') && (
+                <MemberAvatar name={item.member.name} size="sm" />
               )}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {item.type === 'event' && item.fullItem?.time ? <span style={{ marginRight: '4px', opacity: 0.8 }}>{item.fullItem.time}</span> : null}
@@ -378,7 +376,11 @@ export default function CalendarPage() {
   };
 
   const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-  const mobileDayItems = filteredItems.filter(item => item.date === selectedDateStr).sort((a, b) => a.title.localeCompare(b.title));
+  const mobileDayItems = filteredItems.filter(item => {
+    const start = item.startDate || item.date;
+    const end = item.date;
+    return selectedDateStr >= start && selectedDateStr <= end;
+  }).sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <div>
@@ -478,7 +480,12 @@ export default function CalendarPage() {
             {mobileWeekDays.map((day, i) => {
               const isSelected = day.toDateString() === selectedDate.toDateString();
               const isToday = day.toDateString() === new Date().toDateString();
-              const hasItems = filteredItems.some(item => item.date === `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`);
+              const hasItems = filteredItems.some(item => {
+                const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                const start = item.startDate || item.date;
+                const end = item.date;
+                return dayStr >= start && dayStr <= end;
+              });
               
               return (
                 <div key={i} onClick={() => setSelectedDate(day)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', gap: '0.5rem' }}>
