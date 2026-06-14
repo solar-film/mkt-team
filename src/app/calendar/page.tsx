@@ -291,12 +291,59 @@ export default function CalendarPage() {
   const todayStr = new Date().toISOString().split('T')[0];
   const filteredItems = filterMemberId ? items.filter(i => i.memberId === filterMemberId) : items;
 
+  // 1. Sort items globally
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const startA = new Date((a.startDate || a.date) + 'T00:00:00').getTime();
+    const startB = new Date((b.startDate || b.date) + 'T00:00:00').getTime();
+    if (startA !== startB) return startA - startB;
+    const endA = new Date(a.date + 'T00:00:00').getTime();
+    const endB = new Date(b.date + 'T00:00:00').getTime();
+    return (endB - startB) - (endA - startA); // Longest first
+  });
+
+  // 2. Assign rows to prevent overlap
+  const occupied: Record<string, boolean[]> = {};
+  const itemRows = new Map<string, number>();
+
+  sortedItems.forEach(item => {
+    const startD = new Date((item.startDate || item.date) + 'T00:00:00');
+    const endD = new Date(item.date + 'T00:00:00');
+    
+    let row = 0;
+    while (true) {
+      let isFree = true;
+      for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+        const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (occupied[dStr] && occupied[dStr][row]) {
+          isFree = false;
+          break;
+        }
+      }
+      if (isFree) break;
+      row++;
+    }
+    
+    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+      const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!occupied[dStr]) occupied[dStr] = [];
+      occupied[dStr][row] = true;
+    }
+    itemRows.set(item.id, row);
+  });
+
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-    const dayItems = filteredItems.filter(item => {
+    
+    const dayItemsRaw = sortedItems.filter(item => {
       const start = item.startDate || item.date;
       const end = item.date;
       return dateStr >= start && dateStr <= end;
+    });
+
+    const maxRow = dayItemsRaw.reduce((max, item) => Math.max(max, itemRows.get(item.id) || 0), -1);
+    const daySlots: (UnifiedItem | null)[] = Array(maxRow + 1).fill(null);
+    dayItemsRaw.forEach(item => {
+      daySlots[itemRows.get(item.id) || 0] = item;
     });
     
     gridCells.push(
@@ -308,7 +355,11 @@ export default function CalendarPage() {
       >
         <div className="calendar-date-number">{i}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {dayItems.map(item => {
+          {daySlots.map((item, index) => {
+            if (!item) {
+              return <div key={`empty-${dateStr}-${index}`} style={{ height: '28px' }}></div>;
+            }
+            
             const start = item.startDate || item.date;
             const end = item.date;
             const isStart = dateStr === start;
@@ -319,13 +370,25 @@ export default function CalendarPage() {
               else if (isEnd) spanClass = 'task-span-end';
               else spanClass = 'task-span-middle';
             }
+            
+            let bgColor = 'white';
+            let borderColor = 'var(--color-border)';
+            let textColor = 'inherit';
+            if (item.type !== 'event') {
+              if (item.status === 'todo') { bgColor = '#fffbeb'; borderColor = '#f97316'; textColor = '#ea580c'; }
+              else if (item.status === 'in_progress') { bgColor = '#eff6ff'; borderColor = '#3b82f6'; textColor = '#1d4ed8'; }
+              else if (item.status === 'done') { bgColor = '#ecfdf5'; borderColor = '#10b981'; textColor = '#047857'; }
+            }
+
             return (
             <div 
               key={`${item.type}-${item.id}`} 
               className={item.type === 'event' ? 'calendar-task-item status-event' : `calendar-task-item status-${item.status} ${spanClass}`} 
               title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
               onClick={(e) => handleItemClick(e, item)}
-              style={item.type === 'event' ? { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#b45309', fontWeight: 600 } : {}}
+              style={item.type === 'event' 
+                ? { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#b45309', fontWeight: 600, height: '28px' } 
+                : { backgroundColor: bgColor, borderColor: borderColor, color: textColor, fontWeight: 600, height: '28px' }}
             >
               {item.type === 'event' && <span style={{ marginRight: '4px' }}>📢</span>}
               {item.type !== 'event' && item.member && (spanClass === '' || spanClass === 'task-span-start') && (
