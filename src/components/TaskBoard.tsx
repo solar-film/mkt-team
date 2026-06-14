@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
+import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList, HiDotsVertical } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -393,28 +393,31 @@ export default function TaskBoard() {
       </div>
 
       <div className="mobile-only" style={{ paddingBottom: '2rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          <button 
-            onClick={() => setMobileTab('todo')}
-            style={{ flex: 1, padding: '0.75rem 0', borderRadius: '12px', border: 'none', backgroundColor: mobileTab === 'todo' ? '#fffbeb' : '#f8fafc', color: mobileTab === 'todo' ? '#f97316' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
-          >
-            รอดำเนินการ
-            <span style={{ backgroundColor: mobileTab === 'todo' ? '#f97316' : '#e2e8f0', color: mobileTab === 'todo' ? 'white' : '#64748b', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{items.filter(i => i.status === 'todo').length}</span>
-          </button>
-          <button 
-            onClick={() => setMobileTab('in_progress')}
-            style={{ flex: 1, padding: '0.75rem 0', borderRadius: '12px', border: 'none', backgroundColor: mobileTab === 'in_progress' ? '#eff6ff' : '#f8fafc', color: mobileTab === 'in_progress' ? '#3b82f6' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
-          >
-            กำลังทำ
-            <span style={{ backgroundColor: mobileTab === 'in_progress' ? '#3b82f6' : '#e2e8f0', color: mobileTab === 'in_progress' ? 'white' : '#64748b', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{items.filter(i => i.status === 'in_progress').length}</span>
-          </button>
-          <button 
-            onClick={() => setMobileTab('done')}
-            style={{ flex: 1, padding: '0.75rem 0', borderRadius: '12px', border: 'none', backgroundColor: mobileTab === 'done' ? '#ecfdf5' : '#f8fafc', color: mobileTab === 'done' ? '#10b981' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
-          >
-            เสร็จแล้ว
-            <span style={{ backgroundColor: mobileTab === 'done' ? '#10b981' : '#e2e8f0', color: mobileTab === 'done' ? 'white' : '#64748b', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{items.filter(i => i.status === 'done').length}</span>
-          </button>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
+          {['todo', 'in_progress', 'done'].map((tab) => {
+            const count = items.filter(i => i.status === tab).length;
+            const isActive = mobileTab === tab;
+            const colors = {
+              todo: { text: '#f97316', bg: '#fffbeb', badgeText: 'white', badgeBg: '#f97316' },
+              in_progress: { text: '#3b82f6', bg: '#eff6ff', badgeText: 'white', badgeBg: '#3b82f6' },
+              done: { text: '#10b981', bg: '#ecfdf5', badgeText: 'white', badgeBg: '#10b981' }
+            };
+            const inactiveColors = { text: '#64748b', bg: '#f8fafc', badgeText: '#64748b', badgeBg: '#e2e8f0' };
+            const currentColors = isActive ? colors[tab as keyof typeof colors] : inactiveColors;
+            const labels = { todo: 'รอดำเนินการ', in_progress: 'กำลังทำ', done: 'เสร็จแล้ว' };
+            
+            return (
+              <button 
+                key={tab}
+                onClick={() => setMobileTab(tab)}
+                style={{ position: 'relative', flex: 1, padding: '0.75rem 0.5rem', borderRadius: '12px', border: 'none', backgroundColor: currentColors.bg, color: currentColors.text, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s', minWidth: '100px' }}
+              >
+                {labels[tab as keyof typeof labels]}
+                <span style={{ backgroundColor: currentColors.badgeBg, color: currentColors.badgeText, padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.7rem' }}>{count}</span>
+                {isActive && <div style={{ position: 'absolute', bottom: '-0.5rem', left: '10%', right: '10%', height: '3px', backgroundColor: currentColors.text, borderRadius: '3px' }} />}
+              </button>
+            );
+          })}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -423,53 +426,52 @@ export default function TaskBoard() {
             const iconColor = item.status === 'todo' ? '#f97316' : item.status === 'in_progress' ? '#3b82f6' : '#10b981';
             
             return (
-              <div key={item.id} onClick={() => handleEditClick(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
+              <div key={item.id} onClick={() => handleEditClick(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
                 <div 
                   onClick={(e) => { 
                     e.stopPropagation(); 
                     const nextStatus = item.status === 'todo' ? 'in_progress' : item.status === 'in_progress' ? 'done' : 'todo';
                     handleStatusChange(item, nextStatus); 
                   }}
-                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: `2px solid ${item.status === 'done' ? '#10b981' : item.status === 'in_progress' ? '#3b82f6' : '#cbd5e1'}`, backgroundColor: item.status === 'done' ? '#10b981' : item.status === 'in_progress' ? '#eff6ff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.2rem' }}
+                  style={{ width: '22px', height: '22px', borderRadius: '6px', border: item.status === 'done' ? 'none' : '2px solid #cbd5e1', backgroundColor: item.status === 'done' ? '#10b981' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.15rem' }}
                 >
                   {item.status === 'done' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
-                  {item.status === 'in_progress' && <div style={{ width: '10px', height: '10px', backgroundColor: '#3b82f6', borderRadius: '2px' }}></div>}
                 </div>
                 
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-                    <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
-                      {item.link && (
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', padding: '0.2rem', flexShrink: 0 }}>
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                          </svg>
-                        </a>
-                      )}
-                    </h3>
-                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiOutlineTrash size={18} /></button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
+                        {item.link && (
+                          <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', flexShrink: 0 }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                            </svg>
+                          </a>
+                        )}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : 'โพสต์'} - ${item.company}`}
+                      </p>
+                    </div>
+                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiDotsVertical size={20} /></button>
                   </div>
                   
-                  <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : 'โพสต์'} - ${item.company}`}
-                  </p>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem', color: '#64748b' }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                      {item.deadline || item.publishDate ? new Date(item.deadline || item.publishDate || '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'ไม่ระบุ'}
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        {item.deadline || item.publishDate ? new Date(item.deadline || item.publishDate || '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ' 10:00' : 'ไม่ระบุ'}
+                      </div>
                       {item.member && (
                         <MemberAvatar name={item.member.name} size="sm" />
                       )}
-                      
-                      <span style={{ backgroundColor: item.status === 'todo' ? '#fffbeb' : item.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: iconColor, padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                        {item.status === 'todo' ? 'รอดำเนินการ' : item.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จแล้ว'}
-                      </span>
                     </div>
+                    
+                    <span style={{ backgroundColor: item.status === 'todo' ? '#fffbeb' : item.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: iconColor, padding: '0.25rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      {item.status === 'todo' ? 'รอดำเนินการ' : item.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จแล้ว'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -481,6 +483,13 @@ export default function TaskBoard() {
              </div>
           )}
         </div>
+
+        <button 
+          onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}
+          style={{ position: 'fixed', bottom: '80px', right: '20px', width: '60px', height: '60px', borderRadius: '30px', backgroundColor: '#3b82f6', color: 'white', border: 'none', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, cursor: 'pointer' }}
+        >
+          <HiPlus size={32} />
+        </button>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
