@@ -677,7 +677,7 @@ export default function CalendarPage() {
               </select>
             </div>
 
-            <div className="form-row mt-4">
+            <div className="form-row-2col mt-4">
               <div className="form-group">
                 <label className="form-label">วันเริ่มต้น (ถ้ามี)</label>
                 <input type="date" className="form-input" value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
