@@ -850,12 +850,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
     background: transparent !important;
   }
   .sidebar-link span { 
-    display: block !important; 
-    font-size: 0.65rem; 
-    margin-top: 0.25rem; 
-    opacity: 0.7;
-    white-space: nowrap;
-    text-align: center;
+    display: none !important; 
   }
   .sidebar-link.active span {
     opacity: 1;
@@ -893,6 +888,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
   gap: 1px;
   background-color: var(--color-border);
   border: 1px solid var(--color-border);
