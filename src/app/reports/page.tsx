@@ -1,0 +1,277 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
+
+interface Task {
+  id: string; title: string; description: string | null; status: string;
+  priority: string; deadline: string | null; memberId: string;
+}
+interface KPI {
+  id: string; name: string; target: number; current: number;
+  unit: string; month: number; year: number; memberId: string;
+}
+interface Content {
+  id: string; title: string; type: string; platform: string;
+  status: string; publishDate: string | null; memberId: string; company: string;
+}
+interface TeamMember {
+  id: string; name: string; role: string; avatar: string | null; status: string;
+  tasks: Task[]; kpis: KPI[]; contents: Content[];
+}
+
+export default function ReportsPage() {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [memberFilter, setMemberFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [platformFilter, setPlatformFilter] = useState('all');
+  
+  const currentDate = new Date();
+  const [dateFilterType, setDateFilterType] = useState('month'); // 'month' or 'day' or 'all'
+  const [dateMonth, setDateMonth] = useState((currentDate.getMonth() + 1).toString());
+  const [dateYear, setDateYear] = useState(currentDate.getFullYear().toString());
+  const [dateDay, setDateDay] = useState(currentDate.toISOString().split('T')[0]);
+
+  useEffect(() => {
+    fetch('/api/members?includeRelations=true')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setMembers(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <div className="loading-container"><div className="loading-spinner"></div></div>;
+  }
+
+  // Flatten data
+  let allItems: any[] = [];
+  members.forEach(m => {
+    if (m.status === 'inactive') return;
+    
+    m.tasks.forEach(t => {
+      allItems.push({
+        ...t,
+        memberName: m.name,
+        itemType: 'task',
+        date: t.deadline
+      });
+    });
+    
+    m.contents.forEach(c => {
+      allItems.push({
+        ...c,
+        memberName: m.name,
+        itemType: 'content',
+        date: c.publishDate
+      });
+    });
+  });
+
+  // Apply filters
+  let filteredItems = allItems.filter(item => {
+    // 1. Member Filter
+    if (memberFilter !== 'all' && item.memberId !== memberFilter) return false;
+    
+    // 2. Type Filter
+    if (typeFilter !== 'all' && item.itemType !== typeFilter) return false;
+    
+    // 3. Platform Filter (only applicable to content)
+    if (platformFilter !== 'all') {
+      if (item.itemType === 'task') return false;
+      if (item.platform !== platformFilter) return false;
+    }
+    
+    // 4. Date Filter
+    if (dateFilterType !== 'all' && item.date) {
+      const itemDate = new Date(item.date);
+      if (dateFilterType === 'month') {
+        if ((itemDate.getMonth() + 1).toString() !== dateMonth || itemDate.getFullYear().toString() !== dateYear) return false;
+      } else if (dateFilterType === 'day') {
+        if (item.date.split('T')[0] !== dateDay) return false;
+      }
+    } else if (dateFilterType !== 'all' && !item.date) {
+        // If they filter by date, but item has no date, probably hide it, except if dateFilterType is 'all'
+        return false;
+    }
+    
+    return true;
+  });
+
+  // Sort by date descending
+  filteredItems.sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'todo': return <span className="badge badge-draft">รอดำเนินการ</span>;
+      case 'in_progress': return <span className="badge badge-article">กำลังทำ</span>;
+      case 'done': 
+      case 'published': return <span className="badge badge-published">เสร็จแล้ว</span>;
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{ padding: '0 0.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '1.5rem', marginTop: '0.5rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
+          <HiChartPie /> รายงานรวม
+        </h1>
+        <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem', fontWeight: 500 }}>
+          ดูภาพรวมงานและคอนเทนต์ทั้งหมด พร้อมตัวกรอง
+        </p>
+      </div>
+
+      <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#334155' }}>
+          <HiFunnel /> ตัวกรองข้อมูล
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+          
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}><HiUser /> พนักงาน</label>
+            <select className="form-input" value={memberFilter} onChange={e => setMemberFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="all">ทุกคน</option>
+              {members.filter(m => m.status !== 'inactive').map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}><HiTag /> ประเภท</label>
+            <select className="form-input" value={typeFilter} onChange={e => { setTypeFilter(e.target.value); if(e.target.value === 'task') setPlatformFilter('all'); }} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="all">ทั้งหมด</option>
+              <option value="task">งานทั่วไป</option>
+              <option value="content">คอนเทนต์</option>
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0, opacity: typeFilter === 'task' ? 0.5 : 1, pointerEvents: typeFilter === 'task' ? 'none' : 'auto' }}>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}>แพลตฟอร์ม</label>
+            <select className="form-input" value={platformFilter} onChange={e => setPlatformFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="all">ทุกแพลตฟอร์ม</option>
+              <option value="Facebook">Facebook</option>
+              <option value="TikTok">TikTok</option>
+              <option value="Instagram">Instagram</option>
+              <option value="YouTube">YouTube</option>
+              <option value="Website">Website</option>
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}><HiCalendar /> ช่วงเวลา</label>
+            <select className="form-input" value={dateFilterType} onChange={e => setDateFilterType(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="month">รายเดือน</option>
+              <option value="day">รายวัน</option>
+              <option value="all">ทุกช่วงเวลา</option>
+            </select>
+          </div>
+
+          {dateFilterType === 'month' && (
+            <div className="form-group" style={{ marginBottom: 0, display: 'flex', gap: '0.5rem' }}>
+              <select className="form-input" value={dateMonth} onChange={e => setDateMonth(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem', flex: 1 }}>
+                {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                  <option key={m} value={m.toString()}>เดือน {m}</option>
+                ))}
+              </select>
+              <select className="form-input" value={dateYear} onChange={e => setDateYear(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem', flex: 1 }}>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+              </select>
+            </div>
+          )}
+
+          {dateFilterType === 'day' && (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <input type="date" className="form-input" value={dateDay} onChange={e => setDateDay(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }} />
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>ผลลัพธ์การค้นหา</h2>
+          <span style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
+            {filteredItems.length} รายการ
+          </span>
+        </div>
+
+        <div className="desktop-only">
+          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left' }}>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>วันที่</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>ประเภท</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>หัวข้อ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>รับผิดชอบ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>แพลตฟอร์ม/ความสำคัญ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.length > 0 ? filteredItems.map((item, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '0.75rem' }}>{item.date ? new Date(item.date).toLocaleDateString('th-TH') : '-'}</td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: item.itemType === 'task' ? '#f59e0b' : '#3b82f6' }}>
+                      {item.itemType === 'task' ? <HiClipboardDocumentList /> : <HiDocumentText />} 
+                      {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</td>
+                  <td style={{ padding: '0.75rem' }}>{item.memberName}</td>
+                  <td style={{ padding: '0.75rem' }}>{item.itemType === 'content' ? item.platform : item.priority}</td>
+                  <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {filteredItems.length > 0 ? filteredItems.map((item, i) => (
+            <div key={i} style={{ padding: '1rem', border: '1px solid #f1f5f9', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: item.itemType === 'task' ? '#fffbeb' : '#eff6ff', color: item.itemType === 'task' ? '#f59e0b' : '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {item.itemType === 'task' ? <HiClipboardDocumentList size={16} /> : <HiDocumentText size={16} />}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.title}</h4>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.memberName}</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.75rem' }}>
+                <span style={{ color: '#64748b' }}>{item.date ? new Date(item.date).toLocaleDateString('th-TH') : '-'}</span>
+                <span style={{ color: '#64748b' }}>{item.itemType === 'content' ? item.platform : item.priority}</span>
+                {getStatusBadge(item.status)}
+              </div>
+            </div>
+          )) : (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #e2e8f0', borderRadius: '12px' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
