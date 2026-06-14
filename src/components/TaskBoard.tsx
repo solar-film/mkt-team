@@ -515,6 +515,15 @@ export default function TaskBoard() {
               </select>
             </div>
 
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">ความสำคัญ *</label>
+              <select className="form-select" required value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value})}>
+                <option value="high">สูง</option>
+                <option value="medium">ปานกลาง</option>
+                <option value="low">ต่ำ</option>
+              </select>
+            </div>
+
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', width: '100%' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันเริ่มต้น (ถ้ามี)</label>
@@ -525,29 +534,7 @@ export default function TaskBoard() {
                 <input type="date" className="form-input" required style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box' }} value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value, kpiId: ''})} />
               </div>
             </div>
-            {taskForm.memberId ? (
-              taskForm.deadline ? (
-                kpis.filter(k => k.memberId === taskForm.memberId && k.month === new Date(taskForm.deadline).getMonth() + 1 && k.year === new Date(taskForm.deadline).getFullYear()).length > 0 ? (
-                  <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-                    <label className="form-label" style={{ color: 'var(--color-primary)' }}>เชื่อมโยงกับเป้าหมาย KPI ประจำเดือนที่กำหนดส่ง</label>
-                    <select className="form-select" value={taskForm.kpiId} onChange={e => setTaskForm({...taskForm, kpiId: e.target.value})}>
-                      <option value="">-- ไม่เชื่อมโยง --</option>
-                      {kpis.filter(k => k.memberId === taskForm.memberId && k.month === new Date(taskForm.deadline).getMonth() + 1 && k.year === new Date(taskForm.deadline).getFullYear()).sort((a, b) => a.name.length - b.name.length).map(k => (
-                        <option key={k.id} value={k.id}>{k.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="form-group" style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', marginTop: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-                    ไม่พบเป้าหมาย KPI ของพนักงานท่านนี้ในเดือนที่เลือก
-                  </div>
-                )
-              ) : (
-                <div className="form-group" style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', marginTop: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-                  กรุณาระบุกำหนดส่งด้านบนเพื่อดึงข้อมูลเป้าหมาย KPI
-                </div>
-              )
-            ) : null}
+            {/* KPI selection removed from tasks as per user request */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
               <button type="submit" className="btn btn-primary">บันทึกงาน</button>
@@ -581,22 +568,12 @@ export default function TaskBoard() {
                 </select>
               </div>
             </div>
-            <div className="form-row mt-4">
-              <div className="form-group">
-                <label className="form-label">บริษัท *</label>
-                <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
-                  <option value="GFS">GFS</option>
-                  <option value="MHL">MHL</option>
-                  <option value="CAR">CAR</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">ผู้สร้าง *</label>
-                <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
-                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                  {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-              </div>
+            <div className="form-group mt-4">
+              <label className="form-label">ผู้สร้าง *</label>
+              <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
+                <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
             </div>
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>
