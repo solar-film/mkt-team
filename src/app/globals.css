@@ -894,6 +894,17 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
     text-overflow: ellipsis;
   }
   
+  .form-input, .form-select, .form-textarea {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+  
+  .modal-body {
+    padding: 1rem;
+  }
+  
   .main-content { 
     padding: 1rem; 
     height: 100vh; 
