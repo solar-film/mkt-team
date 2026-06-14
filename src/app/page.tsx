@@ -97,7 +97,12 @@ export default function DashboardPage() {
 
   const currentMonthKpis = members.flatMap(m => m.kpis).filter(k => k.month === currentMonth && k.year === currentYear);
   const avgKPI = currentMonthKpis.length > 0 
-    ? currentMonthKpis.reduce((sum, kpi) => sum + Math.min((kpi.current / kpi.target) * 100, 100), 0) / currentMonthKpis.length 
+    ? currentMonthKpis.reduce((sum, kpi) => {
+        const target = Number(kpi.target) || 1;
+        const current = Number(kpi.current) || 0;
+        const percentage = (current / target) * 100;
+        return sum + (isNaN(percentage) ? 0 : Math.min(percentage, 100));
+      }, 0) / currentMonthKpis.length 
     : 0;
 
   // Get recent tasks sorted by deadline
@@ -183,11 +188,11 @@ export default function DashboardPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', display: 'flex', flexDirection: 'column', position: 'relative', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
           <h3 style={{ fontSize: '0.85rem', color: '#1e293b', margin: '0 0 1rem 0', fontWeight: 700 }}>ความคืบหน้า KPI</h3>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#8b5cf6' }}>{Math.round(avgKPI)}</span>
+            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#8b5cf6' }}>{Math.round(avgKPI || 0)}</span>
             <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>%</span>
           </div>
           <p style={{ fontSize: '0.7rem', color: '#8b5cf6', margin: '0.25rem 0 0 0', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-            <HiChartBar size={12} /> สัปดาห์นี้
+            <HiChartBar size={12} /> เดือนนี้
           </p>
           <div style={{ position: 'absolute', top: '1rem', right: '1rem', width: '32px', height: '32px', backgroundColor: '#f5f3ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
             <HiChartBar size={18} />
@@ -248,7 +253,12 @@ export default function DashboardPage() {
             {members.filter(m => m.status !== 'inactive').map((member, index) => {
               const memberKpis = member.kpis.filter(k => k.month === currentMonth && k.year === currentYear);
               const memberAvgKpi = memberKpis.length > 0 
-                ? memberKpis.reduce((sum, k) => sum + Math.min((k.current / k.target) * 100, 100), 0) / memberKpis.length 
+                ? memberKpis.reduce((sum, k) => {
+                    const target = Number(k.target) || 1;
+                    const current = Number(k.current) || 0;
+                    const percentage = (current / target) * 100;
+                    return sum + (isNaN(percentage) ? 0 : Math.min(percentage, 100));
+                  }, 0) / memberKpis.length 
                 : 0;
               const doneTasks = member.tasks.filter(t => t.status === 'done').length;
               const doneContents = member.contents.filter(c => c.status === 'published').length;
