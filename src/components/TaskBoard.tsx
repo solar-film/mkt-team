@@ -284,7 +284,7 @@ export default function TaskBoard() {
               {item.itemType === 'content' && (
                 <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                   <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{item.company}</span>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>• {item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : 'โพสต์'}</span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>• {item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : item.contentType === 'graphic' ? 'กราฟิก' : item.contentType === 'reel' ? 'Reel' : 'โพสต์'}</span>
                 </div>
               )}
               
@@ -452,7 +452,7 @@ export default function TaskBoard() {
                         )}
                       </h3>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : 'โพสต์'} - ${item.company}`}
+                        {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : item.contentType === 'graphic' ? 'กราฟิก' : item.contentType === 'reel' ? 'Reel' : 'โพสต์'} - ${item.company}`}
                       </p>
                     </div>
                     <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiEllipsisVertical size={20} /></button>
@@ -554,6 +554,7 @@ export default function TaskBoard() {
                   <option value="post">โพสต์</option>
                   <option value="video">วิดีโอ</option>
                   <option value="graphic">กราฟิก</option>
+                  <option value="reel">Reel</option>
                 </select>
               </div>
               <div className="form-group">
