@@ -100,11 +100,11 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="sidebar-footer" style={{ display: 'flex', justifyContent: isCollapsed ? 'center' : 'space-between', alignItems: 'center' }}>
+      <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`}>
         {!isCollapsed && <small>© 2026 Marketing Team</small>}
         <button 
           onClick={handleLockClick}
-          style={{ background: 'none', border: 'none', color: isAdmin ? 'var(--color-success)' : 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.5, transition: 'opacity 0.2s' }}
+          className={`lock-btn ${isAdmin ? 'admin' : ''}`}
           title={isAdmin ? "ล็อคระบบ" : "ปลดล็อคระบบ"}
           onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
           onMouseOut={(e) => e.currentTarget.style.opacity = '0.5'}
