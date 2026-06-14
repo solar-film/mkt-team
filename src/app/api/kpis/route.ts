@@ -16,19 +16,37 @@ export async function GET(request: NextRequest) {
     
     if (!sheet) return NextResponse.json([])
 
+    await sheet.loadHeaderRow()
+    const headers = sheet.headerValues;
+    if (!headers.includes('id')) {
+      const newHeaders = [...headers, 'id'];
+      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }); } catch(e) {}
+      await sheet.setHeaderRow(newHeaders);
+    }
+
     const rows = await sheet.getRows()
-    let kpis = rows.map(row => ({
-      id: row.get('id'),
-      name: row.get('name'),
+    let kpis = []
+    
+    for (const row of rows) {
+      let rowId = row.get('id');
+      if (!rowId) {
+        rowId = generateId();
+        row.assign({ id: rowId });
+        await row.save();
+      }
+      kpis.push({
+        id: rowId,
+        name: row.get('name'),
       target: parseFloat(row.get('target') || '0'),
       current: parseFloat(row.get('current') || '0'),
       unit: row.get('unit'),
       month: parseInt(row.get('month') || '0', 10),
       year: parseInt(row.get('year') || '0', 10),
-      company: row.get('company'),
-      memberId: row.get('memberId'),
-      createdAt: row.get('createdAt')
-    }))
+        company: row.get('company'),
+        memberId: row.get('memberId'),
+        createdAt: row.get('createdAt')
+      });
+    }
 
     if (memberId) kpis = kpis.filter(k => k.memberId === memberId)
     if (month) kpis = kpis.filter(k => k.month === parseInt(month, 10))
@@ -75,11 +93,13 @@ export async function POST(request: NextRequest) {
     await sheet.loadHeaderRow()
     let newHeaders = [...sheet.headerValues]
     let headerChanged = false
-    if (!newHeaders.includes('month')) { newHeaders.push('month'); headerChanged = true; }
-    if (!newHeaders.includes('year')) { newHeaders.push('year'); headerChanged = true; }
+    const requiredHeaders = ['id', 'name', 'target', 'current', 'unit', 'month', 'year', 'company', 'memberId', 'createdAt'];
+    requiredHeaders.forEach(h => {
+      if (!newHeaders.includes(h)) { newHeaders.push(h); headerChanged = true; }
+    });
 
     if (headerChanged) {
-      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
+      try { await sheet.resize({ rowCount: Math.max(sheet.rowCount, 100), columnCount: newHeaders.length }) } catch(e) {}
       await sheet.setHeaderRow(newHeaders)
     }
 

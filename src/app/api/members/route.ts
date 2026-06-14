@@ -51,12 +51,27 @@ export async function GET(request: NextRequest) {
       }
 
       if (kpisSheet) {
+        await kpisSheet.loadHeaderRow()
+        const headers = kpisSheet.headerValues;
+        if (!headers.includes('id')) {
+          const newHeaders = [...headers, 'id'];
+          try { await kpisSheet.resize({ rowCount: kpisSheet.rowCount, columnCount: newHeaders.length }); } catch(e) {}
+          await kpisSheet.setHeaderRow(newHeaders);
+        }
+
         const kpiRows = await kpisSheet.getRows()
-        kpiRows.forEach(row => {
+        for (const row of kpiRows) {
+          let rowId = row.get('id');
+          if (!rowId) {
+            rowId = generateId();
+            row.assign({ id: rowId });
+            await row.save();
+          }
+
           const member = members.find(m => m.id === row.get('memberId'))
           if (member) {
             member.kpis.push({
-              id: row.get('id'),
+              id: rowId,
               name: row.get('name'),
               target: parseFloat(row.get('target')),
               current: parseFloat(row.get('current') || '0'),
@@ -66,7 +81,7 @@ export async function GET(request: NextRequest) {
             })
             member._count.kpis++
           }
-        })
+        }
       }
 
       if (contentsSheet) {
