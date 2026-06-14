@@ -84,6 +84,21 @@ export async function POST(request: NextRequest) {
       await sheet.setHeaderRow(newHeaders)
     }
 
+    let autoKpiId = body.kpiId || ''
+    if (!autoKpiId && deadline) {
+      const kpiSheet = doc.sheetsByTitle['KPI']
+      if (kpiSheet) {
+        const kpiRows = await kpiSheet.getRows()
+        const dDate = new Date(deadline)
+        const kMonth = dDate.getMonth() + 1
+        const kYear = dDate.getFullYear()
+        const kpiRow = kpiRows.find(r => r.get('memberId') === memberId && parseInt(r.get('month')) === kMonth && parseInt(r.get('year')) === kYear && r.get('name') === 'งานทั่วไป')
+        if (kpiRow) {
+          autoKpiId = kpiRow.get('id')
+        }
+      }
+    }
+
     const newTask = {
       id: generateId(),
       title,
@@ -94,7 +109,7 @@ export async function POST(request: NextRequest) {
       startDate: startDate ? new Date(startDate).toISOString() : '',
       deadline: deadline ? new Date(deadline).toISOString() : '',
       memberId,
-      kpiId: body.kpiId || '',
+      kpiId: autoKpiId,
       link: body.link || '',
       createdAt: new Date().toISOString()
     }
