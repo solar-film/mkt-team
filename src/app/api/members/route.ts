@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
               title: row.get('title'),
               status: row.get('status'),
               publishDate: row.get('publishDate'),
+              platform: row.get('platform'),
               createdAt: row.get('createdAt')
             })
             member._count.contents++
