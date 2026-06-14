@@ -677,14 +677,14 @@ export default function CalendarPage() {
               </select>
             </div>
 
-            <div className="form-row-2col mt-4">
-              <div className="form-group">
-                <label className="form-label">วันเริ่มต้น (ถ้ามี)</label>
-                <input type="date" className="form-input" value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', width: '100%' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันเริ่มต้น (ถ้ามี)</label>
+                <input type="date" className="form-input" style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box' }} value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
               </div>
-              <div className="form-group">
-                <label className="form-label">กำหนดส่ง *</label>
-                <input type="date" className="form-input" required value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value, kpiId: ''})} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>กำหนดส่ง *</label>
+                <input type="date" className="form-input" required style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box' }} value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value, kpiId: ''})} />
               </div>
             </div>
             {taskForm.memberId ? (
@@ -765,9 +765,9 @@ export default function CalendarPage() {
               <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>
               <input type="text" className="form-input" placeholder="เช่น https://facebook.com/..." value={contentForm.link} onChange={e => setContentForm({...contentForm, link: e.target.value})} />
             </div>
-            <div className="form-group" style={{ marginTop: '1rem' }}>
+            <div style={{ marginTop: '1rem', width: '100%', maxWidth: '100%', overflow: 'hidden', marginBottom: '1.25rem' }}>
               <label className="form-label">วันที่เผยแพร่ *</label>
-              <input type="date" className="form-input" required value={contentForm.publishDate} onChange={e => setContentForm({...contentForm, publishDate: e.target.value, kpiId: ''})} />
+              <input type="date" className="form-input" required style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box', maxWidth: '100%' }} value={contentForm.publishDate} onChange={e => setContentForm({...contentForm, publishDate: e.target.value, kpiId: ''})} />
             </div>
             {contentForm.memberId ? (
               contentForm.publishDate ? (
