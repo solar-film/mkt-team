@@ -10,7 +10,7 @@ interface TeamMember {
 }
 
 interface UnifiedItem {
-  id: string; title: string; status: string; memberId: string; date: string; type: 'task' | 'content';
+  id: string; title: string; status: string; memberId: string; date: string; type: 'task' | 'content' | 'event';
   member?: { name: string; avatar: string | null; };
   fullItem?: any;
 }
@@ -27,7 +27,11 @@ export default function CalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [newItemType, setNewItemType] = useState<'task' | 'content'>('content');
+  const [newItemType, setNewItemType] = useState<'task' | 'content' | 'event'>('event');
+
+  const [eventForm, setEventForm] = useState({
+    title: '', date: '', time: '', type: 'event'
+  });
 
   const [taskForm, setTaskForm] = useState({
     title: '', description: '', memberId: '', priority: 'medium', deadline: '', kpiId: '', link: ''
@@ -39,14 +43,16 @@ export default function CalendarPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resTasks, resContent, resMembers, resKpis] = await Promise.all([
+      const [resTasks, resContent, resEvents, resMembers, resKpis] = await Promise.all([
         fetch('/api/tasks'),
         fetch('/api/content'),
+        fetch('/api/events'),
         fetch('/api/members'),
         fetch('/api/kpis')
       ]);
       const tasks = await resTasks.json();
       const contents = await resContent.json();
+      const events = await resEvents.json();
       const members: TeamMember[] = await resMembers.json();
       const kpisData = await resKpis.json();
       setMembersList(Array.isArray(members) ? members : []);
@@ -80,6 +86,18 @@ export default function CalendarPage() {
         });
       }
 
+      if (Array.isArray(events)) {
+        events.forEach((e: any) => {
+          if (e.date) {
+            unified.push({
+              id: e.id, title: e.title, status: 'event', memberId: '',
+              date: e.date, type: 'event',
+              fullItem: e
+            });
+          }
+        });
+      }
+
       setItems(unified);
     } catch (err) {
       console.error(err);
@@ -102,10 +120,14 @@ export default function CalendarPage() {
   const handleCellClick = (dateStr: string) => {
     setIsEditing(false);
     setEditingItemId(null);
-    setNewItemType('content');
+    setNewItemType('event');
     setContentForm({
       title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
     });
+    setTaskForm({
+      title: '', description: '', memberId: '', priority: 'medium', deadline: dateStr, kpiId: '', link: ''
+    });
+    setEventForm({ title: '', date: dateStr, time: '', type: 'event' });
     setIsModalOpen(true);
   };
 
@@ -126,7 +148,7 @@ export default function CalendarPage() {
         kpiId: fullItem.kpiId || '',
         link: fullItem.link || ''
       });
-    } else {
+    } else if (item.type === 'content') {
       const fullItem = item.fullItem || item;
       setContentForm({
         title: item.title || '',
@@ -137,6 +159,14 @@ export default function CalendarPage() {
         publishDate: item.date || '',
         kpiId: fullItem.kpiId || '',
         link: fullItem.link || ''
+      });
+    } else {
+      const fullItem = item.fullItem || item;
+      setEventForm({
+        title: item.title || '',
+        date: item.date || '',
+        time: fullItem.time || '',
+        type: fullItem.type || 'event'
       });
     }
     setIsModalOpen(true);
@@ -201,6 +231,43 @@ export default function CalendarPage() {
     }
   };
 
+  const handleEventSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const body = { ...eventForm };
+      
+      if (isEditing && editingItemId) {
+        await fetch('/api/events', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingItemId, ...body })
+        });
+      } else {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+      setIsModalOpen(false);
+      setEventForm({ title: '', date: '', time: '', type: 'event' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm('ยืนยันการลบกิจกรรม/แจ้งเตือนนี้?')) return;
+    try {
+      await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+      setIsModalOpen(false);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // --- Desktop Calendar Grid Logic ---
   const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   const daysOfWeek = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -237,16 +304,21 @@ export default function CalendarPage() {
           {dayItems.map(item => (
             <div 
               key={`${item.type}-${item.id}`} 
-              className={`calendar-task-item status-${item.status}`} 
-              title={`${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
+              className={item.type === 'event' ? 'calendar-task-item status-event' : `calendar-task-item status-${item.status}`} 
+              title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
               onClick={(e) => handleItemClick(e, item)}
+              style={item.type === 'event' ? { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#b45309', fontWeight: 600 } : {}}
             >
-              {item.member && (
+              {item.type === 'event' && <span style={{ marginRight: '4px' }}>📢</span>}
+              {item.type !== 'event' && item.member && (
                 <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', flexShrink: 0 }}>
                   {item.member.name.charAt(0)}
                 </div>
               )}
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {item.type === 'event' && item.fullItem?.time ? <span style={{ marginRight: '4px', opacity: 0.8 }}>{item.fullItem.time}</span> : null}
+                {item.title}
+              </span>
             </div>
           ))}
         </div>
@@ -426,6 +498,22 @@ export default function CalendarPage() {
               {mobileDayItems.length > 0 && <div style={{ position: 'absolute', left: '19px', top: '20px', bottom: '20px', width: '2px', backgroundColor: '#e2e8f0', zIndex: 0 }}></div>}
               
               {mobileDayItems.map((item, index) => {
+                if (item.type === 'event') {
+                  return (
+                    <div key={`event-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1, cursor: 'pointer' }}>
+                      <div style={{ width: '40px', fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b', paddingTop: '0.75rem', textAlign: 'right' }}>
+                        {item.fullItem?.time || '-'}
+                      </div>
+                      <div style={{ flex: 1, backgroundColor: '#fef3c7', borderLeft: `4px solid #f59e0b`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#b45309' }}>📢 {item.title}</h4>
+                          <span style={{ fontSize: '0.75rem', color: '#b45309', opacity: 0.8 }}>กิจกรรม / แจ้งให้ทราบ</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 const isContent = item.type === 'content';
                 const timeStr = item.type === 'task' ? '10:00' : '14:00'; 
                 
@@ -470,7 +558,15 @@ export default function CalendarPage() {
       </div>
 
       {/* --- Shared Modal --- */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : newItemType === 'content' ? "แก้ไขคอนเท้น" : "แก้ไขกิจกรรม/ประกาศ") : "เพิ่มรายการใหม่"}>
+        {!isEditing && (
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <button type="button" className={`btn ${newItemType === 'content' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setNewItemType('content')} style={{ flex: 1 }}>คอนเท้น</button>
+            <button type="button" className={`btn ${newItemType === 'task' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setNewItemType('task')} style={{ flex: 1 }}>งานทั่วไป</button>
+            <button type="button" className={`btn ${newItemType === 'event' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setNewItemType('event')} style={{ flex: 1 }}>แจ้งเตือน</button>
+          </div>
+        )}
+        
         {newItemType === 'task' ? (
           <form onSubmit={handleTaskSubmit}>
             <div className="form-group">
@@ -535,7 +631,7 @@ export default function CalendarPage() {
               <button type="submit" className="btn btn-primary">บันทึกงาน</button>
             </div>
           </form>
-        ) : (
+        ) : newItemType === 'content' ? (
           <form onSubmit={handleContentSubmit}>
             <div className="form-group">
               <label className="form-label">ชื่อคอนเท้น *</label>
@@ -611,9 +707,47 @@ export default function CalendarPage() {
                 </div>
               )
             ) : null}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-              <button type="submit" className="btn btn-primary">บันทึก</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
+              {isEditing && editingItemId ? (
+                <button type="button" className="btn btn-danger" onClick={() => {
+                  if (confirm('ยืนยันการลบคอนเท้นนี้?')) {
+                    fetch(`/api/content?id=${editingItemId}`, { method: 'DELETE' }).then(() => {
+                      setIsModalOpen(false); fetchData();
+                    });
+                  }
+                }}>ลบคอนเท้น</button>
+              ) : <div></div>}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
+                <button type="submit" className="btn btn-primary">บันทึก</button>
+              </div>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleEventSubmit}>
+            <div className="form-group">
+              <label className="form-label">ชื่อกิจกรรม / เรื่องที่แจ้งให้ทราบ *</label>
+              <input type="text" className="form-input" required placeholder="เช่น วันนี้ประชุม 10 โมง" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">วันที่ *</label>
+                <input type="date" className="form-input" required value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">เวลา (ถ้ามี)</label>
+                <input type="time" className="form-input" value={eventForm.time} onChange={e => setEventForm({...eventForm, time: e.target.value})} />
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
+              {isEditing && editingItemId ? (
+                <button type="button" className="btn btn-danger" onClick={() => handleDeleteEvent(editingItemId)}>ลบกิจกรรม</button>
+              ) : <div></div>}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
+                <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#f59e0b' }}>บันทึกกิจกรรม</button>
+              </div>
             </div>
           </form>
         )}
