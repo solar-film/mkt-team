@@ -394,7 +394,7 @@ export default function CalendarPage() {
               {item.type !== 'event' && item.member && (spanClass === '' || spanClass === 'task-span-start') && (
                 <MemberAvatar name={item.member.name} size="sm" />
               )}
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, display: 'block' }}>
                 {item.type === 'event' && item.fullItem?.time ? <span style={{ marginRight: '4px', opacity: 0.8 }}>{item.fullItem.time}</span> : null}
                 {(spanClass === '' || spanClass === 'task-span-start') ? item.title : '\u00A0'}
               </span>
