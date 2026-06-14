@@ -425,10 +425,15 @@ export default function TaskBoard() {
             return (
               <div key={item.id} onClick={() => handleEditClick(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
                 <div 
-                  onClick={(e) => { e.stopPropagation(); handleStatusChange(item, item.status === 'done' ? 'todo' : 'done'); }}
-                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: `2px solid ${item.status === 'done' ? '#10b981' : '#cbd5e1'}`, backgroundColor: item.status === 'done' ? '#10b981' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.2rem' }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    const nextStatus = item.status === 'todo' ? 'in_progress' : item.status === 'in_progress' ? 'done' : 'todo';
+                    handleStatusChange(item, nextStatus); 
+                  }}
+                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: `2px solid ${item.status === 'done' ? '#10b981' : item.status === 'in_progress' ? '#3b82f6' : '#cbd5e1'}`, backgroundColor: item.status === 'done' ? '#10b981' : item.status === 'in_progress' ? '#eff6ff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.2rem' }}
                 >
                   {item.status === 'done' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                  {item.status === 'in_progress' && <div style={{ width: '10px', height: '10px', backgroundColor: '#3b82f6', borderRadius: '2px' }}></div>}
                 </div>
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
