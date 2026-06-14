@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiPlus, HiBriefcase, HiCheckCircle, HiDocumentText, HiOutlineTrash, HiPencilSquare } from 'react-icons/hi2';
+import { HiPlus, HiBriefcase, HiCheckCircle, HiDocumentText, HiOutlineTrash, HiPencilSquare, HiLockClosed } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -27,6 +27,19 @@ interface TeamMember {
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check admin status
+    const adminStatus = localStorage.getItem('isAdmin') === 'true';
+    setIsAdmin(adminStatus);
+    
+    if (adminStatus) {
+      fetchMembers();
+    } else {
+      setLoading(false);
+    }
+  }, []);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,6 +122,18 @@ export default function TeamPage() {
     setEditingId(null);
     setIsModalOpen(true);
   };
+
+  if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
+  
+  if (isAdmin === false) {
+    return (
+      <div className="empty-state" style={{ height: '70vh' }}>
+        <HiLockClosed style={{ fontSize: '4rem', color: 'var(--color-text-secondary)', opacity: 0.5, marginBottom: '1rem' }} />
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+        <p>หน้านี้สงวนไว้สำหรับผู้ดูแลระบบเท่านั้น</p>
+      </div>
+    );
+  }
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 

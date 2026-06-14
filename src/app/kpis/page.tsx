@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiPlus, HiPencilSquare } from 'react-icons/hi2';
+import { HiPlus, HiPencilSquare, HiLockClosed } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import MemberAvatar from '@/components/MemberAvatar';
 import ProgressBar from '@/components/ProgressBar';
@@ -22,7 +22,20 @@ export default function KPIsPage() {
   const currentDate = new Date();
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1);
-  const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check admin status
+    const adminStatus = localStorage.getItem('isAdmin') === 'true';
+    setIsAdmin(adminStatus);
+    
+    if (adminStatus) {
+      fetchMembers();
+    } else {
+      setLoading(false);
+    }
+  }, []);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,6 +95,18 @@ export default function KPIsPage() {
   const filteredMembers = filterMemberId 
     ? members.filter(m => m.id === filterMemberId) 
     : members;
+
+  if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
+  
+  if (isAdmin === false) {
+    return (
+      <div className="empty-state" style={{ height: '70vh' }}>
+        <HiLockClosed style={{ fontSize: '4rem', color: 'var(--color-text-secondary)', opacity: 0.5, marginBottom: '1rem' }} />
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+        <p>หน้านี้สงวนไว้สำหรับผู้ดูแลระบบเท่านั้น</p>
+      </div>
+    );
+  }
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 

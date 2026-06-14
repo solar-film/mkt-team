@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -14,7 +14,9 @@ import {
   HiGlobeAlt,
   HiChevronLeft,
   HiChevronRight,
-  HiCalendarDays
+  HiCalendarDays,
+  HiLockClosed,
+  HiLockOpen
 } from 'react-icons/hi2';
 
 const navLinks = [
@@ -28,6 +30,40 @@ const navLinks = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Read from localStorage on mount
+    const adminStatus = localStorage.getItem('isAdmin') === 'true';
+    setIsAdmin(adminStatus);
+  }, []);
+
+  const handleLockClick = () => {
+    if (isAdmin) {
+      if (confirm('ต้องการออกจากโหมดผู้ดูแลระบบหรือไม่?')) {
+        localStorage.removeItem('isAdmin');
+        setIsAdmin(false);
+        // Force reload to apply access restrictions
+        window.location.reload();
+      }
+    } else {
+      const pin = prompt('กรุณาใส่รหัสผ่านลับ (PIN) เพื่อเข้าถึงเมนูผู้ดูแล:');
+      if (pin === '8888') {
+        localStorage.setItem('isAdmin', 'true');
+        setIsAdmin(true);
+        alert('ปลดล็อคสำเร็จ!');
+      } else if (pin !== null) {
+        alert('รหัสผ่านไม่ถูกต้อง');
+      }
+    }
+  };
+
+  const visibleLinks = navLinks.filter(link => {
+    if ((link.path === '/kpis' || link.path === '/team') && !isAdmin) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
@@ -52,7 +88,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {navLinks.map((link) => (
+        {visibleLinks.map((link) => (
           <Link
             key={link.path}
             href={link.path}
@@ -64,8 +100,17 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="sidebar-footer">
+      <div className="sidebar-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <small>© 2026 Marketing Team</small>
+        <button 
+          onClick={handleLockClick}
+          style={{ background: 'none', border: 'none', color: isAdmin ? 'var(--color-success)' : 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.5, transition: 'opacity 0.2s' }}
+          title={isAdmin ? "ล็อคระบบ" : "ปลดล็อคระบบ"}
+          onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
+          onMouseOut={(e) => e.currentTarget.style.opacity = '0.5'}
+        >
+          {isAdmin ? <HiLockOpen size={14} /> : <HiLockClosed size={14} />}
+        </button>
       </div>
     </aside>
   );
