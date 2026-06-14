@@ -28,7 +28,7 @@ export default function CalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [newItemType, setNewItemType] = useState<'task' | 'content' | 'event'>('event');
+  const [newItemType, setNewItemType] = useState<'task' | 'content' | 'event'>('content');
 
   const [eventForm, setEventForm] = useState({
     title: '', date: '', time: '', type: 'event'
@@ -122,7 +122,7 @@ export default function CalendarPage() {
   const handleCellClick = (dateStr: string) => {
     setIsEditing(false);
     setEditingItemId(null);
-    setNewItemType('event');
+    setNewItemType('content');
     setContentForm({
       title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
     });
