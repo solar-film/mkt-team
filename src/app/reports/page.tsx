@@ -246,7 +246,8 @@ export default function ReportsPage() {
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>วันที่</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ประเภท</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>หัวข้อ</th>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>รับผิดชอบ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', textAlign: 'center' }}>ลิงก์</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>ผู้รับผิดชอบ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>แพลตฟอร์ม/ความสำคัญ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>สถานะ</th>
               </tr>
@@ -261,15 +262,15 @@ export default function ReportsPage() {
                       {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                     </span>
                   </td>
-                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
-                      {item.link && (
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          <HiArrowTopRightOnSquare size={12} style={{ flexShrink: 0 }} /> {item.link}
-                        </a>
-                      )}
-                    </div>
+                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.title}
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                    {item.link && (
+                      <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.35rem', backgroundColor: '#eff6ff', borderRadius: '6px' }} title="เปิดลิงก์">
+                        <HiArrowTopRightOnSquare size={16} />
+                      </a>
+                    )}
                   </td>
                   <td style={{ padding: '0.75rem' }}>{item.memberName}</td>
                   <td style={{ padding: '0.75rem' }}>{item.itemType === 'content' ? item.platform : item.priority}</td>
@@ -277,7 +278,7 @@ export default function ReportsPage() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td>
+                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td>
                 </tr>
               )}
             </tbody>
@@ -293,11 +294,11 @@ export default function ReportsPage() {
                     {item.itemType === 'task' ? <HiClipboardDocumentList size={16} /> : <HiDocumentText size={16} />}
                   </div>
                   <div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.title}</h4>
                       {item.link && (
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', wordBreak: 'break-all' }}>
-                          <HiArrowTopRightOnSquare size={12} style={{ flexShrink: 0 }} /> {item.link}
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', padding: '0.35rem', backgroundColor: '#eff6ff', borderRadius: '6px' }} title="เปิดลิงก์">
+                          <HiArrowTopRightOnSquare size={14} />
                         </a>
                       )}
                     </div>
