@@ -12,8 +12,9 @@ const GRADIENT_COLORS = [
 function hashName(name: string): number {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = name.charCodeAt(i) + ((hash << 5) - hash) + (i * 11);
   }
+  hash ^= name.length * 17;
   return Math.abs(hash);
 }
 
