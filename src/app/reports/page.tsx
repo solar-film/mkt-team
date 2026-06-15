@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare } from 'react-icons/hi2';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format } from 'date-fns';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
@@ -206,7 +209,13 @@ export default function ReportsPage() {
 
           {dateFilterType === 'day' && (
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <input type="date" className="form-input" value={dateDay} onChange={e => setDateDay(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }} />
+              <DatePicker 
+                selected={dateDay ? new Date(dateDay) : null} 
+                onChange={(date: Date | null) => setDateDay(date ? format(date, 'yyyy-MM-dd') : '')} 
+                dateFormat="dd/MM/yyyy" 
+                className="form-input" 
+                placeholderText="วว/ดด/ปปปป"
+              />
             </div>
           )}
 

@@ -1080,3 +1080,5 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   .desktop-only { display: block !important; }
   .mobile-only { display: none !important; }
 }
+. r e a c t - d a t e p i c k e r - w r a p p e r   {   w i d t h :   1 0 0 % ;   }  
+ 

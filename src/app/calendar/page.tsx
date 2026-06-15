@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import MemberAvatar from '@/components/MemberAvatar';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format } from 'date-fns';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -688,12 +691,24 @@ export default function CalendarPage() {
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', width: '100%' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันเริ่มต้น (ถ้ามี)</label>
-                <input type="date" className="form-input" style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box' }} value={taskForm.startDate} onChange={e => setTaskForm({...taskForm, startDate: e.target.value})} />
+                <DatePicker 
+                  selected={taskForm.startDate ? new Date(taskForm.startDate) : null} 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date ? format(date, 'yyyy-MM-dd') : ''})} 
+                  dateFormat="dd/MM/yyyy" 
+                  className="form-input" 
+                  placeholderText="วว/ดด/ปปปป"
+                  isClearable
+                />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>กำหนดส่ง *</label>
-                <input type="date" className="form-input" required style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box' }} value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value, kpiId: ''})} />
+                <DatePicker 
+                  selected={taskForm.deadline ? new Date(taskForm.deadline) : null} 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date ? format(date, 'yyyy-MM-dd') : '', kpiId: ''})} 
+                  dateFormat="dd/MM/yyyy" 
+                  className="form-input" 
+                  placeholderText="วว/ดด/ปปปป"
+                  required
+                />
               </div>
             </div>
             {/* KPI selection removed from tasks as per user request */}
@@ -745,7 +760,14 @@ export default function CalendarPage() {
             </div>
             <div style={{ marginTop: '1rem', width: '100%', maxWidth: '100%', overflow: 'hidden', marginBottom: '1.25rem' }}>
               <label className="form-label">วันที่เผยแพร่ *</label>
-              <input type="date" className="form-input" required style={{ width: '100%', padding: '0.5rem', fontSize: '0.8rem', boxSizing: 'border-box', maxWidth: '100%' }} value={contentForm.publishDate} onChange={e => setContentForm({...contentForm, publishDate: e.target.value, kpiId: ''})} />
+              <DatePicker 
+                selected={contentForm.publishDate ? new Date(contentForm.publishDate) : null} 
+                onChange={(date: Date | null) => setContentForm({...contentForm, publishDate: date ? format(date, 'yyyy-MM-dd') : '', kpiId: ''})} 
+                dateFormat="dd/MM/yyyy" 
+                className="form-input" 
+                placeholderText="วว/ดด/ปปปป"
+                required
+              />
             </div>
             {contentForm.memberId ? (
               contentForm.publishDate ? (
@@ -795,7 +817,14 @@ export default function CalendarPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">วันที่ *</label>
-                <input type="date" className="form-input" required value={eventForm.date} onChange={e => setEventForm({...eventForm, date: e.target.value})} />
+                <DatePicker 
+                  selected={eventForm.date ? new Date(eventForm.date) : null} 
+                  onChange={(date: Date | null) => setEventForm({...eventForm, date: date ? format(date, 'yyyy-MM-dd') : ''})} 
+                  dateFormat="dd/MM/yyyy" 
+                  className="form-input" 
+                  placeholderText="วว/ดด/ปปปป"
+                  required
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">เวลา (ถ้ามี)</label>
