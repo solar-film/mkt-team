@@ -447,7 +447,28 @@ export default function CalendarPage() {
     const start = item.startDate || item.date;
     const end = item.date;
     return selectedDateStr >= start && selectedDateStr <= end;
-  }).sort((a, b) => a.title.localeCompare(b.title));
+  }).sort((a, b) => {
+    if (a.type === 'event' && b.type !== 'event') return -1;
+    if (a.type !== 'event' && b.type === 'event') return 1;
+    
+    const getTimeVal = (item: UnifiedItem) => {
+      if (item.type === 'event') {
+        if (!item.fullItem?.time) return 9999;
+        const [h, m] = item.fullItem.time.split(':');
+        return parseInt(h) * 60 + parseInt(m);
+      }
+      const dateStr = item.type === 'task' ? item.fullItem?.deadline : item.fullItem?.publishDate;
+      if (!dateStr || !dateStr.includes('T')) return 9999;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return 9999;
+      return d.getHours() * 60 + d.getMinutes();
+    };
+    
+    const timeA = getTimeVal(a);
+    const timeB = getTimeVal(b);
+    if (timeA !== timeB) return timeA - timeB;
+    return a.title.localeCompare(b.title);
+  });
 
   return (
     <div>
@@ -541,40 +562,68 @@ export default function CalendarPage() {
               </div>
               <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', margin: 0, marginBottom: '0.5rem' }}>งานประจำวันที่ {selectedDate.getDate()} {thaiMonths[selectedDate.getMonth()]} {selectedDate.getFullYear() + 543}</h3>
-                {mobileDayItems.length > 0 ? mobileDayItems.map((item, index) => {
-                  if (item.type === 'event') {
-                    return (
-                      <div key={`event-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', alignItems: 'center', cursor: 'pointer', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#fce7f3', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <HiOutlineCalendar size={24} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+                  {mobileDayItems.length > 0 && <div style={{ position: 'absolute', left: '19px', top: '20px', bottom: '20px', width: '2px', backgroundColor: '#e2e8f0', zIndex: 0 }}></div>}
+                  {mobileDayItems.map((item, index) => {
+                    if (item.type === 'event') {
+                      return (
+                        <div key={`event-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1, cursor: 'pointer' }}>
+                          <div style={{ width: '40px', fontSize: '0.8rem', fontWeight: 600, color: '#ec4899', paddingTop: '0.75rem', textAlign: 'right' }}>
+                            {item.fullItem?.time || '-'}
+                          </div>
+                          <div style={{ flex: 1, backgroundColor: '#fce7f3', borderLeft: `4px solid #ec4899`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#be185d' }}>📢 {item.title}</h4>
+                              <span style={{ fontSize: '0.75rem', color: '#be185d', opacity: 0.8 }}>กิจกรรม / แจ้งให้ทราบ</span>
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', margin: '0 0 0.25rem 0' }}>{item.title}</h4>
-                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{item.fullItem?.time ? `${item.fullItem.time} น.` : 'ตลอดวัน'}</div>
+                      );
+                    }
+
+                    const isContent = item.type === 'content';
+                    const dateStr = item.type === 'task' ? item.fullItem?.deadline : item.fullItem?.publishDate;
+                    let timeStr = '-';
+                    if (dateStr && dateStr.includes('T')) {
+                      const d = new Date(dateStr);
+                      if (!isNaN(d.getTime())) {
+                        const h = d.getHours().toString().padStart(2, '0');
+                        const m = d.getMinutes().toString().padStart(2, '0');
+                        if (h !== '00' || m !== '00') timeStr = `${h}:${m}`;
+                      }
+                    }
+                    
+                    let borderColor = '#3b82f6';
+                    let bgColor = '#f0f9ff';
+                    if (item.status === 'todo') { borderColor = '#f97316'; bgColor = '#fffbeb'; }
+                    else if (item.status === 'in_progress') { borderColor = '#3b82f6'; bgColor = '#eff6ff'; }
+                    else if (item.status === 'done') { borderColor = '#10b981'; bgColor = '#ecfdf5'; }
+                    
+                    return (
+                      <div key={item.id} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1, cursor: 'pointer' }}>
+                        <div style={{ width: '40px', fontSize: '0.8rem', fontWeight: 600, color: '#64748b', paddingTop: '0.75rem', textAlign: 'right' }}>
+                          {timeStr}
+                        </div>
+                        <div style={{ flex: 1, backgroundColor: bgColor, borderLeft: `4px solid ${borderColor}`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                          <div>
+                            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>{item.title}</h4>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                              {item.type === 'task' ? item.fullItem?.description || 'ไม่มีรายละเอียด' : `${item.fullItem?.type} - ${item.fullItem?.platform}`}
+                            </span>
+                          </div>
+                          {item.member && (
+                            <div style={{ flexShrink: 0 }}>
+                              <MemberAvatar name={item.member.name} size="sm" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
-                  }
-                  return (
-                    <div key={`${item.type}-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', alignItems: 'center', cursor: 'pointer', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9', position: 'relative' }}>
-                      <div style={{ width: '4px', height: '100%', position: 'absolute', left: 0, top: 0, borderRadius: '12px 0 0 12px', backgroundColor: item.type === 'task' ? '#f59e0b' : '#3b82f6' }}></div>
-                      <div style={{ paddingLeft: '1rem', flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', margin: '0 0 0.25rem 0' }}>{item.title}</h4>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
-                            <span style={{ padding: '0.1rem 0.5rem', borderRadius: '4px', backgroundColor: item.type === 'task' ? '#fef3c7' : '#dbeafe', color: item.type === 'task' ? '#d97706' : '#2563eb', fontWeight: 600 }}>{item.type === 'task' ? 'งาน' : 'คอนเทนต์'}</span>
-                            {item.member && <span>• {item.member.name}</span>}
-                          </div>
-                        </div>
-                        <div style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: item.status === 'done' || item.status === 'published' ? '#dcfce7' : (item.status === 'in-progress' ? '#fef3c7' : '#f1f5f9'), color: item.status === 'done' || item.status === 'published' ? '#16a34a' : (item.status === 'in-progress' ? '#d97706' : '#64748b') }}>
-                          {item.status === 'done' ? 'เสร็จแล้ว' : (item.status === 'published' ? 'เผยแพร่แล้ว' : (item.status === 'in-progress' ? 'กำลังทำ' : 'รอดำเนินการ'))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }) : (
-                  <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8' }}>ไม่มีงานในวันนี้</div>
-                )}
+                  })}
+                  {mobileDayItems.length === 0 && (
+                    <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8' }}>ไม่มีงานในวันนี้</div>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
@@ -691,7 +740,16 @@ export default function CalendarPage() {
                 }
 
                 const isContent = item.type === 'content';
-                const timeStr = item.type === 'task' ? '10:00' : '14:00'; 
+                const dateStr = item.type === 'task' ? item.fullItem?.deadline : item.fullItem?.publishDate;
+                let timeStr = '-';
+                if (dateStr && dateStr.includes('T')) {
+                  const d = new Date(dateStr);
+                  if (!isNaN(d.getTime())) {
+                    const h = d.getHours().toString().padStart(2, '0');
+                    const m = d.getMinutes().toString().padStart(2, '0');
+                    if (h !== '00' || m !== '00') timeStr = `${h}:${m}`;
+                  }
+                }
                 
                 // Color mapping based on status
                 let borderColor = '#3b82f6';
