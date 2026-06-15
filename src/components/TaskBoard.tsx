@@ -35,6 +35,15 @@ interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
 }
 
+const formatDateTime = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const datePart = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  const hours = d.getHours().toString().padStart(2, '0');
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  if (hours === '00' && minutes === '00') return datePart;
+  return `${datePart} ${hours}:${minutes}`;
+}
+
 export default function TaskBoard() {
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -300,12 +309,12 @@ export default function TaskBoard() {
                 )}
                 {item.itemType === 'task' && item.deadline && (
                   <span style={{ marginLeft: 'auto', color: new Date(item.deadline) < new Date() ? 'var(--color-danger)' : 'inherit' }}>
-                    📅 {new Date(item.deadline).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                    ถึง {formatDateTime(item.deadline)}
                   </span>
                 )}
                 {item.itemType === 'content' && item.publishDate && (
                   <span style={{ marginLeft: 'auto', color: new Date(item.publishDate) < new Date() ? 'var(--color-danger)' : 'inherit' }}>
-                    📅 {new Date(item.publishDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                    เผยแพร่ {formatDateTime(item.publishDate)}
                   </span>
                 )}
               </div>
@@ -465,7 +474,7 @@ export default function TaskBoard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem', color: '#94a3b8' }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        {item.deadline || item.publishDate ? new Date(item.deadline || item.publishDate || '').toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ' 10:00' : 'ไม่ระบุ'}
+                        {item.deadline || item.publishDate ? formatDateTime(item.deadline || item.publishDate || '') : 'ไม่ระบุ'}
                       </div>
                       {item.member && (
                         <MemberAvatar name={item.member.name} size="sm" />

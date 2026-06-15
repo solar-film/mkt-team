@@ -29,6 +29,15 @@ interface TeamMember {
   tasks: Task[]; kpis: KPI[]; contents: Content[];
 }
 
+const formatDateTime = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const datePart = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  const hours = d.getHours().toString().padStart(2, '0');
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  if (hours === '00' && minutes === '00') return datePart;
+  return `${datePart} ${hours}:${minutes}`;
+}
+
 export default function ReportsPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,7 +254,7 @@ export default function ReportsPage() {
             <tbody>
               {filteredItems.length > 0 ? filteredItems.map((item, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '0.75rem' }}>{item.date ? new Date(item.date).toLocaleDateString('th-TH') : '-'}</td>
+                  <td style={{ padding: '0.75rem' }}>{item.date ? formatDateTime(item.date) : '-'}</td>
                   <td style={{ padding: '0.75rem' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: item.itemType === 'task' ? '#f59e0b' : '#3b82f6' }}>
                       {item.itemType === 'task' ? <HiClipboardDocumentList /> : <HiDocumentText />} 
@@ -297,7 +306,7 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.75rem' }}>
-                <span style={{ color: '#64748b' }}>{item.date ? new Date(item.date).toLocaleDateString('th-TH') : '-'}</span>
+                <span style={{ color: '#64748b' }}>{item.date ? formatDateTime(item.date) : '-'}</span>
                 <span style={{ color: '#64748b' }}>{item.itemType === 'content' ? item.platform : item.priority}</span>
                 {getStatusBadge(item.status)}
               </div>
