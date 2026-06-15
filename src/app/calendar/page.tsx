@@ -391,9 +391,9 @@ export default function CalendarPage() {
               title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
               onClick={(e) => handleItemClick(e, item)}
               style={item.type === 'event' 
-                ? { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#b45309', fontWeight: 600, height: '28px' } 
+                ? { backgroundColor: '#fce7f3', borderColor: '#ec4899', color: '#be185d', fontWeight: 600, height: '28px' } 
                 : { backgroundColor: bgColor, borderColor: borderColor, color: textColor, fontWeight: 600, height: '28px' }}
-            >
+              >
               {item.type === 'event' && <span style={{ marginRight: '4px' }}>📢</span>}
               {item.type !== 'event' && item.member && (spanClass === '' || spanClass === 'task-span-start') && (
                 <MemberAvatar name={item.member.name} size="sm" />
@@ -545,7 +545,7 @@ export default function CalendarPage() {
                   if (item.type === 'event') {
                     return (
                       <div key={`event-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', alignItems: 'center', cursor: 'pointer', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#fce7f3', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <HiOutlineCalendar size={24} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -677,13 +677,13 @@ export default function CalendarPage() {
                 if (item.type === 'event') {
                   return (
                     <div key={`event-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', position: 'relative', zIndex: 1, cursor: 'pointer' }}>
-                      <div style={{ width: '40px', fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b', paddingTop: '0.75rem', textAlign: 'right' }}>
+                      <div style={{ width: '40px', fontSize: '0.8rem', fontWeight: 600, color: '#ec4899', paddingTop: '0.75rem', textAlign: 'right' }}>
                         {item.fullItem?.time || '-'}
                       </div>
-                      <div style={{ flex: 1, backgroundColor: '#fef3c7', borderLeft: `4px solid #f59e0b`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                      <div style={{ flex: 1, backgroundColor: '#fce7f3', borderLeft: `4px solid #ec4899`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
                         <div>
-                          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#b45309' }}>📢 {item.title}</h4>
-                          <span style={{ fontSize: '0.75rem', color: '#b45309', opacity: 0.8 }}>กิจกรรม / แจ้งให้ทราบ</span>
+                          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#be185d' }}>📢 {item.title}</h4>
+                          <span style={{ fontSize: '0.75rem', color: '#be185d', opacity: 0.8 }}>กิจกรรม / แจ้งให้ทราบ</span>
                         </div>
                       </div>
                     </div>
