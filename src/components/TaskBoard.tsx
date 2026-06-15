@@ -162,8 +162,8 @@ export default function TaskBoard() {
         description: item.description || '',
         memberId: item.memberId || '',
         priority: item.priority || 'medium',
-        startDate: item.startDate ? item.startDate.split('T')[0] : '',
-        deadline: item.deadline ? item.deadline.split('T')[0] : '',
+        startDate: item.startDate || '',
+        deadline: item.deadline || '',
         kpiId: (item as any).kpiId || '',
         link: item.link || ''
       });
@@ -532,10 +532,12 @@ export default function TaskBoard() {
                 <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันเริ่มต้น (ถ้ามี)</label>
                 <DatePicker 
                   selected={taskForm.startDate ? new Date(taskForm.startDate) : null} 
-                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date ? format(date, 'yyyy-MM-dd') : ''})} 
-                  dateFormat="dd/MM/yyyy" 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date ? date.toISOString() : ''})} 
+                  dateFormat="dd/MM/yyyy HH:mm"
+                  showTimeSelect
+                  timeFormat="HH:mm"
                   className="form-input" 
-                  placeholderText="วว/ดด/ปปปป"
+                  placeholderText="วว/ดด/ปปปป HH:mm"
                   isClearable
                 />
               </div>
@@ -543,10 +545,12 @@ export default function TaskBoard() {
                 <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันครบกำหนด *</label>
                 <DatePicker 
                   selected={taskForm.deadline ? new Date(taskForm.deadline) : null} 
-                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date ? format(date, 'yyyy-MM-dd') : '', kpiId: ''})} 
-                  dateFormat="dd/MM/yyyy" 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date ? date.toISOString() : '', kpiId: ''})} 
+                  dateFormat="dd/MM/yyyy HH:mm"
+                  showTimeSelect
+                  timeFormat="HH:mm"
                   className="form-input" 
-                  placeholderText="วว/ดด/ปปปป"
+                  placeholderText="วว/ดด/ปปปป HH:mm"
                   required
                 />
               </div>
