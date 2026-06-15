@@ -261,12 +261,12 @@ export default function ReportsPage() {
                       {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                     </span>
                   </td>
-                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {item.title}
+                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
                       {item.link && (
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center' }}>
-                          <HiArrowTopRightOnSquare size={14} />
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <HiArrowTopRightOnSquare size={12} style={{ flexShrink: 0 }} /> {item.link}
                         </a>
                       )}
                     </div>
@@ -293,11 +293,11 @@ export default function ReportsPage() {
                     {item.itemType === 'task' ? <HiClipboardDocumentList size={16} /> : <HiDocumentText size={16} />}
                   </div>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                       <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.title}</h4>
                       {item.link && (
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center' }}>
-                          <HiArrowTopRightOnSquare size={14} />
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', wordBreak: 'break-all' }}>
+                          <HiArrowTopRightOnSquare size={12} style={{ flexShrink: 0 }} /> {item.link}
                         </a>
                       )}
                     </div>
