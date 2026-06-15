@@ -20,6 +20,7 @@ interface UnifiedItem {
 }
 
 export default function CalendarPage() {
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [items, setItems] = useState<UnifiedItem[]>([]);
@@ -452,10 +453,26 @@ export default function CalendarPage() {
     <div>
       {/* -------------------- DESKTOP VIEW -------------------- */}
       <div className="desktop-only">
-        <div className="page-header" style={{ marginBottom: '1rem' }}>
+        <div className="page-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div className="page-header-content">
-            <h1>ปฏิทินงาน</h1>
-            <p>ดูภาพรวมงานและกำหนดส่งทั้งหมดในแต่ละเดือน</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <h1 style={{ margin: 0 }}>ปฏิทินงาน</h1>
+              <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '0.25rem' }}>
+                <button 
+                  style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: 'none', background: viewMode === 'month' ? '#ffffff' : 'transparent', color: viewMode === 'month' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'month' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: viewMode === 'month' ? 600 : 400 }}
+                  onClick={() => setViewMode('month')}
+                >
+                  รายเดือน
+                </button>
+                <button 
+                  style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: 'none', background: viewMode === 'week' ? '#ffffff' : 'transparent', color: viewMode === 'week' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'week' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: viewMode === 'week' ? 600 : 400 }}
+                  onClick={() => setViewMode('week')}
+                >
+                  รายสัปดาห์
+                </button>
+              </div>
+            </div>
+            <p>ภาพรวมงานและคอนเทนต์ทั้งหมดของทีม</p>
           </div>
         </div>
 
@@ -492,6 +509,74 @@ export default function CalendarPage() {
 
           {loading ? (
             <div className="loading-container" style={{ minHeight: '400px' }}><div className="loading-spinner"></div></div>
+          ) : viewMode === 'week' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {mobileWeekDays.map((day, i) => {
+                  const isSelected = day.toDateString() === selectedDate.toDateString();
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  const hasItems = filteredItems.some(item => {
+                    const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                    const start = item.startDate || item.date;
+                    const end = item.date;
+                    return dayStr >= start && dayStr <= end;
+                  });
+                  return (
+                    <div key={i} onClick={() => setSelectedDate(day)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', gap: '0.5rem', flex: 1 }}>
+                      <span style={{ fontSize: '0.85rem', color: isSelected ? '#3b82f6' : '#64748b', fontWeight: isSelected ? 600 : 500 }}>{daysOfWeek[i]}</span>
+                      <div style={{ 
+                        width: '40px', height: '40px', borderRadius: '50%', 
+                        backgroundColor: isSelected ? '#3b82f6' : 'transparent', 
+                        color: isSelected ? '#ffffff' : (isToday ? '#f97316' : '#1e293b'),
+                        fontWeight: isSelected || isToday ? 700 : 500,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1rem', position: 'relative'
+                      }}>
+                        {day.getDate()}
+                        {hasItems && !isSelected && <div style={{ position: 'absolute', bottom: '2px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f97316' }}></div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', margin: 0, marginBottom: '0.5rem' }}>งานประจำวันที่ {selectedDate.getDate()} {thaiMonths[selectedDate.getMonth()]} {selectedDate.getFullYear() + 543}</h3>
+                {mobileDayItems.length > 0 ? mobileDayItems.map((item, index) => {
+                  if (item.type === 'event') {
+                    return (
+                      <div key={`event-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', alignItems: 'center', cursor: 'pointer', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <HiOutlineCalendar size={24} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', margin: '0 0 0.25rem 0' }}>{item.title}</h4>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{item.fullItem?.time ? `${item.fullItem.time} น.` : 'ตลอดวัน'}</div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={`${item.type}-${item.id}`} onClick={(e) => handleItemClick(e, item)} style={{ display: 'flex', gap: '1rem', alignItems: 'center', cursor: 'pointer', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9', position: 'relative' }}>
+                      <div style={{ width: '4px', height: '100%', position: 'absolute', left: 0, top: 0, borderRadius: '12px 0 0 12px', backgroundColor: item.type === 'task' ? '#f59e0b' : '#3b82f6' }}></div>
+                      <div style={{ paddingLeft: '1rem', flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', margin: '0 0 0.25rem 0' }}>{item.title}</h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
+                            <span style={{ padding: '0.1rem 0.5rem', borderRadius: '4px', backgroundColor: item.type === 'task' ? '#fef3c7' : '#dbeafe', color: item.type === 'task' ? '#d97706' : '#2563eb', fontWeight: 600 }}>{item.type === 'task' ? 'งาน' : 'คอนเทนต์'}</span>
+                            {item.member && <span>• {item.member.name}</span>}
+                          </div>
+                        </div>
+                        <div style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: item.status === 'done' || item.status === 'published' ? '#dcfce7' : (item.status === 'in-progress' ? '#fef3c7' : '#f1f5f9'), color: item.status === 'done' || item.status === 'published' ? '#16a34a' : (item.status === 'in-progress' ? '#d97706' : '#64748b') }}>
+                          {item.status === 'done' ? 'เสร็จแล้ว' : (item.status === 'published' ? 'เผยแพร่แล้ว' : (item.status === 'in-progress' ? 'กำลังทำ' : 'รอดำเนินการ'))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8' }}>ไม่มีงานในวันนี้</div>
+                )}
+              </div>
+            </div>
           ) : (
             <div style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
               <div className="calendar-grid" style={{ minWidth: '800px' }}>
