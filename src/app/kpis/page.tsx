@@ -202,7 +202,7 @@ export default function KPIsPage() {
                 return monthKpis.length > 0 ? (
                   monthKpis.map(kpi => {
                     const target = Number(kpi.target) || 1;
-                    const percent = kpi.target === 0 ? 0 : Math.min((kpi.current / kpi.target) * 100, 100);
+                    const percent = kpi.target === 0 ? (kpi.current > 0 ? 100 : 0) : Math.min((kpi.current / kpi.target) * 100, 100);
                     const color = getProgressColor(percent);
                     
                     return (
