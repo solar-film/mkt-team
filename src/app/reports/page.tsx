@@ -144,7 +144,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div style={{ padding: '0 0.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '0 0.5rem' }}>
       <div style={{ marginBottom: '1.5rem', marginTop: '0.5rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
           <HiChartPie /> รายงานรวม
