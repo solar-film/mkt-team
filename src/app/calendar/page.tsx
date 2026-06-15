@@ -297,6 +297,9 @@ export default function CalendarPage() {
 
   // 1. Sort items globally
   const sortedItems = [...filteredItems].sort((a, b) => {
+    if (a.type === 'event' && b.type !== 'event') return -1;
+    if (a.type !== 'event' && b.type === 'event') return 1;
+    
     const startA = new Date((a.startDate || a.date) + 'T00:00:00').getTime();
     const startB = new Date((b.startDate || b.date) + 'T00:00:00').getTime();
     if (startA !== startB) return startA - startB;
