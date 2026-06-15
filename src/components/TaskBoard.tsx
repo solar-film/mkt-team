@@ -541,7 +541,7 @@ export default function TaskBoard() {
                 <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันเริ่มต้น (ถ้ามี)</label>
                 <DatePicker 
                   selected={taskForm.startDate ? new Date(taskForm.startDate) : null} 
-                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date ? date.toISOString() : ''})} 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date && !isNaN(date.getTime()) ? date.toISOString() : ''})} 
                   dateFormat="dd/MM/yyyy HH:mm"
                   showTimeSelect
                   timeFormat="HH:mm"
@@ -554,7 +554,7 @@ export default function TaskBoard() {
                 <label className="form-label" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.25rem' }}>วันครบกำหนด *</label>
                 <DatePicker 
                   selected={taskForm.deadline ? new Date(taskForm.deadline) : null} 
-                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date ? date.toISOString() : '', kpiId: ''})} 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date && !isNaN(date.getTime()) ? date.toISOString() : '', kpiId: ''})} 
                   dateFormat="dd/MM/yyyy HH:mm"
                   showTimeSelect
                   timeFormat="HH:mm"
@@ -614,10 +614,12 @@ export default function TaskBoard() {
               <label className="form-label">วันที่เผยแพร่ *</label>
               <DatePicker 
                 selected={contentForm.publishDate ? new Date(contentForm.publishDate) : null} 
-                onChange={(date: Date | null) => setContentForm({...contentForm, publishDate: date ? format(date, 'yyyy-MM-dd') : '', kpiId: ''})} 
-                dateFormat="dd/MM/yyyy" 
+                onChange={(date: Date | null) => setContentForm({...contentForm, publishDate: date && !isNaN(date.getTime()) ? date.toISOString() : '', kpiId: ''})} 
+                dateFormat="dd/MM/yyyy HH:mm"
+                showTimeSelect
+                timeFormat="HH:mm"
                 className="form-input" 
-                placeholderText="วว/ดด/ปปปป"
+                placeholderText="วว/ดด/ปปปป HH:mm"
                 required
               />
             </div>

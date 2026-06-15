@@ -778,7 +778,7 @@ export default function CalendarPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <DatePicker 
                   selected={taskForm.startDate ? new Date(taskForm.startDate) : null} 
-                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date ? date.toISOString() : ''})} 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, startDate: date && !isNaN(date.getTime()) ? date.toISOString() : ''})} 
                   dateFormat="dd/MM/yyyy HH:mm"
                   showTimeSelect
                   timeFormat="HH:mm"
@@ -790,7 +790,7 @@ export default function CalendarPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <DatePicker 
                   selected={taskForm.deadline ? new Date(taskForm.deadline) : null} 
-                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date ? date.toISOString() : '', kpiId: ''})} 
+                  onChange={(date: Date | null) => setTaskForm({...taskForm, deadline: date && !isNaN(date.getTime()) ? date.toISOString() : '', kpiId: ''})} 
                   dateFormat="dd/MM/yyyy HH:mm"
                   showTimeSelect
                   timeFormat="HH:mm"
@@ -851,10 +851,12 @@ export default function CalendarPage() {
               <label className="form-label">วันที่เผยแพร่ *</label>
               <DatePicker 
                 selected={contentForm.publishDate ? new Date(contentForm.publishDate) : null} 
-                onChange={(date: Date | null) => setContentForm({...contentForm, publishDate: date ? format(date, 'yyyy-MM-dd') : '', kpiId: ''})} 
-                dateFormat="dd/MM/yyyy" 
+                onChange={(date: Date | null) => setContentForm({...contentForm, publishDate: date && !isNaN(date.getTime()) ? date.toISOString() : '', kpiId: ''})} 
+                dateFormat="dd/MM/yyyy HH:mm"
+                showTimeSelect
+                timeFormat="HH:mm"
                 className="form-input" 
-                placeholderText="วว/ดด/ปปปป"
+                placeholderText="วว/ดด/ปปปป HH:mm"
                 required
               />
             </div>
