@@ -50,6 +50,9 @@ export default function TaskBoard() {
   const [kpis, setKpis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [showAllDone, setShowAllDone] = useState(false);
   const [mobileTab, setMobileTab] = useState('todo');
   
@@ -260,8 +263,19 @@ export default function TaskBoard() {
     }
   };
 
+  const filteredItems = items.filter(item => {
+    if (filterType !== 'all' && item.itemType !== filterType) return false;
+    if (filterMonth && filterYear) {
+      const dateStr = item.deadline || item.publishDate || item.startDate;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (d.getMonth() + 1 !== parseInt(filterMonth) || d.getFullYear() !== parseInt(filterYear)) return false;
+    }
+    return true;
+  });
+
   const renderColumn = (status: string, title: string) => {
-    const columnItems = items.filter(t => t.status === status);
+    const columnItems = filteredItems.filter(t => t.status === status);
     const isDoneColumn = status === 'done';
     const displayedItems = isDoneColumn && !showAllDone ? columnItems.slice(0, 15) : columnItems;
     
@@ -373,18 +387,51 @@ export default function TaskBoard() {
     <div style={{ padding: '0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto' }}>
-          <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>กรองตามพนักงาน:</label>
+          <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>ผู้รับผิดชอบ:</label>
           <select 
             className="form-select" 
-            style={{ width: '100%', minWidth: '150px', maxWidth: '250px' }}
+            style={{ width: '100%', minWidth: '130px', maxWidth: '200px' }}
             value={filterMemberId}
             onChange={(e) => setFilterMemberId(e.target.value)}
           >
-            <option value="">-- พนักงานทั้งหมด --</option>
+            <option value="">-- ทุกคน --</option>
             {members.map(m => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
+          <select 
+            className="form-select" 
+            style={{ width: '100%', minWidth: '100px', maxWidth: '150px' }}
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+          >
+            <option value="all">ทุกประเภท</option>
+            <option value="task">งานทั่วไป</option>
+            <option value="content">คอนเทนต์</option>
+          </select>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <select 
+              className="form-select" 
+              style={{ minWidth: '80px' }}
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+            >
+              <option value="">ทุกเดือน</option>
+              {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                <option key={m} value={m.toString()}>เดือน {m}</option>
+              ))}
+            </select>
+            <select 
+              className="form-select" 
+              style={{ minWidth: '80px' }}
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+            >
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 auto' }}>
           <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
@@ -407,7 +454,7 @@ export default function TaskBoard() {
       <div className="mobile-only" style={{ paddingBottom: '2rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
           {['todo', 'in_progress', 'done'].map((tab) => {
-            const count = items.filter(i => i.status === tab).length;
+            const count = filteredItems.filter(i => i.status === tab).length;
             const isActive = mobileTab === tab;
             const colors = {
               todo: { text: '#f97316', bg: '#fffbeb', badgeText: 'white', badgeBg: '#f97316' },
@@ -433,7 +480,7 @@ export default function TaskBoard() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {items.filter(i => i.status === mobileTab).map(item => {
+          {filteredItems.filter(i => i.status === mobileTab).map(item => {
             const isTask = item.itemType === 'task';
             const iconColor = item.status === 'todo' ? '#f97316' : item.status === 'in_progress' ? '#3b82f6' : '#10b981';
             
@@ -489,7 +536,7 @@ export default function TaskBoard() {
               </div>
             );
           })}
-          {items.filter(i => i.status === mobileTab).length === 0 && (
+          {filteredItems.filter(i => i.status === mobileTab).length === 0 && (
              <div style={{ padding: '3rem 1rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>ไม่มีงานในหมวดหมู่นี้</p>
              </div>
