@@ -396,9 +396,9 @@ export default function TaskBoard() {
 
   return (
     <div style={{ padding: '0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
-          <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>ผู้รับผิดชอบ:</label>
+          <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap', fontWeight: 600 }}>ผู้รับผิดชอบ:</label>
           <select 
             className="form-select" 
             style={{ width: '100%', minWidth: '130px', maxWidth: '200px' }}
@@ -466,7 +466,7 @@ export default function TaskBoard() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 auto' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
           <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
