@@ -200,47 +200,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
-        {/* Important Tasks */}
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>งานที่ใกล้ถึงกำหนดส่ง</h2>
-            <span style={{ backgroundColor: '#fff7ed', color: '#f97316', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
-              {upcomingTasks.length} งาน
-            </span>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {upcomingTasks.length > 0 ? upcomingTasks.map((task, index) => {
-              const isTask = task.itemType === 'task';
-              const colors = ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4'];
-              const color = isTask ? colors[index % colors.length] : ((task as any).platform === 'Facebook' ? '#3b82f6' : '#ec4899');
-              
-              return (
-                <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: index < upcomingTasks.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: `${color}15`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {isTask ? <HiClipboardDocumentList size={14} /> : <HiDocumentText size={14} />}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</h4>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.memberName}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, paddingLeft: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: color, fontWeight: 600, opacity: 0.8 }}>
-                      {new Date(task.deadline!).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
-                    </span>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color }}></div>
-                  </div>
-                </div>
-              );
-            }) : (
-              <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', fontSize: '0.85rem' }}>ไม่มีงานที่ใกล้ถึงกำหนดส่ง 🎉</div>
-            )}
-          </div>
-        </div>
-
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
         {/* Team Performance */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -345,6 +305,49 @@ export default function DashboardPage() {
             </table>
           </div>
         </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+        {/* Important Tasks */}
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>งานที่ใกล้ถึงกำหนดส่ง</h2>
+            <span style={{ backgroundColor: '#fff7ed', color: '#f97316', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
+              {upcomingTasks.length} งาน
+            </span>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {upcomingTasks.length > 0 ? upcomingTasks.map((task, index) => {
+              const isTask = task.itemType === 'task';
+              const colors = ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4'];
+              const color = isTask ? colors[index % colors.length] : ((task as any).platform === 'Facebook' ? '#3b82f6' : '#ec4899');
+              
+              return (
+                <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: index < upcomingTasks.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: `${color}15`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {isTask ? <HiClipboardDocumentList size={14} /> : <HiDocumentText size={14} />}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</h4>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.memberName}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, paddingLeft: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: color, fontWeight: 600, opacity: 0.8 }}>
+                      {new Date(task.deadline!).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                    </span>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color }}></div>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', fontSize: '0.85rem' }}>ไม่มีงานที่ใกล้ถึงกำหนดส่ง 🎉</div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
