@@ -29,7 +29,11 @@ export default function MemberAvatar({
   size = 'md',
   className = '',
 }: MemberAvatarProps) {
-  const colorIndex = hashName(name) % GRADIENT_COLORS.length;
+  let colorIndex = hashName(name) % GRADIENT_COLORS.length;
+  
+  if (name && name.includes('เพลง')) {
+    colorIndex = 5; // Pink gradient
+  }
   
   let initial = name ? name.charAt(0) : '';
   const leadingVowels = ['เ', 'แ', 'โ', 'ใ', 'ไ'];
