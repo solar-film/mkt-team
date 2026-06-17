@@ -20,6 +20,18 @@ interface UnifiedItem {
   fullItem?: any;
 }
 
+const isKpiMatchPlatform = (kpiName: string, platform: string) => {
+  if (!platform) return true;
+  const p = platform.toLowerCase();
+  const k = kpiName.toLowerCase();
+  if (p === 'facebook' && (k.includes('facebook') || k.includes('fb'))) return true;
+  if (p === 'instagram' && (k.includes('instagram') || k.includes('ig'))) return true;
+  if (p === 'tiktok' && (k.includes('tiktok') || k.includes('tt'))) return true;
+  if (p === 'youtube' && (k.includes('youtube') || k.includes('yt'))) return true;
+  if (p === 'icons' && k.includes('icons')) return true;
+  return k.includes(p);
+};
+
 export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -917,7 +929,7 @@ export default function CalendarPage() {
                   <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram</option>
                   <option value="TikTok">TikTok</option>
-                  <option value="Website">Website</option>
+                  <option value="iCONS">iCONS</option>
                   <option value="YouTube">YouTube</option>
                   <option value="Google Map">Google Map</option>
                 </select>
