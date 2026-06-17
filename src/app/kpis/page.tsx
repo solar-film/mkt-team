@@ -186,74 +186,6 @@ export default function KPIsPage() {
         </div>
       </div>
 
-      {filteredMembers.length > 0 && (
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>สรุปผลงานรายบุคคลแยกตามบริษัท</h2>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', color: '#64748b', fontSize: '0.8rem' }}>ผู้รับผิดชอบ</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>GFS</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>MHL</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>CAR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.filter(m => m.status !== 'inactive').map((member, index) => {
-                  const getStats = (company: string) => {
-                    const cTasks = (member.tasks || []).filter(t => {
-                      if (t.company !== company) return false;
-                      if (!t.deadline) return false;
-                      const d = new Date(t.deadline);
-                      return (d.getMonth() + 1) === filterMonth && d.getFullYear() === filterYear;
-                    });
-                    const cContents = (member.contents || []).filter(c => {
-                      if (c.company !== company) return false;
-                      if (!c.publishDate) return false;
-                      const d = new Date(c.publishDate);
-                      return (d.getMonth() + 1) === filterMonth && d.getFullYear() === filterYear;
-                    });
-                    return { t: cTasks.length, c: cContents.length };
-                  };
-                  const gfs = getStats('GFS');
-                  const mhl = getStats('MHL');
-                  const car = getStats('CAR');
-
-                  const renderStats = (stats: {t: number, c: number}) => {
-                    if (stats.t === 0 && stats.c === 0) return <span style={{ color: '#cbd5e1' }}>-</span>;
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
-                        {stats.t > 0 && <span style={{ fontSize: '0.7rem', backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 600 }}>{stats.t} งาน</span>}
-                        {stats.c > 0 && <span style={{ fontSize: '0.7rem', backgroundColor: '#fdf4ff', color: '#d946ef', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 600 }}>{stats.c} คอนเทนต์</span>}
-                      </div>
-                    );
-                  };
-
-                  const activeMembersCount = filteredMembers.filter(m => m.status !== 'inactive').length;
-
-                  return (
-                    <tr key={member.id} style={{ borderBottom: index < activeMembersCount - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                      <td style={{ padding: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <MemberAvatar name={member.name} />
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{member.name}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{renderStats(gfs)}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{renderStats(mhl)}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{renderStats(car)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       <div className="kpi-grid">
         {filteredMembers.map(member => (
           <div key={member.id} className="card">
@@ -268,9 +200,47 @@ export default function KPIsPage() {
             </div>
             <div className="card-body">
               {(() => {
+                const getStats = (company: string) => {
+                  const cTasks = (member.tasks || []).filter(t => {
+                    if (t.company !== company) return false;
+                    if (!t.deadline) return false;
+                    const d = new Date(t.deadline);
+                    return (d.getMonth() + 1) === filterMonth && d.getFullYear() === filterYear;
+                  });
+                  const cContents = (member.contents || []).filter(c => {
+                    if (c.company !== company) return false;
+                    if (!c.publishDate) return false;
+                    const d = new Date(c.publishDate);
+                    return (d.getMonth() + 1) === filterMonth && d.getFullYear() === filterYear;
+                  });
+                  return { t: cTasks.length, c: cContents.length };
+                };
+                const gfs = getStats('GFS');
+                const mhl = getStats('MHL');
+                const car = getStats('CAR');
+                const hasStats = gfs.t > 0 || gfs.c > 0 || mhl.t > 0 || mhl.c > 0 || car.t > 0 || car.c > 0;
+
                 const monthKpis = member.kpis.filter(k => k.month === filterMonth && k.year === filterYear);
-                return monthKpis.length > 0 ? (
-                  monthKpis.map(kpi => {
+                return (
+                  <>
+                    {hasStats && (
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
+                        {[
+                          { name: 'GFS', stats: gfs, color: '#0ea5e9', bg: '#f0f9ff' },
+                          { name: 'MHL', stats: mhl, color: '#f59e0b', bg: '#fffbeb' },
+                          { name: 'CAR', stats: car, color: '#8b5cf6', bg: '#f5f3ff' }
+                        ].map(comp => comp.stats.t > 0 || comp.stats.c > 0 ? (
+                          <div key={comp.name} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', backgroundColor: comp.bg, padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', border: `1px solid ${comp.color}30` }}>
+                            <span style={{ fontWeight: 800, color: comp.color }}>{comp.name}:</span>
+                            {comp.stats.t > 0 && <span style={{ color: '#475569', fontWeight: 500 }}>{comp.stats.t} งาน</span>}
+                            {comp.stats.t > 0 && comp.stats.c > 0 && <span style={{ color: '#cbd5e1' }}>|</span>}
+                            {comp.stats.c > 0 && <span style={{ color: '#475569', fontWeight: 500 }}>{comp.stats.c} คอนเทนต์</span>}
+                          </div>
+                        ) : null)}
+                      </div>
+                    )}
+                    {monthKpis.length > 0 ? (
+                      monthKpis.map(kpi => {
                     const target = Number(kpi.target) || 1;
                     const percent = kpi.target === 0 ? (kpi.current > 0 ? 100 : 0) : Math.min((kpi.current / kpi.target) * 100, 100);
                     const color = getProgressColor(percent);
@@ -297,10 +267,12 @@ export default function KPIsPage() {
                     );
                   })
                 ) : (
-                  <div className="empty-state" style={{ padding: '2rem 1rem' }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem' }}>ยังไม่ได้ตั้งเป้าหมายในเดือนนี้</p>
+                  <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                    ไม่มีเป้าหมาย KPI ในเดือนนี้
                   </div>
-                );
+                )}
+              </>
+            );
               })()}
             </div>
           </div>
