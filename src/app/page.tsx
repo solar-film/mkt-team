@@ -13,7 +13,7 @@ import ProgressBar from '@/components/ProgressBar';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
-  priority: string; deadline: string | null; memberId: string;
+  priority: string; deadline: string | null; memberId: string; company?: string;
 }
 interface KPI {
   id: string; name: string; target: number; current: number;
@@ -21,7 +21,7 @@ interface KPI {
 }
 interface Content {
   id: string; title: string; type: string; platform: string;
-  status: string; publishDate: string | null; memberId: string;
+  status: string; publishDate: string | null; memberId: string; company?: string;
 }
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -286,6 +286,63 @@ export default function DashboardPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Company Work Summary */}
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>สรุปผลงานรายบุคคลแยกตามบริษัท</h2>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', color: '#64748b', fontSize: '0.8rem' }}>ผู้รับผิดชอบ</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>GFS</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>MHL</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>CAR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.filter(m => m.status !== 'inactive').map((member, index) => {
+                  const getStats = (company: string) => {
+                    const cTasks = member.tasks.filter(t => t.company === company);
+                    const cContents = member.contents.filter(c => c.company === company);
+                    return { t: cTasks.length, c: cContents.length };
+                  };
+                  const gfs = getStats('GFS');
+                  const mhl = getStats('MHL');
+                  const car = getStats('CAR');
+
+                  const renderStats = (stats: {t: number, c: number}) => {
+                    if (stats.t === 0 && stats.c === 0) return <span style={{ color: '#cbd5e1' }}>-</span>;
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                        {stats.t > 0 && <span style={{ fontSize: '0.7rem', backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 600 }}>{stats.t} งาน</span>}
+                        {stats.c > 0 && <span style={{ fontSize: '0.7rem', backgroundColor: '#fdf4ff', color: '#d946ef', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 600 }}>{stats.c} คอนเทนต์</span>}
+                      </div>
+                    );
+                  };
+
+                  const activeMembersCount = members.filter(m => m.status !== 'inactive').length;
+
+                  return (
+                    <tr key={member.id} style={{ borderBottom: index < activeMembersCount - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                      <td style={{ padding: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <MemberAvatar name={member.name} />
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{member.name}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{renderStats(gfs)}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{renderStats(mhl)}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{renderStats(car)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
