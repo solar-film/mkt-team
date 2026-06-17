@@ -67,7 +67,7 @@ export default function TaskBoard() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: ''
+    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
   });
   
   const [contentForm, setContentForm] = useState({
@@ -171,14 +171,15 @@ export default function TaskBoard() {
     
     if (item.itemType === 'task') {
       setTaskForm({
-        title: item.title || '',
+        title: item.title,
         description: item.description || '',
         memberId: item.memberId || '',
         priority: item.priority || 'medium',
-        startDate: item.startDate || '',
-        deadline: item.deadline || '',
+        startDate: item.startDate ? new Date(item.startDate).toISOString() : '',
+        deadline: item.deadline ? new Date(item.deadline).toISOString() : '',
         kpiId: (item as any).kpiId || '',
-        link: item.link || ''
+        link: item.link || '',
+        company: item.company || 'GFS'
       });
     } else {
       setContentForm({
@@ -217,7 +218,7 @@ export default function TaskBoard() {
         });
       }
       setIsModalOpen(false);
-      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' });
+      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -447,7 +448,7 @@ export default function TaskBoard() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 auto' }}>
-          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
           <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
@@ -586,6 +587,14 @@ export default function TaskBoard() {
                 {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">บริษัท/แบรนด์ *</label>
+              <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="CAR">CAR</option>
+              </select>
+            </div>
 
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label">ความสำคัญ *</label>
@@ -664,6 +673,14 @@ export default function TaskBoard() {
               <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
                 <option value="">-- เลือกผู้รับผิดชอบ --</option>
                 {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">บริษัท/แบรนด์ *</label>
+              <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="CAR">CAR</option>
               </select>
             </div>
             <div className="form-group" style={{ marginTop: '1rem' }}>

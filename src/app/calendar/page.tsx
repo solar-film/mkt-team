@@ -39,7 +39,7 @@ export default function CalendarPage() {
   });
 
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: ''
+    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
   });
   const [contentForm, setContentForm] = useState({
     title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
@@ -131,7 +131,7 @@ export default function CalendarPage() {
       title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
     });
     setTaskForm({
-      title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: dateStr, kpiId: '', link: ''
+      title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: dateStr, kpiId: '', link: '', company: 'GFS'
     });
     setEventForm({ title: '', date: dateStr, time: '', type: 'event' });
     setIsModalOpen(true);
@@ -146,14 +146,15 @@ export default function CalendarPage() {
     if (item.type === 'task') {
       const fullItem = item.fullItem || item;
       setTaskForm({
-        title: item.title || '',
+        title: fullItem.title,
         description: fullItem.description || '',
-        memberId: item.memberId || '',
+        memberId: fullItem.memberId || '',
         priority: fullItem.priority || 'medium',
-        startDate: fullItem.startDate || '',
-        deadline: fullItem.deadline || '',
+        startDate: fullItem.startDate ? new Date(fullItem.startDate).toISOString() : '',
+        deadline: fullItem.deadline ? new Date(fullItem.deadline).toISOString() : '',
         kpiId: fullItem.kpiId || '',
-        link: fullItem.link || ''
+        link: fullItem.link || '',
+        company: fullItem.company || 'GFS'
       });
     } else if (item.type === 'content') {
       const fullItem = item.fullItem || item;
@@ -201,7 +202,7 @@ export default function CalendarPage() {
         });
       }
       setIsModalOpen(false);
-      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '' });
+      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -825,6 +826,14 @@ export default function CalendarPage() {
                 {membersList.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">บริษัท/แบรนด์ *</label>
+              <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="CAR">CAR</option>
+              </select>
+            </div>
 
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label">ความสำคัญ *</label>
@@ -904,6 +913,14 @@ export default function CalendarPage() {
               </select>
             </div>
 
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">บริษัท/แบรนด์ *</label>
+              <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="CAR">CAR</option>
+              </select>
+            </div>
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>
               <input type="text" className="form-input" placeholder="เช่น https://facebook.com/..." value={contentForm.link} onChange={e => setContentForm({...contentForm, link: e.target.value})} />
