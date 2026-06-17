@@ -330,7 +330,10 @@ export default function DashboardPage() {
                       {isTask ? <HiClipboardDocumentList size={14} /> : <HiDocumentText size={14} />}
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</h4>
+                      <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {task.company ? <span style={{ color: '#0ea5e9', marginRight: '4px' }}>[{task.company}]</span> : null}
+                        {task.title}
+                      </h4>
                       <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.memberName}</div>
                     </div>
                   </div>
