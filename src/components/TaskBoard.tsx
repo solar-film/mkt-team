@@ -295,22 +295,26 @@ export default function TaskBoard() {
           {displayedItems.map(item => (
             <div key={item.id} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: item.itemType === 'content' ? '4px solid var(--color-primary)' : 'none' }}>
               <div className="task-header">
-                <h3 className="task-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {item.itemType === 'task' ? <HiClipboardDocumentList style={{ color: 'var(--color-text-secondary)' }} /> : <HiDocumentText style={{ color: 'var(--color-primary)' }} />}
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 className="task-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                  <div style={{ flexShrink: 0, display: 'flex' }}>
+                    {item.itemType === 'task' ? <HiClipboardDocumentList style={{ color: 'var(--color-text-secondary)' }} /> : <HiDocumentText style={{ color: 'var(--color-primary)' }} />}
+                  </div>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
                     {item.company ? `[${item.company}] ` : ''}{item.title}
                   </span>
                   {item.link && (
-                    <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', color: 'var(--color-primary)', display: 'inline-flex', padding: '0.2rem' }}>
+                    <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', color: 'var(--color-primary)', display: 'inline-flex', padding: '0.2rem', flexShrink: 0 }}>
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                       </svg>
                     </a>
                   )}
                 </h3>
-                {item.itemType === 'task' ? getPriorityBadge(item.priority) : (
-                  <span className="badge badge-secondary">{item.platform}</span>
-                )}
+                <div style={{ flexShrink: 0, marginLeft: '0.5rem' }}>
+                  {item.itemType === 'task' ? getPriorityBadge(item.priority) : (
+                    <span className="badge badge-secondary">{item.platform}</span>
+                  )}
+                </div>
               </div>
               
               {item.itemType === 'task' && item.description && <p style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>{item.description}</p>}
@@ -529,8 +533,8 @@ export default function TaskBoard() {
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-                      <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.company ? `[${item.company}] ` : ''}{item.title}</span>
+                      <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.25rem', minWidth: 0 }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{item.company ? `[${item.company}] ` : ''}{item.title}</span>
                         {item.link && (
                           <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', flexShrink: 0 }}>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
