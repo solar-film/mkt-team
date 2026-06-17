@@ -278,6 +278,22 @@ export default function TaskBoard() {
       if (filterDay && d.getDate() !== parseInt(filterDay)) return false;
     }
     return true;
+  }).sort((a, b) => {
+    if (a.status === 'done' && b.status === 'done') {
+      const dateA = a.deadline || a.publishDate || a.startDate;
+      const dateB = b.deadline || b.publishDate || b.startDate;
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    } else {
+      const dateA = a.deadline || a.publishDate || a.startDate;
+      const dateB = b.deadline || b.publishDate || b.startDate;
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return new Date(dateA).getTime() - new Date(dateB).getTime();
+    }
   });
 
   const renderColumn = (status: string, title: string) => {
