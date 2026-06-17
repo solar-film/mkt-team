@@ -40,10 +40,10 @@ export default function CalendarPage() {
   });
 
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
+    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: ''
   });
   const [contentForm, setContentForm] = useState({
-    title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
+    title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: ''
   });
 
   const fetchData = async () => {
@@ -132,10 +132,10 @@ export default function CalendarPage() {
     setEditingItemId(null);
     setNewItemType('content');
     setContentForm({
-      title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
+      title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: dateStr, kpiId: '', link: ''
     });
     setTaskForm({
-      title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: dateStr, kpiId: '', link: '', company: 'GFS'
+      title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: dateStr, kpiId: '', link: '', company: ''
     });
     setEventForm({ title: '', date: dateStr, time: '', type: 'event' });
     setIsModalOpen(true);
@@ -207,7 +207,7 @@ export default function CalendarPage() {
         });
       }
       setIsModalOpen(false);
-      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' });
+      setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -237,7 +237,7 @@ export default function CalendarPage() {
         });
       }
       setIsModalOpen(false);
-      setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
+      setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -839,6 +839,7 @@ export default function CalendarPage() {
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
                 <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
+                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
                   <option value="GFS">GFS</option>
                   <option value="MHL">MHL</option>
                   <option value="CAR">CAR</option>
@@ -901,6 +902,7 @@ export default function CalendarPage() {
               <div className="form-group">
                 <label className="form-label">ประเภท</label>
                 <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
+                  <option value="">-- เลือกประเภท --</option>
                   <option value="article">บทความ</option>
                   <option value="post">โพสต์</option>
                   <option value="video">วิดีโอ</option>
@@ -911,6 +913,7 @@ export default function CalendarPage() {
               <div className="form-group">
                 <label className="form-label">แพลตฟอร์ม</label>
                 <select className="form-select" value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
+                  <option value="">-- เลือกแพลตฟอร์ม --</option>
                   <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram</option>
                   <option value="TikTok">TikTok</option>
@@ -931,6 +934,7 @@ export default function CalendarPage() {
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
                 <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
                   <option value="GFS">GFS</option>
                   <option value="MHL">MHL</option>
                   <option value="CAR">CAR</option>

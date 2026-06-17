@@ -71,11 +71,11 @@ export default function TaskBoard() {
   const [validationAlert, setValidationAlert] = useState<{ isOpen: boolean; item: UnifiedItem | null }>({ isOpen: false, item: null });
   
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
+    title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: ''
   });
   
   const [contentForm, setContentForm] = useState({
-    title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
+    title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: ''
   });
 
   const fetchData = async () => {
@@ -498,7 +498,7 @@ export default function TaskBoard() {
           <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
-          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มคอนเท้น
           </button>
         </div>
@@ -608,7 +608,7 @@ export default function TaskBoard() {
         </div>
 
         <button 
-          onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}
+          onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}
           style={{ position: 'fixed', bottom: '80px', right: '20px', width: '60px', height: '60px', borderRadius: '30px', backgroundColor: '#3b82f6', color: 'white', border: 'none', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, cursor: 'pointer' }}
         >
           <HiPlus size={32} />
@@ -641,6 +641,7 @@ export default function TaskBoard() {
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
                 <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
+                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
                   <option value="GFS">GFS</option>
                   <option value="MHL">MHL</option>
                   <option value="CAR">CAR</option>
@@ -705,6 +706,7 @@ export default function TaskBoard() {
               <div className="form-group">
                 <label className="form-label">ประเภท</label>
                 <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
+                  <option value="">-- เลือกประเภท --</option>
                   <option value="article">บทความ</option>
                   <option value="post">โพสต์</option>
                   <option value="video">วิดีโอ</option>
@@ -715,6 +717,7 @@ export default function TaskBoard() {
               <div className="form-group">
                 <label className="form-label">แพลตฟอร์ม</label>
                 <select className="form-select" value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
+                  <option value="">-- เลือกแพลตฟอร์ม --</option>
                   <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram</option>
                   <option value="TikTok">TikTok</option>
@@ -735,6 +738,7 @@ export default function TaskBoard() {
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
                 <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
                   <option value="GFS">GFS</option>
                   <option value="MHL">MHL</option>
                   <option value="CAR">CAR</option>
