@@ -74,7 +74,7 @@ export default function TaskBoard() {
   });
   
   const [contentForm, setContentForm] = useState({
-    title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
+    title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
   });
 
   const fetchData = async () => {
@@ -187,6 +187,7 @@ export default function TaskBoard() {
     } else {
       setContentForm({
         title: item.title || '',
+        description: item.description || '',
         type: item.contentType || 'post',
         platform: item.platform || 'Facebook',
         memberId: item.memberId || '',
@@ -251,7 +252,7 @@ export default function TaskBoard() {
         });
       }
       setIsModalOpen(false);
-      setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
+      setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -491,7 +492,7 @@ export default function TaskBoard() {
           <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
-          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มคอนเท้น
           </button>
         </div>
@@ -601,7 +602,7 @@ export default function TaskBoard() {
         </div>
 
         <button 
-          onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}
+          onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}
           style={{ position: 'fixed', bottom: '80px', right: '20px', width: '60px', height: '60px', borderRadius: '30px', backgroundColor: '#3b82f6', color: 'white', border: 'none', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, cursor: 'pointer' }}
         >
           <HiPlus size={32} />
@@ -690,7 +691,11 @@ export default function TaskBoard() {
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
             </div>
-            <div className="form-row">
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">รายละเอียดงาน</label>
+              <textarea className="form-input" rows={3} value={contentForm.description} onChange={e => setContentForm({...contentForm, description: e.target.value})} />
+            </div>
+            <div className="form-row" style={{ marginTop: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">ประเภท</label>
                 <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
@@ -713,20 +718,22 @@ export default function TaskBoard() {
                 </select>
               </div>
             </div>
-            <div className="form-group mt-4">
-              <label className="form-label">ผู้สร้าง *</label>
-              <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
-                <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label className="form-label">บริษัท/แบรนด์ *</label>
-              <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
-                <option value="GFS">GFS</option>
-                <option value="MHL">MHL</option>
-                <option value="CAR">CAR</option>
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">ผู้รับผิดชอบ *</label>
+                <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
+                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                  {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">บริษัท/แบรนด์ *</label>
+                <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
+                  <option value="GFS">GFS</option>
+                  <option value="MHL">MHL</option>
+                  <option value="CAR">CAR</option>
+                </select>
+              </div>
             </div>
             <div className="form-group" style={{ marginTop: '1rem' }}>
               <label className="form-label">ลิงก์ผลงาน (ถ้ามี)</label>

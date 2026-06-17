@@ -43,7 +43,7 @@ export default function CalendarPage() {
     title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
   });
   const [contentForm, setContentForm] = useState({
-    title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
+    title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: ''
   });
 
   const fetchData = async () => {
@@ -132,7 +132,7 @@ export default function CalendarPage() {
     setEditingItemId(null);
     setNewItemType('content');
     setContentForm({
-      title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
+      title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: dateStr, kpiId: '', link: ''
     });
     setTaskForm({
       title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: dateStr, kpiId: '', link: '', company: 'GFS'
@@ -164,6 +164,7 @@ export default function CalendarPage() {
       const fullItem = item.fullItem || item;
       setContentForm({
         title: item.title || '',
+        description: fullItem.description || '',
         type: fullItem.type || 'post',
         platform: fullItem.platform || 'Facebook',
         memberId: item.memberId || '',
@@ -236,7 +237,7 @@ export default function CalendarPage() {
         });
       }
       setIsModalOpen(false);
-      setContentForm({ title: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
+      setContentForm({ title: '', description: '', type: 'post', platform: 'Facebook', memberId: '', company: 'GFS', publishDate: '', kpiId: '', link: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -892,7 +893,11 @@ export default function CalendarPage() {
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
             </div>
-            <div className="form-row">
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">รายละเอียดงาน</label>
+              <textarea className="form-input" rows={3} value={contentForm.description} onChange={e => setContentForm({...contentForm, description: e.target.value})} />
+            </div>
+            <div className="form-row" style={{ marginTop: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">ประเภท</label>
                 <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>

@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       memberId: row.get('memberId'),
       link: row.get('link') || '',
       kpiId: row.get('kpiId') || '',
+      description: row.get('description') || null,
       createdAt: row.get('createdAt')
     }))
 
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
     let headerChanged = false
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+    if (!newHeaders.includes('description')) { newHeaders.push('description'); headerChanged = true; }
 
     if (headerChanged) {
       try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
@@ -103,6 +105,7 @@ export async function POST(request: NextRequest) {
       company: company || 'GFS',
       kpiId: body.kpiId || '',
       link: body.link || '',
+      description: body.description || '',
       createdAt: new Date().toISOString()
     }
 
@@ -154,7 +157,7 @@ export async function PUT(request: NextRequest) {
     const oldStatus = row.get('status')
     const oldKpiId = row.get('kpiId')
 
-    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link', 'kpiId']
+    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link', 'kpiId', 'description']
     fields.forEach(f => {
       if (data[f] !== undefined) row.assign({ [f]: data[f] })
     })
