@@ -51,6 +51,7 @@ export default function TaskBoard() {
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [filterCompany, setFilterCompany] = useState('all');
   const [filterDay, setFilterDay] = useState('');
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
@@ -267,6 +268,7 @@ export default function TaskBoard() {
 
   const filteredItems = items.filter(item => {
     if (filterType !== 'all' && item.itemType !== filterType) return false;
+    if (filterCompany !== 'all' && item.company !== filterCompany) return false;
     if (filterMonth && filterYear) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
       if (!dateStr) return false;
@@ -401,6 +403,17 @@ export default function TaskBoard() {
             {members.map(m => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
+          </select>
+          <select 
+            className="form-select" 
+            style={{ width: '100%', minWidth: '90px', maxWidth: '120px' }}
+            value={filterCompany}
+            onChange={(e) => setFilterCompany(e.target.value)}
+          >
+            <option value="all">ทุกบริษัท</option>
+            <option value="GFS">GFS</option>
+            <option value="MHL">MHL</option>
+            <option value="CAR">CAR</option>
           </select>
           <select 
             className="form-select" 

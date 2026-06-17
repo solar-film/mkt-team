@@ -45,6 +45,7 @@ export default function ReportsPage() {
   const [memberFilter, setMemberFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('all');
   
   const currentDate = new Date();
   const [dateFilterType, setDateFilterType] = useState('month'); // 'month' or 'day' or 'all'
@@ -109,6 +110,11 @@ export default function ReportsPage() {
     if (platformFilter !== 'all') {
       if (item.itemType === 'task') return false;
       if (item.platform !== platformFilter) return false;
+    }
+    
+    // Company Filter
+    if (companyFilter !== 'all') {
+      if (item.company !== companyFilter) return false;
     }
     
     // 4. Date Filter
@@ -186,9 +192,19 @@ export default function ReportsPage() {
               <option value="Facebook">Facebook</option>
               <option value="Instagram">Instagram</option>
               <option value="TikTok">TikTok</option>
-              <option value="Website">Website</option>
               <option value="YouTube">YouTube</option>
-              <option value="Google Map">Google Map</option>
+              <option value="LINE OA">LINE OA</option>
+              <option value="Website">Website</option>
+            </select>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}>บริษัท/แบรนด์</label>
+            <select className="form-input" value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="all">ทุกแบรนด์</option>
+              <option value="GFS">GFS</option>
+              <option value="MHL">MHL</option>
+              <option value="CAR">CAR</option>
             </select>
           </div>
 

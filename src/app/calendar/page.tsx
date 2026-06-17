@@ -113,6 +113,9 @@ export default function CalendarPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setViewMode('week');
+    }
     fetchData();
     
     // Auto-refresh data every 2 minutes (120,000 ms)
