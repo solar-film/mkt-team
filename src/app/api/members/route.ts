@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
               title: row.get('title'),
               status: row.get('status'),
               priority: row.get('priority'),
+              company: row.get('company'),
               deadline: row.get('deadline'),
               link: row.get('link'),
               kpiId: row.get('kpiId'),
@@ -97,6 +98,7 @@ export async function GET(request: NextRequest) {
               status: row.get('status'),
               publishDate: row.get('publishDate'),
               platform: row.get('platform'),
+              company: row.get('company'),
               link: row.get('link'),
               kpiId: row.get('kpiId'),
               createdAt: row.get('createdAt')
