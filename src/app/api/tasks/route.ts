@@ -214,22 +214,6 @@ export async function PUT(request: NextRequest) {
       await updateKpi(newKpiId, 1);
     }
 
-    if (Object.keys(data).length > 0) {
-      try {
-        const title = data.title || row.get('title')
-        const memberId = data.memberId || row.get('memberId')
-        const mRows = doc.sheetsByTitle['TeamMember'] ? await doc.sheetsByTitle['TeamMember'].getRows() : []
-        const mRow = mRows.find(r => r.get('id') === memberId)
-        const memberName = mRow ? mRow.get('name') : 'ไม่ระบุ'
-        const dDate = data.deadline !== undefined ? data.deadline : row.get('deadline')
-        const message = `\n✏️ [แก้ไขงาน] ${title}\n👤 รับผิดชอบ: ${memberName}\n📅 กำหนดส่ง: ${dDate ? new Date(dDate).toLocaleDateString('th-TH') : '-'}`
-        const { sendLineNotify } = await import('@/lib/line-notify')
-        await sendLineNotify(message)
-      } catch (e) {
-        console.error('Error sending line notify:', e)
-      }
-    }
-
     return NextResponse.json({ id, ...body })
   } catch (error) {
     console.error('API Error:', error)

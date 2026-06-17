@@ -42,11 +42,11 @@ export async function GET(request: Request) {
       const deadline = new Date(deadlineStr);
       const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
 
-      // If deadline is today, tomorrow, or past due
+      // If deadline is today, tomorrow
       const diffTime = deadlineDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays <= 2) { // Notify 2 days before, 1 day before, today, and overdue
+      if (diffDays === 1 || diffDays === 0) { // Notify 1 day before and today
         const memberId = row.get('memberId');
         const member = members.find(m => m.id === memberId);
         const memberName = member ? member.name : 'ไม่ระบุ';
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
         const diffTime = deadlineDate.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays <= 2) {
+        if (diffDays === 1 || diffDays === 0) {
           const memberId = row.get('memberId');
           const member = members.find(m => m.id === memberId);
           const memberName = member ? member.name : 'ไม่ระบุ';
