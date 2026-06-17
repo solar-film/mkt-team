@@ -68,6 +68,7 @@ export default function TaskBoard() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [viewItem, setViewItem] = useState<UnifiedItem | null>(null);
+  const [validationAlert, setValidationAlert] = useState<{ isOpen: boolean; item: UnifiedItem | null }>({ isOpen: false, item: null });
   
   const [taskForm, setTaskForm] = useState({
     title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
@@ -133,8 +134,7 @@ export default function TaskBoard() {
 
   const handleStatusChange = async (item: UnifiedItem, newStatus: string) => {
     if (item.itemType === 'content' && newStatus === 'done' && !item.link) {
-      alert('กรุณาใส่ "ลิงก์ผลงาน" ก่อนเปลี่ยนสถานะเป็น เสร็จสิ้น (เพื่อนับ KPI)');
-      handleEditClick(item);
+      setValidationAlert({ isOpen: true, item });
       return;
     }
 
@@ -859,6 +859,23 @@ export default function TaskBoard() {
           </div>
         </Modal>
       )}
+
+      <ConfirmModal
+        isOpen={validationAlert.isOpen}
+        onClose={() => setValidationAlert({ isOpen: false, item: null })}
+        onConfirm={() => {
+          const itemToEdit = validationAlert.item;
+          setValidationAlert({ isOpen: false, item: null });
+          if (itemToEdit) {
+            handleEditClick(itemToEdit);
+          }
+        }}
+        title="ข้อมูลไม่ครบถ้วน"
+        message={`กรุณาใส่ "ลิงก์ผลงาน" ก่อนเปลี่ยนสถานะเป็น เสร็จสิ้น (เพื่อใช้นับ KPI)`}
+        confirmText="ใส่ลิงก์ผลงาน"
+        cancelText="ปิด"
+        type="warning"
+      />
 
       <ConfirmModal
         isOpen={isConfirmOpen}
