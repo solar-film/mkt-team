@@ -297,7 +297,9 @@ export default function TaskBoard() {
               <div className="task-header">
                 <h3 className="task-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {item.itemType === 'task' ? <HiClipboardDocumentList style={{ color: 'var(--color-text-secondary)' }} /> : <HiDocumentText style={{ color: 'var(--color-primary)' }} />}
-                  {item.title}
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.company ? `[${item.company}] ` : ''}{item.title}
+                  </span>
                   {item.link && (
                     <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', color: 'var(--color-primary)', display: 'inline-flex', padding: '0.2rem' }}>
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
@@ -528,7 +530,7 @@ export default function TaskBoard() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                       <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.company ? `[${item.company}] ` : ''}{item.title}</span>
                         {item.link && (
                           <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', flexShrink: 0 }}>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>

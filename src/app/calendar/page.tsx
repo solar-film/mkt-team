@@ -395,7 +395,7 @@ export default function CalendarPage() {
             <div 
               key={`${item.type}-${item.id}`} 
               className={item.type === 'event' ? 'calendar-task-item status-event' : `calendar-task-item status-${item.status} ${spanClass}`} 
-              title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
+              title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
               onClick={(e) => handleItemClick(e, item)}
               style={item.type === 'event' 
                 ? { backgroundColor: '#fce7f3', borderColor: '#ec4899', color: '#be185d', fontWeight: 600, height: '28px' } 
@@ -613,7 +613,9 @@ export default function CalendarPage() {
                         </div>
                         <div style={{ flex: 1, backgroundColor: bgColor, borderLeft: `4px solid ${borderColor}`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
                           <div>
-                            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>{item.title}</h4>
+                            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>
+                              {item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}{item.title}
+                            </h4>
                             <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                               {item.type === 'task' ? item.fullItem?.description || 'ไม่มีรายละเอียด' : `${item.fullItem?.type} - ${item.fullItem?.platform}`}
                             </span>
@@ -772,7 +774,9 @@ export default function CalendarPage() {
                     </div>
                     <div style={{ flex: 1, backgroundColor: bgColor, borderLeft: `4px solid ${borderColor}`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
                       <div>
-                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>{item.title}</h4>
+                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>
+                          {item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}{item.title}
+                        </h4>
                         <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                           {item.type === 'task' ? item.fullItem?.description || 'งานทั่วไป' : `${item.fullItem?.type} - ${item.fullItem?.platform}`}
                         </span>
