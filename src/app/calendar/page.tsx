@@ -7,6 +7,7 @@ import MemberAvatar from '@/components/MemberAvatar';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
+import { getCompanyColor } from '@/lib/colors';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -614,7 +615,7 @@ export default function CalendarPage() {
                         <div style={{ flex: 1, backgroundColor: bgColor, borderLeft: `4px solid ${borderColor}`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
                           <div>
                             <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>
-                              {item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}{item.title}
+                              {item.fullItem?.company ? <span style={{ color: getCompanyColor(item.fullItem.company), marginRight: '4px' }}>[{item.fullItem.company}]</span> : null}{item.title}
                             </h4>
                             <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                               {item.type === 'task' ? item.fullItem?.description || 'ไม่มีรายละเอียด' : `${item.fullItem?.type} - ${item.fullItem?.platform}`}
@@ -775,7 +776,7 @@ export default function CalendarPage() {
                     <div style={{ flex: 1, backgroundColor: bgColor, borderLeft: `4px solid ${borderColor}`, borderRadius: '0 12px 12px 0', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
                       <div>
                         <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 600, color: borderColor }}>
-                          {item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}{item.title}
+                          {item.fullItem?.company ? <span style={{ color: getCompanyColor(item.fullItem.company), marginRight: '4px' }}>[{item.fullItem.company}]</span> : null}{item.title}
                         </h4>
                         <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                           {item.type === 'task' ? item.fullItem?.description || 'งานทั่วไป' : `${item.fullItem?.type} - ${item.fullItem?.platform}`}

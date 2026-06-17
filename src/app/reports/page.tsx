@@ -5,6 +5,7 @@ import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentLis
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
+import { getCompanyColor } from '@/lib/colors';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
@@ -279,7 +280,7 @@ export default function ReportsPage() {
                     </span>
                   </td>
                   <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.company ? `[${item.company}] ` : ''}{item.title}
+                    {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
                   </td>
                   <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                     {item.link && (
@@ -311,7 +312,7 @@ export default function ReportsPage() {
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.company ? `[${item.company}] ` : ''}{item.title}</h4>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}</h4>
                       {item.link && (
                         <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', padding: '0.35rem', backgroundColor: '#eff6ff', borderRadius: '6px' }} title="เปิดลิงก์">
                           <HiArrowTopRightOnSquare size={14} />

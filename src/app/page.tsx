@@ -10,6 +10,7 @@ import {
 import StatsCard from '@/components/StatsCard';
 import MemberAvatar from '@/components/MemberAvatar';
 import ProgressBar from '@/components/ProgressBar';
+import { getCompanyColor } from '@/lib/colors';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
@@ -320,8 +321,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
             {upcomingTasks.length > 0 ? upcomingTasks.map((task, index) => {
               const isTask = task.itemType === 'task';
-              const colors = ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4'];
-              const color = isTask ? colors[index % colors.length] : ((task as any).platform === 'Facebook' ? '#3b82f6' : '#ec4899');
+              const color = getCompanyColor((task as any).company);
               
               return (
                 <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 0', borderBottom: index < upcomingTasks.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {task.company ? <span style={{ color: '#0ea5e9', marginRight: '4px' }}>[{task.company}]</span> : null}
+                        {task.company ? <span style={{ color: color, marginRight: '4px' }}>[{task.company}]</span> : null}
                         {task.title}
                       </h4>
                       <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.memberName}</div>

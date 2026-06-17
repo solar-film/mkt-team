@@ -8,6 +8,7 @@ import MemberAvatar from '@/components/MemberAvatar';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
+import { getCompanyColor } from '@/lib/colors';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -534,7 +535,7 @@ export default function TaskBoard() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                       <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.25rem', minWidth: 0 }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{item.company ? `[${item.company}] ` : ''}{item.title}</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}</span>
                         {item.link && (
                           <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', flexShrink: 0 }}>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
