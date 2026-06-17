@@ -34,6 +34,9 @@ export default function MemberAvatar({
   if (name && name.includes('เพลง')) {
     colorIndex = 5; // Pink gradient
   }
+  if (name && name.includes('แต้ว')) {
+    colorIndex = 0; // Purple gradient
+  }
   
   let initial = name ? name.charAt(0) : '';
   const leadingVowels = ['เ', 'แ', 'โ', 'ใ', 'ไ'];
