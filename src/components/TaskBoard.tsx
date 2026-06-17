@@ -623,20 +623,22 @@ export default function TaskBoard() {
               <label className="form-label">ลิงก์ตรวจสอบงาน (ถ้ามี)</label>
               <input type="text" className="form-input" placeholder="เช่น https://docs.google.com/..." value={taskForm.link} onChange={e => setTaskForm({...taskForm, link: e.target.value})} />
             </div>
-            <div className="form-group">
-              <label className="form-label">ผู้รับผิดชอบ *</label>
-              <select className="form-select" required value={taskForm.memberId} onChange={e => setTaskForm({...taskForm, memberId: e.target.value, kpiId: ''})}>
-                <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
-            <div className="form-group" style={{ marginTop: '1rem' }}>
-              <label className="form-label">บริษัท/แบรนด์ *</label>
-              <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
-                <option value="GFS">GFS</option>
-                <option value="MHL">MHL</option>
-                <option value="CAR">CAR</option>
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">ผู้รับผิดชอบ *</label>
+                <select className="form-select" required value={taskForm.memberId} onChange={e => setTaskForm({...taskForm, memberId: e.target.value, kpiId: ''})}>
+                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                  {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">บริษัท/แบรนด์ *</label>
+                <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
+                  <option value="GFS">GFS</option>
+                  <option value="MHL">MHL</option>
+                  <option value="CAR">CAR</option>
+                </select>
+              </div>
             </div>
 
             <div className="form-group" style={{ marginTop: '1rem' }}>
