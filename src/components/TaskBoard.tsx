@@ -132,6 +132,12 @@ export default function TaskBoard() {
   }, [filterMemberId]);
 
   const handleStatusChange = async (item: UnifiedItem, newStatus: string) => {
+    if (item.itemType === 'content' && newStatus === 'done' && !item.link) {
+      alert('กรุณาใส่ "ลิงก์ผลงาน" ก่อนเปลี่ยนสถานะเป็น เสร็จสิ้น (เพื่อนับ KPI)');
+      handleEditClick(item);
+      return;
+    }
+
     try {
       // Optimistic update
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i));
