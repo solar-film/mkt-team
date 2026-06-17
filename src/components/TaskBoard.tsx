@@ -393,7 +393,7 @@ export default function TaskBoard() {
   return (
     <div style={{ padding: '0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
           <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>ผู้รับผิดชอบ:</label>
           <select 
             className="form-select" 
