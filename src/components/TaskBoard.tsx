@@ -8,7 +8,7 @@ import MemberAvatar from '@/components/MemberAvatar';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
-import { getCompanyColor } from '@/lib/colors';
+import { getCompanyColor, getMemberColor } from '@/lib/colors';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -318,7 +318,7 @@ export default function TaskBoard() {
         
         <div className="kanban-cards-container">
           {displayedItems.map(item => (
-            <div key={item.id} onClick={() => setViewItem(item)} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: item.itemType === 'content' ? '4px solid var(--color-primary)' : 'none', cursor: 'pointer' }}>
+            <div key={item.id} onClick={() => setViewItem(item)} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: `4px solid ${getMemberColor(item.member?.name)}`, cursor: 'pointer' }}>
               <div className="task-header">
                 <h3 className="task-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                   <div style={{ flexShrink: 0, display: 'flex' }}>
@@ -546,7 +546,7 @@ export default function TaskBoard() {
             const iconColor = item.status === 'todo' ? '#f97316' : item.status === 'in_progress' ? '#3b82f6' : '#10b981';
             
             return (
-              <div key={item.id} onClick={() => setViewItem(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
+              <div key={item.id} onClick={() => setViewItem(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', borderLeft: `4px solid ${getMemberColor(item.member?.name)}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
                 <div 
                   onClick={(e) => { 
                     e.stopPropagation(); 
