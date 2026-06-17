@@ -67,6 +67,7 @@ export default function TaskBoard() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [viewItem, setViewItem] = useState<UnifiedItem | null>(null);
   
   const [taskForm, setTaskForm] = useState({
     title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: 'GFS'
@@ -310,7 +311,7 @@ export default function TaskBoard() {
         
         <div className="kanban-cards-container">
           {displayedItems.map(item => (
-            <div key={item.id} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: item.itemType === 'content' ? '4px solid var(--color-primary)' : 'none' }}>
+            <div key={item.id} onClick={() => setViewItem(item)} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: item.itemType === 'content' ? '4px solid var(--color-primary)' : 'none', cursor: 'pointer' }}>
               <div className="task-header">
                 <h3 className="task-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                   <div style={{ flexShrink: 0, display: 'flex' }}>
@@ -535,7 +536,7 @@ export default function TaskBoard() {
             const iconColor = item.status === 'todo' ? '#f97316' : item.status === 'in_progress' ? '#3b82f6' : '#10b981';
             
             return (
-              <div key={item.id} onClick={() => handleEditClick(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
+              <div key={item.id} onClick={() => setViewItem(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
                 <div 
                   onClick={(e) => { 
                     e.stopPropagation(); 
@@ -766,6 +767,77 @@ export default function TaskBoard() {
           </form>
         )}
       </Modal>
+
+      {/* View Item Modal */}
+      {viewItem && (
+        <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="รายละเอียด">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {viewItem.itemType === 'task' ? <HiClipboardDocumentList size={24} style={{ color: 'var(--color-text-secondary)' }} /> : <HiDocumentText size={24} style={{ color: 'var(--color-primary)' }} />}
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                {viewItem.company ? <span style={{ color: getCompanyColor(viewItem.company), marginRight: '0.5rem' }}>[{viewItem.company}]</span> : null}
+                {viewItem.title}
+              </h3>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <MemberAvatar name={viewItem.member?.name || 'ไม่ระบุ'} size="sm" />
+                <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{viewItem.member?.name || 'ไม่ระบุ'}</span>
+              </div>
+              <span style={{ backgroundColor: viewItem.status === 'todo' ? '#fffbeb' : viewItem.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: viewItem.status === 'todo' ? '#f97316' : viewItem.status === 'in_progress' ? '#3b82f6' : '#10b981', padding: '0.25rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                {viewItem.status === 'todo' ? 'รอดำเนินการ' : viewItem.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จเรียบร้อย'}
+              </span>
+              {viewItem.itemType === 'task' && viewItem.priority && (
+                <span className={`badge priority-${viewItem.priority}`}>
+                  {viewItem.priority === 'high' ? 'ด่วน' : viewItem.priority === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                </span>
+              )}
+            </div>
+
+            <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', border: '1px solid #e2e8f0' }}>
+              {viewItem.description || viewItem.platform || 'ไม่มีรายละเอียดเพิ่มเติม'}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{viewItem.itemType === 'task' ? 'วันที่เริ่ม' : 'วันที่เผยแพร่'}</span>
+                <span style={{ fontSize: '0.9rem', color: '#1e293b' }}>
+                  {viewItem.itemType === 'task' 
+                    ? (viewItem.startDate ? formatDateTime(viewItem.startDate) : '-')
+                    : (viewItem.publishDate ? formatDateTime(viewItem.publishDate) : '-')}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{viewItem.itemType === 'task' ? 'กำหนดส่ง' : 'แพลตฟอร์ม'}</span>
+                <span style={{ fontSize: '0.9rem', color: '#1e293b' }}>
+                  {viewItem.itemType === 'task'
+                    ? (viewItem.deadline ? formatDateTime(viewItem.deadline) : '-')
+                    : (viewItem.platform || '-')}
+                </span>
+              </div>
+            </div>
+
+            {viewItem.link && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <a href={viewItem.link.startsWith('http') ? viewItem.link : `https://${viewItem.link}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.2rem', height: '1.2rem', marginRight: '0.5rem' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                  </svg>
+                  เปิดลิงก์แนบ
+                </a>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+              <button className="btn btn-secondary" onClick={() => setViewItem(null)}>ปิด</button>
+              <button className="btn btn-primary" onClick={() => { setViewItem(null); handleEditClick(viewItem); }}>
+                <HiOutlinePencilSquare /> แก้ไข
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       <ConfirmModal
         isOpen={isConfirmOpen}
