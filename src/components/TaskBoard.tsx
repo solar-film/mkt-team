@@ -51,6 +51,7 @@ export default function TaskBoard() {
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [filterDay, setFilterDay] = useState('');
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [showAllDone, setShowAllDone] = useState(false);
@@ -270,6 +271,7 @@ export default function TaskBoard() {
       if (!dateStr) return false;
       const d = new Date(dateStr);
       if (d.getMonth() + 1 !== parseInt(filterMonth) || d.getFullYear() !== parseInt(filterYear)) return false;
+      if (filterDay && d.getDate() !== parseInt(filterDay)) return false;
     }
     return true;
   });
@@ -410,6 +412,17 @@ export default function TaskBoard() {
             <option value="content">คอนเทนต์</option>
           </select>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <select 
+              className="form-select" 
+              style={{ minWidth: '80px' }}
+              value={filterDay}
+              onChange={(e) => setFilterDay(e.target.value)}
+            >
+              <option value="">ทุกวัน</option>
+              {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                <option key={d} value={d.toString()}>วันที่ {d}</option>
+              ))}
+            </select>
             <select 
               className="form-select" 
               style={{ minWidth: '80px' }}
