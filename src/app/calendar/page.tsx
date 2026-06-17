@@ -912,8 +912,8 @@ export default function CalendarPage() {
             </div>
             <div className="form-row" style={{ marginTop: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">ประเภท</label>
-                <select className="form-select" value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
+                <label className="form-label">ประเภท *</label>
+                <select className="form-select" required value={contentForm.type} onChange={e => setContentForm({...contentForm, type: e.target.value})}>
                   <option value="">-- เลือกประเภท --</option>
                   <option value="article">บทความ</option>
                   <option value="post">โพสต์</option>
@@ -923,8 +923,8 @@ export default function CalendarPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">แพลตฟอร์ม</label>
-                <select className="form-select" value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
+                <label className="form-label">แพลตฟอร์ม *</label>
+                <select className="form-select" required value={contentForm.platform} onChange={e => setContentForm({...contentForm, platform: e.target.value})}>
                   <option value="">-- เลือกแพลตฟอร์ม --</option>
                   <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram</option>
