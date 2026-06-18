@@ -18,6 +18,10 @@ import {
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 interface MeetingLinkedItem {
   id: string;
@@ -576,9 +580,11 @@ export default function MeetingsPage() {
                             <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               📝 สรุปการประชุม
                             </h4>
-                            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.6, backgroundColor: 'var(--color-surface-hover)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)' }}>
-                              {meeting.notes}
-                            </p>
+                            <div 
+                              className="meeting-notes-content"
+                              style={{ fontSize: '0.9rem', color: 'var(--color-text-primary)', lineHeight: 1.6, backgroundColor: 'var(--color-surface-hover)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)' }}
+                              dangerouslySetInnerHTML={{ __html: meeting.notes }}
+                            />
                           </div>
                         )}
 
@@ -818,13 +824,24 @@ export default function MeetingsPage() {
 
           <div className="form-group" style={{ marginTop: '1rem' }}>
             <label className="form-label">สรุปการประชุม</label>
-            <textarea
-              className="form-textarea"
-              rows={3}
-              placeholder="สรุปเนื้อหาที่ประชุม"
-              value={form.notes}
-              onChange={e => setForm({ ...form, notes: e.target.value })}
-            ></textarea>
+            <div style={{ backgroundColor: 'var(--color-surface)' }}>
+              <ReactQuill
+                theme="snow"
+                value={form.notes}
+                onChange={value => setForm({ ...form, notes: value })}
+                placeholder="สรุปเนื้อหาที่ประชุม (พิมพ์ข้อความ, ตัวหนา, ตัวเอียง, หรือรายการได้เหมือน Word)"
+                style={{ height: '200px', marginBottom: '40px' }}
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'color': [] }, { 'background': [] }],
+                    ['link', 'clean']
+                  ],
+                }}
+              />
+            </div>
           </div>
 
           {/* Action Items / Follow-ups */}
