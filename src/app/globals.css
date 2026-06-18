@@ -1152,6 +1152,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 }
 .meeting-notes-content p {
   margin-bottom: 0.5rem;
+  color: inherit;
 }
 .meeting-notes-content h1, .meeting-notes-content h2, .meeting-notes-content h3 {
   font-weight: 600;
