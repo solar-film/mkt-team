@@ -63,7 +63,6 @@ export default function TaskBoard() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -98,20 +97,18 @@ export default function TaskBoard() {
 
   const fetchData = async () => {
     try {
-      const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes, eventsRes] = await Promise.all([
+      const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes] = await Promise.all([
         fetch('/api/tasks' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
         fetch('/api/content' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
         fetch('/api/members'),
         fetch('/api/kpis'),
-        fetch('/api/meetings'),
-        fetch('/api/events')
+        fetch('/api/meetings')
       ]);
       const tasksData = await tasksRes.json();
       const contentsData = await contentsRes.json();
       const membersData = await membersRes.json();
       const kpisData = await kpisRes.json();
       const meetingsData = await meetingsRes.json();
-      const eventsData = await eventsRes.json();
       
       const tasksArr = Array.isArray(tasksData) ? tasksData : [];
       const contentsArr = Array.isArray(contentsData) ? contentsData : [];
@@ -137,7 +134,6 @@ export default function TaskBoard() {
       setMembers(Array.isArray(membersData) ? membersData : []);
       setKpis(Array.isArray(kpisData) ? kpisData : []);
       setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
-      setEvents(Array.isArray(eventsData) ? eventsData : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -562,42 +558,13 @@ export default function TaskBoard() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0, alignItems: 'flex-end' }}>
-          {events.filter(e => {
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const eventDate = new Date(e.date);
-            eventDate.setHours(0,0,0,0);
-            return eventDate.getTime() === today.getTime();
-          }).length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.25rem', width: '100%', alignItems: 'flex-end' }}>
-              {events
-                .filter(e => {
-                  const today = new Date();
-                  today.setHours(0,0,0,0);
-                  const eventDate = new Date(e.date);
-                  eventDate.setHours(0,0,0,0);
-                  return eventDate.getTime() === today.getTime();
-                })
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                .map(e => (
-                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.85rem', color: '#1d4ed8', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', whiteSpace: 'nowrap' }}>
-                    <span>🔔</span>
-                    <strong style={{ fontWeight: 600 }}>{e.time ? `วันนี้ ${e.time}:` : 'วันนี้:'}</strong>
-                    <span>{e.title}</span>
-                  </div>
-                ))
-              }
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-            <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
-              <HiPlus /> เพิ่มงานทั่วไป
-            </button>
-            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
-              <HiPlus /> เพิ่มคอนเท้น
-            </button>
-          </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
+            <HiPlus /> เพิ่มงานทั่วไป
+          </button>
+          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+            <HiPlus /> เพิ่มคอนเท้น
+          </button>
         </div>
       </div>
 
