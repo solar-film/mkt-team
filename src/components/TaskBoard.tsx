@@ -682,7 +682,7 @@ export default function TaskBoard() {
             </div>
             <div className="form-group">
               <label className="form-label">ลิงก์ตรวจสอบงาน (ถ้ามี)</label>
-              <input type="url" className="form-input" placeholder="เช่น https://docs.google.com/..." value={taskForm.link} onChange={e => setTaskForm({...taskForm, link: e.target.value})} />
+              <input type="url" pattern="https?://.*" title="ต้องขึ้นต้นด้วย http:// หรือ https://" className="form-input" placeholder="เช่น https://docs.google.com/..." value={taskForm.link} onChange={e => setTaskForm({...taskForm, link: e.target.value})} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
