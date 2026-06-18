@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
+    const meetingId = searchParams.get('meetingId')
     const type = searchParams.get('type')
     const platform = searchParams.get('platform')
     const status = searchParams.get('status')
@@ -31,10 +32,12 @@ export async function GET(request: NextRequest) {
       link: row.get('link') || '',
       kpiId: row.get('kpiId') || '',
       description: row.get('description') || null,
+      meetingId: row.get('meetingId') || '',
       createdAt: row.get('createdAt')
     }))
 
-    if (memberId) contents = contents.filter(c => c.memberId === memberId)
+    if (memberId) contents = contents.filter(c => c.memberId === memberId || c.memberId === 'all')
+    if (meetingId) contents = contents.filter(c => c.meetingId === meetingId)
     if (type) contents = contents.filter(c => c.type === type)
     if (platform) contents = contents.filter(c => c.platform === platform)
     if (status) contents = contents.filter(c => c.status === status)
@@ -68,7 +71,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, type, platform, status, publishDate, memberId, company } = body
+    const { title, type, platform, status, publishDate, memberId, company, meetingId } = body
 
     if (!title || !memberId) {
       return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
@@ -84,6 +87,7 @@ export async function POST(request: NextRequest) {
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
     if (!newHeaders.includes('description')) { newHeaders.push('description'); headerChanged = true; }
+    if (!newHeaders.includes('meetingId')) { newHeaders.push('meetingId'); headerChanged = true; }
 
     if (headerChanged) {
       try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
@@ -106,6 +110,7 @@ export async function POST(request: NextRequest) {
       kpiId: body.kpiId || '',
       link: body.link || '',
       description: body.description || '',
+      meetingId: meetingId || '',
       createdAt: new Date().toISOString()
     }
 
@@ -146,6 +151,8 @@ export async function PUT(request: NextRequest) {
     let headerChanged = false
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+    if (!newHeaders.includes('description')) { newHeaders.push('description'); headerChanged = true; }
+    if (!newHeaders.includes('meetingId')) { newHeaders.push('meetingId'); headerChanged = true; }
 
     if (headerChanged) {
       try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
@@ -159,7 +166,7 @@ export async function PUT(request: NextRequest) {
     const oldStatus = row.get('status')
     const oldKpiId = row.get('kpiId')
 
-    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link', 'kpiId', 'description']
+    const fields = ['title', 'type', 'platform', 'company', 'memberId', 'link', 'kpiId', 'description', 'meetingId']
     fields.forEach(f => {
       if (data[f] !== undefined) row.assign({ [f]: data[f] })
     })

@@ -61,6 +61,7 @@ export default function TaskBoard() {
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -93,16 +94,18 @@ export default function TaskBoard() {
 
   const fetchData = async () => {
     try {
-      const [tasksRes, contentsRes, membersRes, kpisRes] = await Promise.all([
+      const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes] = await Promise.all([
         fetch('/api/tasks' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
         fetch('/api/content' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
         fetch('/api/members'),
-        fetch('/api/kpis')
+        fetch('/api/kpis'),
+        fetch('/api/meetings')
       ]);
       const tasksData = await tasksRes.json();
       const contentsData = await contentsRes.json();
       const membersData = await membersRes.json();
       const kpisData = await kpisRes.json();
+      const meetingsData = await meetingsRes.json();
       
       const tasksArr = Array.isArray(tasksData) ? tasksData : [];
       const contentsArr = Array.isArray(contentsData) ? contentsData : [];
@@ -127,6 +130,7 @@ export default function TaskBoard() {
       setItems([...unifiedTasks, ...unifiedContents]);
       setMembers(Array.isArray(membersData) ? membersData : []);
       setKpis(Array.isArray(kpisData) ? kpisData : []);
+      setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -333,7 +337,7 @@ export default function TaskBoard() {
         
         <div className="kanban-cards-container">
           {displayedItems.map(item => (
-            <div key={item.id} onClick={() => setViewItem(item)} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: `4px solid ${getMemberColor(item.member?.name)}`, cursor: 'pointer' }}>
+            <div key={item.id} onClick={() => setViewItem(item)} className={`task-card ${item.itemType === 'content' ? 'content-card' : ''}`} style={{ borderLeft: item.itemType === 'content' ? `4px solid ${getMemberColor(item.member?.name)}` : 'none', cursor: 'pointer' }}>
               <div className="task-header">
                 <h3 className="task-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                   <div style={{ flexShrink: 0, display: 'flex' }}>
@@ -365,8 +369,24 @@ export default function TaskBoard() {
                 </div>
               )}
               
+              {item.meetingId && (
+                <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-secondary)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '1rem', height: '1rem' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                  </svg>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {meetings.find(m => m.id === item.meetingId)?.title || 'จากการประชุม'}
+                  </span>
+                </div>
+              )}
+              
               <div className="task-meta">
-                {item.member && (
+                {item.memberId === 'all' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.1rem' }}>👥</span>
+                    <span>ทุกคน</span>
+                  </div>
+                ) : item.member && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <MemberAvatar name={item.member.name} size="sm" />
                     <span>{item.member.name}</span>
@@ -561,7 +581,7 @@ export default function TaskBoard() {
             const iconColor = item.status === 'todo' ? '#f97316' : item.status === 'in_progress' ? '#3b82f6' : '#10b981';
             
             return (
-              <div key={item.id} onClick={() => setViewItem(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', borderLeft: `4px solid ${getMemberColor(item.member?.name)}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
+              <div key={item.id} onClick={() => setViewItem(item)} style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', borderLeft: item.itemType === 'content' ? `4px solid ${getMemberColor(item.member?.name)}` : '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
                 <div 
                   onClick={(e) => { 
                     e.stopPropagation(); 
@@ -602,7 +622,9 @@ export default function TaskBoard() {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         {item.deadline || item.publishDate ? formatDateTime(item.deadline || item.publishDate || '') : 'ไม่ระบุ'}
                       </div>
-                      {item.member && (
+                      {item.memberId === 'all' ? (
+                        <span style={{ fontSize: '1.1rem' }}>👥</span>
+                      ) : item.member && (
                         <MemberAvatar name={item.member.name} size="sm" />
                       )}
                     </div>
@@ -650,6 +672,7 @@ export default function TaskBoard() {
                 <label className="form-label">ผู้รับผิดชอบ *</label>
                 <select className="form-select" required value={taskForm.memberId} onChange={e => setTaskForm({...taskForm, memberId: e.target.value, kpiId: ''})}>
                   <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                  <option value="all">👥 ทุกคน</option>
                   {members.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
@@ -834,8 +857,8 @@ export default function TaskBoard() {
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MemberAvatar name={viewItem.member?.name || 'ไม่ระบุ'} size="sm" />
-                <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{viewItem.member?.name || 'ไม่ระบุ'}</span>
+                {viewItem.memberId === 'all' ? <span style={{ fontSize: '1.1rem' }}>👥</span> : <MemberAvatar name={viewItem.member?.name || 'ไม่ระบุ'} size="sm" />}
+                <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{viewItem.memberId === 'all' ? 'ทุกคน' : (viewItem.member?.name || 'ไม่ระบุ')}</span>
               </div>
               <span style={{ backgroundColor: viewItem.status === 'todo' ? '#fffbeb' : viewItem.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: viewItem.status === 'todo' ? '#f97316' : viewItem.status === 'in_progress' ? '#3b82f6' : '#10b981', padding: '0.25rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
                 {viewItem.status === 'todo' ? 'รอดำเนินการ' : viewItem.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จเรียบร้อย'}

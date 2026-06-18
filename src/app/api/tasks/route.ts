@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
+    const meetingId = searchParams.get('meetingId')
 
     const doc = await initDoc()
     const sheet = doc.sheetsByTitle['Task']
@@ -27,11 +28,16 @@ export async function GET(request: NextRequest) {
       memberId: row.get('memberId'),
       link: row.get('link') || '',
       kpiId: row.get('kpiId') || '',
+      meetingId: row.get('meetingId') || '',
       createdAt: row.get('createdAt'),
     }))
 
+    if (meetingId) {
+      tasks = tasks.filter(t => t.meetingId === meetingId)
+    }
+
     if (memberId) {
-      tasks = tasks.filter(t => t.memberId === memberId)
+      tasks = tasks.filter(t => t.memberId === memberId || t.memberId === 'all')
     }
 
     if (membersSheet) {
@@ -62,7 +68,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, status, priority, startDate, deadline, memberId, company } = body
+    const { title, description, status, priority, startDate, deadline, memberId, company, meetingId } = body
 
     if (!title || !memberId) {
       return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
@@ -78,6 +84,7 @@ export async function POST(request: NextRequest) {
     if (!newHeaders.includes('startDate')) { newHeaders.push('startDate'); headerChanged = true; }
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+    if (!newHeaders.includes('meetingId')) { newHeaders.push('meetingId'); headerChanged = true; }
 
     if (headerChanged) {
       try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
@@ -111,6 +118,7 @@ export async function POST(request: NextRequest) {
       memberId,
       kpiId: autoKpiId,
       link: body.link || '',
+      meetingId: meetingId || '',
       createdAt: new Date().toISOString()
     }
 
@@ -120,7 +128,9 @@ export async function POST(request: NextRequest) {
       try {
         const membersSheet = doc.sheetsByTitle['TeamMember']
         let memberName = 'ทีมงาน'
-        if (membersSheet) {
+        if (memberId === 'all') {
+          memberName = 'ทุกคน'
+        } else if (membersSheet) {
           const mRows = await membersSheet.getRows()
           const mRow = mRows.find(r => r.get('id') === memberId)
           if (mRow) memberName = mRow.get('name') || memberName
@@ -159,6 +169,7 @@ export async function PUT(request: NextRequest) {
     if (!newHeaders.includes('startDate')) { newHeaders.push('startDate'); headerChanged = true; }
     if (!newHeaders.includes('kpiId')) { newHeaders.push('kpiId'); headerChanged = true; }
     if (!newHeaders.includes('link')) { newHeaders.push('link'); headerChanged = true; }
+    if (!newHeaders.includes('meetingId')) { newHeaders.push('meetingId'); headerChanged = true; }
 
     if (headerChanged) {
       try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }) } catch(e) {}
@@ -172,7 +183,7 @@ export async function PUT(request: NextRequest) {
     const oldStatus = row.get('status')
     const oldKpiId = row.get('kpiId')
     
-    const fields = ['title', 'description', 'status', 'priority', 'company', 'memberId', 'kpiId', 'link']
+    const fields = ['title', 'description', 'status', 'priority', 'company', 'memberId', 'kpiId', 'link', 'meetingId']
     fields.forEach(f => {
       if (data[f] !== undefined) row.assign({ [f]: data[f] })
     })

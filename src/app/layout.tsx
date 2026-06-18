@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
-
-const inter = Inter({ subsets: ['latin'] })
 
 import { Viewport } from 'next'
 
@@ -35,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="th">
-      <body className={inter.className}>
+      <body>
         <div className="app-layout">
           <Sidebar />
           <main className="main-content">

@@ -116,10 +116,12 @@ export default function KPIsPage() {
     return 'danger';
   };
 
-  const filteredMembers = filterMemberId 
+  const filteredMembers = (filterMemberId 
     ? members.filter(m => m.id === filterMemberId) 
-    : members;
-
+    : members).filter(member => {
+      const monthKpis = member.kpis?.filter(k => k.month === filterMonth && k.year === filterYear) || [];
+      return monthKpis.length > 0;
+    });
   if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
@@ -186,9 +188,15 @@ export default function KPIsPage() {
         </div>
       </div>
 
-      <div className="kpi-grid">
-        {filteredMembers.map(member => (
-          <div key={member.id} className="card">
+      {filteredMembers.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--color-text-secondary)', gridColumn: '1 / -1' }}>
+          <p style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>ไม่มีเป้าหมาย KPI ในเดือนนี้</p>
+          <p style={{ fontSize: '0.9rem' }}>ทีมยังไม่มีการตั้งเป้าหมายในเดือนที่เลือก</p>
+        </div>
+      ) : (
+        <div className="kpi-grid">
+          {filteredMembers.map(member => (
+            <div key={member.id} className="card">
             <div className="card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <MemberAvatar name={member.name} />
@@ -277,7 +285,8 @@ export default function KPIsPage() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Add/Edit KPI Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
