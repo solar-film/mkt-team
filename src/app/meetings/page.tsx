@@ -28,6 +28,7 @@ interface MeetingLinkedItem {
   publishDate?: string;
   meetingId: string;
   company?: string;
+  itemCategory: 'task' | 'content';
   member?: {
     id: string;
     name: string;

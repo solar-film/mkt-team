@@ -30,6 +30,7 @@ interface UnifiedItem {
   publishDate?: string | null;
   company?: string;
   link?: string;
+  meetingId?: string;
 }
 
 interface TeamMember {
