@@ -548,6 +548,7 @@ export default function TaskBoard() {
               <DatePicker
                 selected={filterMonthYear}
                 onChange={(date: Date | null) => { setFilterMonthYear(date); setFilterExactDate(null); }}
+                onInputClick={() => setFilterExactDate(null)}
                 dateFormat="MM/yyyy"
                 showMonthYearPicker
                 className="form-select"
@@ -558,7 +559,8 @@ export default function TaskBoard() {
             <div style={{ width: '130px' }}>
               <DatePicker
                 selected={filterExactDate}
-                onChange={(date: Date | null) => setFilterExactDate(date)}
+                onChange={(date: Date | null) => { setFilterExactDate(date); setFilterMonthYear(null); }}
+                onInputClick={() => setFilterMonthYear(null)}
                 dateFormat="dd/MM/yyyy"
                 className="form-select"
                 placeholderText="📅 ระบุวันที่"
