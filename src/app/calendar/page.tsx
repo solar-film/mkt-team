@@ -200,6 +200,10 @@ export default function CalendarPage() {
 
   const handleTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (taskForm.link && !/^https?:\/\/.+/.test(taskForm.link)) {
+      alert('กรุณาระบุลิงก์ให้ถูกต้อง (ต้องขึ้นต้นด้วย http:// หรือ https://)');
+      return;
+    }
     try {
       const body = {
         ...taskForm,
@@ -230,6 +234,10 @@ export default function CalendarPage() {
 
   const handleContentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (contentForm.link && !/^https?:\/\/.+/.test(contentForm.link)) {
+      alert('กรุณาระบุลิงก์ให้ถูกต้อง (ต้องขึ้นต้นด้วย http:// หรือ https://)');
+      return;
+    }
     try {
       const body = {
         ...contentForm,
