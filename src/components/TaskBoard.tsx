@@ -562,56 +562,44 @@ export default function TaskBoard() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
-            <HiPlus /> เพิ่มงานทั่วไป
-          </button>
-          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
-            <HiPlus /> เพิ่มคอนเท้น
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0, alignItems: 'flex-end' }}>
+          {events.filter(e => {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const eventDate = new Date(e.date);
+            eventDate.setHours(0,0,0,0);
+            return eventDate.getTime() === today.getTime();
+          }).length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.25rem', width: '100%', alignItems: 'flex-end' }}>
+              {events
+                .filter(e => {
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const eventDate = new Date(e.date);
+                  eventDate.setHours(0,0,0,0);
+                  return eventDate.getTime() === today.getTime();
+                })
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .map(e => (
+                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.85rem', color: '#1d4ed8', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', whiteSpace: 'nowrap' }}>
+                    <span>🔔</span>
+                    <strong style={{ fontWeight: 600 }}>{e.time ? `วันนี้ ${e.time}:` : 'วันนี้:'}</strong>
+                    <span>{e.title}</span>
+                  </div>
+                ))
+              }
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+            <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
+              <HiPlus /> เพิ่มงานทั่วไป
+            </button>
+            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+              <HiPlus /> เพิ่มคอนเท้น
+            </button>
+          </div>
         </div>
       </div>
-
-      {events.filter(e => {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const eventDate = new Date(e.date);
-        eventDate.setHours(0,0,0,0);
-        const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 && diffDays <= 7; // Show today and next 7 days
-      }).length > 0 && (
-        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {events
-            .filter(e => {
-              const today = new Date();
-              today.setHours(0,0,0,0);
-              const eventDate = new Date(e.date);
-              eventDate.setHours(0,0,0,0);
-              return eventDate.getTime() >= today.getTime();
-            })
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .slice(0, 5)
-            .map(e => {
-              const today = new Date();
-              today.setHours(0,0,0,0);
-              const eventDate = new Date(e.date);
-              eventDate.setHours(0,0,0,0);
-              const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              let dateText = '';
-              if (diffDays === 0) dateText = 'วันนี้';
-              else if (diffDays === 1) dateText = 'พรุ่งนี้';
-              else dateText = format(new Date(e.date), 'dd/MM/yyyy');
-              
-              return (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.85rem', color: '#c2410c', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                  <span>🔔</span>
-                  <strong style={{ fontWeight: 600 }}>{dateText} {e.time ? `(${e.time})` : ''}:</strong>
-                  <span>{e.title}</span>
-                </div>
-              );
-          })}
-        </div>
-      )}
 
       <div className="desktop-only">
         <div className="kanban-board">
