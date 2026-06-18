@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar } from 'react-icons/hi2';
+import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import MemberAvatar from '@/components/MemberAvatar';
 import DatePicker from 'react-datepicker';
@@ -45,6 +45,7 @@ export default function CalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [viewItem, setViewItem] = useState<UnifiedItem | null>(null);
   const [newItemType, setNewItemType] = useState<'task' | 'content' | 'event'>('content');
   const [notifyLine, setNotifyLine] = useState(false);
   const [linkErrorOpen, setLinkErrorOpen] = useState(false);
@@ -59,6 +60,16 @@ export default function CalendarPage() {
   const [contentForm, setContentForm] = useState({
     title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: ''
   });
+
+  const formatDateTime = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return format(d, 'dd/MM/yyyy HH:mm');
+    } catch {
+      return dateStr;
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -157,6 +168,10 @@ export default function CalendarPage() {
 
   const handleItemClick = (e: React.MouseEvent, item: UnifiedItem) => {
     e.stopPropagation();
+    setViewItem(item);
+  };
+
+  const handleEditClick = (item: UnifiedItem) => {
     setIsEditing(true);
     setEditingItemId(item.id);
     setNewItemType(item.type);
@@ -1089,6 +1104,94 @@ export default function CalendarPage() {
           </button>
         </div>
       </Modal>
+
+      {viewItem && (
+        <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="รายละเอียดงาน">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0.5rem 0' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+              <div style={{ marginTop: '0.25rem' }}>
+              {viewItem.type === 'task' ? <HiClipboardDocumentList size={24} style={{ color: 'var(--color-text-secondary)' }} /> : viewItem.type === 'content' ? <HiDocumentText size={24} style={{ color: 'var(--color-primary)' }} /> : <span style={{ fontSize: '24px' }}>📢</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '1.25rem', margin: '0 0 0.5rem 0', color: 'var(--color-text-primary)' }}>
+                {viewItem.fullItem?.company ? <span style={{ color: getCompanyColor(viewItem.fullItem.company), marginRight: '0.5rem' }}>[{viewItem.fullItem.company}]</span> : null}
+                {viewItem.title}
+                </h3>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.25rem 0.75rem', borderRadius: '20px' }}>
+                  {viewItem.memberId === 'all' ? <span style={{ fontSize: '1.1rem' }}>👥</span> : viewItem.member ? <MemberAvatar name={viewItem.member.name} size="sm" /> : null}
+                  <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{viewItem.memberId === 'all' ? 'ทุกคน' : (viewItem.member?.name || 'ไม่ระบุ')}</span>
+                  </div>
+                  
+                  {viewItem.type !== 'event' && (
+                    <span style={{ backgroundColor: viewItem.status === 'todo' ? '#fffbeb' : viewItem.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: viewItem.status === 'todo' ? '#f97316' : viewItem.status === 'in_progress' ? '#3b82f6' : '#10b981', padding: '0.25rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                      {viewItem.status === 'todo' ? 'รอดำเนินการ' : viewItem.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จแล้ว'}
+                    </span>
+                  )}
+                  {viewItem.type === 'task' && viewItem.fullItem?.priority && (
+                    <span className={`badge priority-${viewItem.fullItem.priority}`}>
+                      {viewItem.fullItem.priority === 'high' ? 'สูง' : viewItem.fullItem.priority === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ backgroundColor: 'var(--color-surface)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', fontSize: '0.95rem', color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  {viewItem.fullItem?.description || viewItem.fullItem?.platform || viewItem.fullItem?.time || 'ไม่มีรายละเอียดเพิ่มเติม'}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{viewItem.type === 'task' ? 'วันเริ่มต้น' : viewItem.type === 'content' ? 'ประเภทคอนเท้นต์' : 'วันที่'}</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 500, color: '#1e293b', marginTop: '0.25rem' }}>
+                  {viewItem.type === 'task' 
+                    ? (viewItem.startDate ? formatDateTime(viewItem.startDate) : '-')
+                    : viewItem.type === 'content'
+                    ? (viewItem.fullItem?.type === 'post' ? 'โพสต์' : viewItem.fullItem?.type === 'article' ? 'บทความ' : viewItem.fullItem?.type === 'video' ? 'วิดีโอ' : viewItem.fullItem?.type === 'graphic' ? 'กราฟิก' : viewItem.fullItem?.type === 'reel' ? 'Reel' : '-')
+                    : (viewItem.date ? formatDateTime(viewItem.date).split(' ')[0] : '-')}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{viewItem.type === 'task' ? 'ครบกำหนด' : viewItem.type === 'content' ? 'แพลตฟอร์ม' : 'เวลา'}</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 500, color: '#1e293b', marginTop: '0.25rem' }}>
+                  {viewItem.type === 'task'
+                    ? (viewItem.date ? formatDateTime(viewItem.date) : '-')
+                    : viewItem.type === 'content'
+                    ? (viewItem.fullItem?.platform || '-')
+                    : (viewItem.fullItem?.time || '-')}
+                </div>
+              </div>
+              {viewItem.type === 'content' && (
+                <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>วันเผยแพร่</span>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 500, color: '#1e293b', marginTop: '0.25rem' }}>
+                    {viewItem.date ? formatDateTime(viewItem.date) : '-'}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {viewItem.fullItem?.link && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <a href={viewItem.fullItem.link.startsWith('http') ? viewItem.fullItem.link : `https://${viewItem.fullItem.link}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                  🔗 เปิดลิงก์ผลงาน / เอกสารอ้างอิง
+                </a>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)' }}>
+              <button className="btn btn-secondary" onClick={() => setViewItem(null)}>ปิด</button>
+              <button className="btn btn-primary" onClick={() => { setViewItem(null); handleEditClick(viewItem); }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                แก้ไข
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 }
