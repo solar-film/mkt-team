@@ -68,9 +68,8 @@ export default function TaskBoard() {
   const [filterType, setFilterType] = useState('all');
   const [filterCompany, setFilterCompany] = useState('all');
   const [filterPlatform, setFilterPlatform] = useState('all');
-  const [filterDay, setFilterDay] = useState('');
-  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [filterMonthYear, setFilterMonthYear] = useState<Date | null>(new Date());
+  const [filterExactDate, setFilterExactDate] = useState<Date | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllDone, setShowAllDone] = useState(false);
   const [mobileTab, setMobileTab] = useState('todo');
@@ -319,12 +318,16 @@ export default function TaskBoard() {
       const matchMember = memberName.toLowerCase().includes(q);
       if (!matchTitle && !matchDesc && !matchMember) return false;
     }
-    if (filterMonth && filterYear) {
+    if (filterExactDate) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
       if (!dateStr) return false;
       const d = new Date(dateStr);
-      if (d.getMonth() + 1 !== parseInt(filterMonth) || d.getFullYear() !== parseInt(filterYear)) return false;
-      if (filterDay && d.getDate() !== parseInt(filterDay)) return false;
+      if (d.getDate() !== filterExactDate.getDate() || d.getMonth() !== filterExactDate.getMonth() || d.getFullYear() !== filterExactDate.getFullYear()) return false;
+    } else if (filterMonthYear) {
+      const dateStr = item.deadline || item.publishDate || item.startDate;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (d.getMonth() !== filterMonthYear.getMonth() || d.getFullYear() !== filterMonthYear.getFullYear()) return false;
     }
     return true;
   }).sort((a, b) => {
@@ -540,39 +543,29 @@ export default function TaskBoard() {
             <option value="YouTube">YouTube</option>
             <option value="Google Map">Google Map</option>
           </select>
-          <div style={{ display: 'flex', gap: '0.2rem' }}>
-            <select 
-              className="form-select" 
-              style={{ minWidth: '70px', padding: '0.4rem 1.25rem 0.4rem 0.5rem', fontSize: '0.85rem' }}
-              value={filterDay}
-              onChange={(e) => setFilterDay(e.target.value)}
-            >
-              <option value="">ทุกวัน</option>
-              {Array.from({length: 31}, (_, i) => i + 1).map(d => (
-                <option key={d} value={d.toString()}>วันที่ {d}</option>
-              ))}
-            </select>
-            <select 
-              className="form-select" 
-              style={{ minWidth: '70px', padding: '0.4rem 1.25rem 0.4rem 0.5rem', fontSize: '0.85rem' }}
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-            >
-              <option value="">ทุกเดือน</option>
-              {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                <option key={m} value={m.toString()}>เดือน {m}</option>
-              ))}
-            </select>
-            <select 
-              className="form-select" 
-              style={{ minWidth: '70px', padding: '0.4rem 1.25rem 0.4rem 0.5rem', fontSize: '0.85rem' }}
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-            >
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-            </select>
+          <div style={{ display: 'flex', gap: '0.4rem', zIndex: 10 }}>
+            <div style={{ width: '90px' }}>
+              <DatePicker
+                selected={filterMonthYear}
+                onChange={(date: Date | null) => { setFilterMonthYear(date); setFilterExactDate(null); }}
+                dateFormat="MM/yyyy"
+                showMonthYearPicker
+                className="form-select"
+                placeholderText="เดือน/ปี"
+                wrapperClassName="w-full"
+              />
+            </div>
+            <div style={{ width: '130px' }}>
+              <DatePicker
+                selected={filterExactDate}
+                onChange={(date: Date | null) => setFilterExactDate(date)}
+                dateFormat="dd/MM/yyyy"
+                className="form-select"
+                placeholderText="📅 ระบุวันที่"
+                isClearable
+                wrapperClassName="w-full"
+              />
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', flexShrink: 0 }}>
