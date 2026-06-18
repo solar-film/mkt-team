@@ -67,6 +67,7 @@ export default function TaskBoard() {
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterCompany, setFilterCompany] = useState('all');
+  const [filterPlatform, setFilterPlatform] = useState('all');
   const [filterDay, setFilterDay] = useState('');
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
@@ -306,8 +307,10 @@ export default function TaskBoard() {
   };
 
   const filteredItems = items.filter(item => {
+    if (filterMemberId && item.memberId !== filterMemberId && item.memberId !== 'all') return false;
     if (filterType !== 'all' && item.itemType !== filterType) return false;
     if (filterCompany !== 'all' && item.company !== filterCompany) return false;
+    if (filterPlatform !== 'all' && item.platform !== filterPlatform) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchTitle = item.title?.toLowerCase().includes(q) || false;
@@ -481,19 +484,19 @@ export default function TaskBoard() {
 
   return (
     <div style={{ padding: '0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
           <input
             type="text"
             className="form-input"
-            placeholder="🔍 ค้นหางาน / คอนเทนต์..."
-            style={{ width: '100%', minWidth: '200px', maxWidth: '300px' }}
+            placeholder="🔍 ค้นหา..."
+            style={{ minWidth: '150px', maxWidth: '200px', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <select 
             className="form-select" 
-            style={{ width: '100%', minWidth: '130px', maxWidth: '200px' }}
+            style={{ minWidth: '110px', maxWidth: '150px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
             value={filterMemberId}
             onChange={(e) => setFilterMemberId(e.target.value)}
           >
@@ -504,7 +507,7 @@ export default function TaskBoard() {
           </select>
           <select 
             className="form-select" 
-            style={{ width: '100%', minWidth: '90px', maxWidth: '120px' }}
+            style={{ minWidth: '90px', maxWidth: '110px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
             value={filterCompany}
             onChange={(e) => setFilterCompany(e.target.value)}
           >
@@ -515,7 +518,7 @@ export default function TaskBoard() {
           </select>
           <select 
             className="form-select" 
-            style={{ width: '100%', minWidth: '100px', maxWidth: '150px' }}
+            style={{ minWidth: '90px', maxWidth: '110px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
           >
@@ -523,10 +526,24 @@ export default function TaskBoard() {
             <option value="task">งานทั่วไป</option>
             <option value="content">คอนเทนต์</option>
           </select>
-          <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <select 
+            className="form-select" 
+            style={{ minWidth: '110px', maxWidth: '130px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
+            value={filterPlatform}
+            onChange={(e) => setFilterPlatform(e.target.value)}
+          >
+            <option value="all">ทุกแพลตฟอร์ม</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram">Instagram</option>
+            <option value="TikTok">TikTok</option>
+            <option value="iCONS">iCONS</option>
+            <option value="YouTube">YouTube</option>
+            <option value="Google Map">Google Map</option>
+          </select>
+          <div style={{ display: 'flex', gap: '0.2rem' }}>
             <select 
               className="form-select" 
-              style={{ minWidth: '80px' }}
+              style={{ minWidth: '70px', padding: '0.4rem 1.25rem 0.4rem 0.5rem', fontSize: '0.85rem' }}
               value={filterDay}
               onChange={(e) => setFilterDay(e.target.value)}
             >
@@ -537,7 +554,7 @@ export default function TaskBoard() {
             </select>
             <select 
               className="form-select" 
-              style={{ minWidth: '80px' }}
+              style={{ minWidth: '70px', padding: '0.4rem 1.25rem 0.4rem 0.5rem', fontSize: '0.85rem' }}
               value={filterMonth}
               onChange={(e) => setFilterMonth(e.target.value)}
             >
@@ -548,7 +565,7 @@ export default function TaskBoard() {
             </select>
             <select 
               className="form-select" 
-              style={{ minWidth: '80px' }}
+              style={{ minWidth: '70px', padding: '0.4rem 1.25rem 0.4rem 0.5rem', fontSize: '0.85rem' }}
               value={filterYear}
               onChange={(e) => setFilterYear(e.target.value)}
             >
@@ -558,11 +575,11 @@ export default function TaskBoard() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
+        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มงานทั่วไป
           </button>
-          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+          <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มคอนเท้น
           </button>
         </div>
