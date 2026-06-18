@@ -161,7 +161,13 @@ export default function MeetingsPage() {
       const tasks = Array.isArray(tasksData) ? tasksData.map(t => ({ ...t, itemCategory: 'task' })) : [];
       const contents = Array.isArray(contentsData) ? contentsData.map(c => ({ ...c, itemCategory: 'content' })) : [];
       
-      setMeetingItems(prev => ({ ...prev, [meetingId]: [...tasks, ...contents] }));
+      const allItems = [...tasks, ...contents].sort((a, b) => {
+        const dateA = new Date(a.deadline || a.publishDate || a.createdAt || 0).getTime();
+        const dateB = new Date(b.deadline || b.publishDate || b.createdAt || 0).getTime();
+        return dateA - dateB;
+      });
+      
+      setMeetingItems(prev => ({ ...prev, [meetingId]: allItems }));
     } catch (err) {
       console.error(err);
     } finally {
