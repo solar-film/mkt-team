@@ -195,15 +195,32 @@ export default function KPIsPage() {
         </div>
       ) : (
         <div className="kpi-grid">
-          {filteredMembers.map(member => (
+          {filteredMembers.map(member => {
+            const monthKpis = member.kpis.filter(k => k.month === filterMonth && k.year === filterYear);
+            let avgKpi = 0;
+            if (monthKpis.length > 0) {
+              const totalPercent = monthKpis.reduce((sum, k) => {
+                const target = Number(k.target) || 1;
+                const percent = k.target === 0 ? (k.current > 0 ? 100 : 0) : Math.min((k.current / target) * 100, 100);
+                return sum + percent;
+              }, 0);
+              avgKpi = Math.round(totalPercent / monthKpis.length);
+            }
+            const color = avgKpi >= 100 ? '#10b981' : avgKpi >= 80 ? '#3b82f6' : avgKpi >= 50 ? '#f59e0b' : '#ef4444';
+
+            return (
             <div key={member.id} className="card">
-            <div className="card-header">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <MemberAvatar name={member.name} />
                 <div>
                   <h3 style={{ fontSize: '1rem', margin: 0 }}>{member.name}</h3>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{member.role}</div>
                 </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: color }}>{avgKpi}%</div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>ภาพรวมสำเร็จ</div>
               </div>
             </div>
             <div className="card-body">
@@ -284,7 +301,7 @@ export default function KPIsPage() {
               })()}
             </div>
           </div>
-        ))}
+          )})}
         </div>
       )}
 
