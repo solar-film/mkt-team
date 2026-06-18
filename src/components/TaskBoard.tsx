@@ -63,6 +63,7 @@ export default function TaskBoard() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -97,18 +98,20 @@ export default function TaskBoard() {
 
   const fetchData = async () => {
     try {
-      const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes] = await Promise.all([
+      const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes, eventsRes] = await Promise.all([
         fetch('/api/tasks' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
         fetch('/api/content' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
         fetch('/api/members'),
         fetch('/api/kpis'),
-        fetch('/api/meetings')
+        fetch('/api/meetings'),
+        fetch('/api/events')
       ]);
       const tasksData = await tasksRes.json();
       const contentsData = await contentsRes.json();
       const membersData = await membersRes.json();
       const kpisData = await kpisRes.json();
       const meetingsData = await meetingsRes.json();
+      const eventsData = await eventsRes.json();
       
       const tasksArr = Array.isArray(tasksData) ? tasksData : [];
       const contentsArr = Array.isArray(contentsData) ? contentsData : [];
@@ -134,6 +137,7 @@ export default function TaskBoard() {
       setMembers(Array.isArray(membersData) ? membersData : []);
       setKpis(Array.isArray(kpisData) ? kpisData : []);
       setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
+      setEvents(Array.isArray(eventsData) ? eventsData : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -567,6 +571,47 @@ export default function TaskBoard() {
           </button>
         </div>
       </div>
+
+      {events.filter(e => {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const eventDate = new Date(e.date);
+        eventDate.setHours(0,0,0,0);
+        const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 7; // Show today and next 7 days
+      }).length > 0 && (
+        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {events
+            .filter(e => {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              const eventDate = new Date(e.date);
+              eventDate.setHours(0,0,0,0);
+              return eventDate.getTime() >= today.getTime();
+            })
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 5)
+            .map(e => {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              const eventDate = new Date(e.date);
+              eventDate.setHours(0,0,0,0);
+              const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              let dateText = '';
+              if (diffDays === 0) dateText = 'วันนี้';
+              else if (diffDays === 1) dateText = 'พรุ่งนี้';
+              else dateText = format(new Date(e.date), 'dd/MM/yyyy');
+              
+              return (
+                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.85rem', color: '#c2410c', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <span>🔔</span>
+                  <strong style={{ fontWeight: 600 }}>{dateText} {e.time ? `(${e.time})` : ''}:</strong>
+                  <span>{e.title}</span>
+                </div>
+              );
+          })}
+        </div>
+      )}
 
       <div className="desktop-only">
         <div className="kanban-board">
