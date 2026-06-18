@@ -81,6 +81,7 @@ export default function TaskBoard() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [viewItem, setViewItem] = useState<UnifiedItem | null>(null);
   const [validationAlert, setValidationAlert] = useState<{ isOpen: boolean; item: UnifiedItem | null }>({ isOpen: false, item: null });
+  const [notifyLine, setNotifyLine] = useState(false);
   
   const [taskForm, setTaskForm] = useState({
     title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: ''
@@ -236,11 +237,12 @@ export default function TaskBoard() {
         await fetch('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body: JSON.stringify({ ...body, notifyLine })
         });
       }
       setIsModalOpen(false);
       setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' });
+      setNotifyLine(false);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -266,11 +268,12 @@ export default function TaskBoard() {
         await fetch('/api/content', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body: JSON.stringify({ ...body, notifyLine })
         });
       }
       setIsModalOpen(false);
       setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' });
+      setNotifyLine(false);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -699,7 +702,13 @@ export default function TaskBoard() {
               </div>
             </div>
             {/* KPI selection removed from tasks as per user request (automatically handled in backend) */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+            {!isEditing && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <input type="checkbox" id="notifyLineTask" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
+                <label htmlFor="notifyLineTask" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 แจ้งเตือนผ่าน LINE</label>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
               <button type="submit" className="btn btn-primary">บันทึกงาน</button>
             </div>
@@ -797,7 +806,13 @@ export default function TaskBoard() {
                 </div>
               )
             ) : null}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+            {!isEditing && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <input type="checkbox" id="notifyLineContent" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
+                <label htmlFor="notifyLineContent" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 แจ้งเตือนผ่าน LINE</label>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
               <button type="submit" className="btn btn-primary">บันทึกคอนเท้น</button>
             </div>

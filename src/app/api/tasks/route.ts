@@ -116,20 +116,23 @@ export async function POST(request: NextRequest) {
 
     await sheet.addRow(newTask)
     
-    try {
-      const membersSheet = doc.sheetsByTitle['TeamMember']
-      let memberName = 'ทีมงาน'
-      if (membersSheet) {
-        const mRows = await membersSheet.getRows()
-        const mRow = mRows.find(r => r.get('id') === memberId)
-        if (mRow) memberName = mRow.get('name') || memberName
+    if (body.notifyLine) {
+      try {
+        const membersSheet = doc.sheetsByTitle['TeamMember']
+        let memberName = 'ทีมงาน'
+        if (membersSheet) {
+          const mRows = await membersSheet.getRows()
+          const mRow = mRows.find(r => r.get('id') === memberId)
+          if (mRow) memberName = mRow.get('name') || memberName
+        }
+        
+        let message = `\n📢 [งานใหม่] ${title}\n👤 มอบหมาย: ${memberName}\n⏰ กำหนดส่ง: ${deadline ? new Date(deadline).toLocaleDateString('th-TH') : '-'}`
+        if (description) message += `\n📝 รายละเอียด: ${description}`
+        const { sendLineNotify } = await import('@/lib/line-notify')
+        await sendLineNotify(message)
+      } catch (e) {
+        console.error('Error sending line notify:', e)
       }
-      
-      const message = `\n📢 [งานใหม่] ${title}\n👤 มอบหมาย: ${memberName}\n⏰ กำหนดส่ง: ${deadline ? new Date(deadline).toLocaleDateString('th-TH') : '-'}`
-      const { sendLineNotify } = await import('@/lib/line-notify')
-      await sendLineNotify(message)
-    } catch (e) {
-      console.error('Error sending line notify:', e)
     }
 
     return NextResponse.json(newTask, { status: 201 })

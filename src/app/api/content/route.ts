@@ -111,15 +111,17 @@ export async function POST(request: NextRequest) {
 
     await sheet.addRow(newContent)
 
-    /* 
-    try {
-      const message = `\n🆕 [เพิ่มคอนเทนต์] ${title}\n👤 รับผิดชอบ: ${memberName}\n📅 เผยแพร่: ${publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'}`
-      const { sendLineNotify } = await import('@/lib/line-notify')
-      await sendLineNotify(message)
-    } catch (e) {
-      console.error('Error sending line notify:', e)
+    if (body.notifyLine) {
+      try {
+        let message = `\n🆕 [เพิ่มคอนเทนต์] ${title}\n👤 รับผิดชอบ: ${memberName}\n📅 เผยแพร่: ${publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'}`
+        if (body.description) message += `\n📝 รายละเอียด: ${body.description}`
+        if (platform) message += `\n📱 แพลตฟอร์ม: ${platform}`
+        const { sendLineNotify } = await import('@/lib/line-notify')
+        await sendLineNotify(message)
+      } catch (e) {
+        console.error('Error sending line notify:', e)
+      }
     }
-    */
 
     return NextResponse.json(newContent, { status: 201 })
   } catch (error) {
