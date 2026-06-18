@@ -47,6 +47,7 @@ export default function CalendarPage() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [newItemType, setNewItemType] = useState<'task' | 'content' | 'event'>('content');
   const [notifyLine, setNotifyLine] = useState(false);
+  const [linkErrorOpen, setLinkErrorOpen] = useState(false);
 
   const [eventForm, setEventForm] = useState({
     title: '', date: '', time: '', type: 'event'
@@ -201,7 +202,7 @@ export default function CalendarPage() {
   const handleTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (taskForm.link && !/^https?:\/\/.+/.test(taskForm.link)) {
-      alert('กรุณาระบุลิงก์ให้ถูกต้อง (ต้องขึ้นต้นด้วย http:// หรือ https://)');
+      setLinkErrorOpen(true);
       return;
     }
     try {
@@ -235,7 +236,7 @@ export default function CalendarPage() {
   const handleContentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (contentForm.link && !/^https?:\/\/.+/.test(contentForm.link)) {
-      alert('กรุณาระบุลิงก์ให้ถูกต้อง (ต้องขึ้นต้นด้วย http:// หรือ https://)');
+      setLinkErrorOpen(true);
       return;
     }
     try {
@@ -1068,6 +1069,25 @@ export default function CalendarPage() {
             </div>
           </form>
         )}
+      </Modal>
+
+      <Modal isOpen={linkErrorOpen} onClose={() => setLinkErrorOpen(false)} title="แจ้งเตือนจากระบบ">
+        <div style={{ padding: '1rem 0', textAlign: 'center' }}>
+          <div style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '4rem', height: '4rem', margin: '0 auto' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p style={{ fontSize: '1.15rem', color: 'var(--color-text-primary)', marginBottom: '0.5rem', fontWeight: 600 }}>
+            รูปแบบลิงก์ไม่ถูกต้อง
+          </p>
+          <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+            ช่องลิงก์ตรวจสอบงาน ต้องขึ้นต้นด้วย <strong style={{ color: 'var(--color-primary)' }}>http://</strong> หรือ <strong style={{ color: 'var(--color-primary)' }}>https://</strong> เท่านั้นครับ
+          </p>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }} onClick={() => setLinkErrorOpen(false)}>
+            ตกลง, เข้าใจแล้ว
+          </button>
+        </div>
       </Modal>
     </div>
   );
