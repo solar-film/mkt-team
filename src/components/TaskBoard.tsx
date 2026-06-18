@@ -70,6 +70,7 @@ export default function TaskBoard() {
   const [filterDay, setFilterDay] = useState('');
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [searchQuery, setSearchQuery] = useState('');
   const [showAllDone, setShowAllDone] = useState(false);
   const [mobileTab, setMobileTab] = useState('todo');
   
@@ -298,6 +299,14 @@ export default function TaskBoard() {
   const filteredItems = items.filter(item => {
     if (filterType !== 'all' && item.itemType !== filterType) return false;
     if (filterCompany !== 'all' && item.company !== filterCompany) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = item.title?.toLowerCase().includes(q) || false;
+      const matchDesc = item.description?.toLowerCase().includes(q) || false;
+      const memberName = members.find(m => m.id === item.memberId)?.name || '';
+      const matchMember = memberName.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchMember) return false;
+    }
     if (filterMonth && filterYear) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
       if (!dateStr) return false;
@@ -462,7 +471,14 @@ export default function TaskBoard() {
     <div style={{ padding: '0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
-          <label className="form-label desktop-only" style={{ marginBottom: 0, whiteSpace: 'nowrap', fontWeight: 600 }}>ผู้รับผิดชอบ:</label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="🔍 ค้นหางาน / คอนเทนต์..."
+            style={{ width: '100%', minWidth: '200px', maxWidth: '300px' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <select 
             className="form-select" 
             style={{ width: '100%', minWidth: '130px', maxWidth: '200px' }}
