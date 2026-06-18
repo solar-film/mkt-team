@@ -222,7 +222,9 @@ export default function DashboardPage() {
                   }, 0) / memberKpis.length 
                 : 0;
               const doneTasks = member.tasks.filter(t => t.status === 'done').length;
+              const unfinishedTasks = member.tasks.filter(t => t.status !== 'done').length;
               const doneContents = member.contents.filter(c => c.status === 'done').length;
+              const unfinishedContents = member.contents.filter(c => c.status !== 'done').length;
 
               return (
                 <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 0', borderBottom: index < members.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
@@ -234,14 +236,30 @@ export default function DashboardPage() {
                     </div>
                     <ProgressBar value={memberAvgKpi} showPercentage={false} />
                   </div>
-                  <div style={{ display: 'flex', gap: '0.75rem', textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ minWidth: '40px' }}>
-                      <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>{doneTasks}</div>
-                      <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>งาน</div>
+                  <div style={{ display: 'flex', gap: '0.5rem', textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#f8fafc', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b', marginBottom: '0.2rem' }}>งาน (รอ/เสร็จ)</div>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <div title="รอดำเนินการ" style={{ minWidth: '16px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f97316' }}>{unfinishedTasks}</span>
+                        </div>
+                        <div style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>/</div>
+                        <div title="เสร็จแล้ว" style={{ minWidth: '16px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981' }}>{doneTasks}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ minWidth: '40px' }}>
-                      <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>{doneContents}</div>
-                      <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>คอนเท้น</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#f8fafc', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b', marginBottom: '0.2rem' }}>คอนเท้น (รอ/เสร็จ)</div>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <div title="รอดำเนินการ" style={{ minWidth: '16px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f97316' }}>{unfinishedContents}</span>
+                        </div>
+                        <div style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>/</div>
+                        <div title="เสร็จแล้ว" style={{ minWidth: '16px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981' }}>{doneContents}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
