@@ -575,12 +575,9 @@ export default function TaskBoard() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setIsModalOpen(true); }}>
-            <HiPlus /> เพิ่มงานทั่วไป
-          </button>
-          <button className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('content'); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
-            <HiPlus /> เพิ่มคอนเท้น
+        <div style={{ display: 'flex', flexShrink: 0 }}>
+          <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+            <HiPlus /> เพิ่มรายการใหม่
           </button>
         </div>
       </div>
@@ -698,7 +695,25 @@ export default function TaskBoard() {
         </button>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : (newItemType === 'task' ? "เพิ่มงานใหม่" : "เพิ่มคอนเท้นใหม่")}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : "เพิ่มรายการใหม่"}>
+        {!isEditing && (
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', padding: '0.25rem', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
+            <button 
+              type="button"
+              onClick={() => setNewItemType('task')}
+              style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', border: 'none', backgroundColor: newItemType === 'task' ? 'white' : 'transparent', color: newItemType === 'task' ? '#3b82f6' : '#64748b', fontWeight: newItemType === 'task' ? 600 : 500, boxShadow: newItemType === 'task' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              งานทั่วไป
+            </button>
+            <button 
+              type="button"
+              onClick={() => setNewItemType('content')}
+              style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', border: 'none', backgroundColor: newItemType === 'content' ? 'white' : 'transparent', color: newItemType === 'content' ? '#3b82f6' : '#64748b', fontWeight: newItemType === 'content' ? 600 : 500, boxShadow: newItemType === 'content' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              คอนเทนต์
+            </button>
+          </div>
+        )}
         {newItemType === 'task' ? (
           <form onSubmit={handleTaskSubmit}>
             <div className="form-group">
