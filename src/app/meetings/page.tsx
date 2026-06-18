@@ -169,6 +169,12 @@ export default function MeetingsPage() {
     fetchMeetings();
   }, []);
 
+  useEffect(() => {
+    if (expandedId && !meetingItems[expandedId] && loadingItems !== expandedId) {
+      fetchItems(expandedId);
+    }
+  }, [expandedId, meetingItems, loadingItems]);
+
   const toggleExpand = (id: string) => {
     if (expandedId === id) {
       setExpandedId(null);
