@@ -522,31 +522,28 @@ export default function CalendarPage() {
     <div>
       {/* -------------------- DESKTOP VIEW -------------------- */}
       <div className="desktop-only">
-        <div className="page-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div className="page-header-content">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <h1 style={{ margin: 0 }}>ปฏิทินงาน</h1>
-              <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '0.25rem' }}>
-                <button 
-                  style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: 'none', background: viewMode === 'month' ? '#ffffff' : 'transparent', color: viewMode === 'month' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'month' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: viewMode === 'month' ? 600 : 400 }}
-                  onClick={() => setViewMode('month')}
-                >
-                  รายเดือน
-                </button>
-                <button 
-                  style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: 'none', background: viewMode === 'week' ? '#ffffff' : 'transparent', color: viewMode === 'week' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'week' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: viewMode === 'week' ? 600 : 400 }}
-                  onClick={() => setViewMode('week')}
-                >
-                  รายสัปดาห์
-                </button>
-              </div>
+        <div className="page-header" style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <h1 style={{ margin: 0, fontSize: '1.5rem' }}>ปฏิทินงาน</h1>
+            <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '0.2rem' }}>
+              <button 
+                style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: 'none', background: viewMode === 'month' ? '#ffffff' : 'transparent', color: viewMode === 'month' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'month' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: viewMode === 'month' ? 600 : 400 }}
+                onClick={() => setViewMode('month')}
+              >
+                รายเดือน
+              </button>
+              <button 
+                style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: 'none', background: viewMode === 'week' ? '#ffffff' : 'transparent', color: viewMode === 'week' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'week' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', fontWeight: viewMode === 'week' ? 600 : 400 }}
+                onClick={() => setViewMode('week')}
+              >
+                รายสัปดาห์
+              </button>
             </div>
-            <p>ภาพรวมงานและคอนเทนต์ทั้งหมดของทีม</p>
           </div>
         </div>
 
-        <div className="card" style={{ padding: '1.5rem' }}>
-          <div className="calendar-controls">
+        <div className="card" style={{ padding: '1rem' }}>
+          <div className="calendar-controls" style={{ marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
                 {thaiMonths[currentDate.getMonth()]} {currentDate.getFullYear() + 543}

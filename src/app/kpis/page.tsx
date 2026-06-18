@@ -133,10 +133,9 @@ export default function KPIsPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: '0.5rem', alignItems: 'center' }}>
         <div className="page-header-content">
-          <h1>เป้าหมาย KPI</h1>
-          <p>ติดตามผลงานและเป้าหมายของทีม</p>
+          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>เป้าหมาย KPI</h1>
         </div>
         {isAdmin && (
           <button className="btn btn-primary" onClick={openAddModal}>
@@ -145,7 +144,7 @@ export default function KPIsPage() {
         )}
       </div>
 
-      <div className="filter-bar">
+      <div className="filter-bar" style={{ padding: '1rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <label className="form-label" style={{ marginBottom: 0 }}>เดือน:</label>

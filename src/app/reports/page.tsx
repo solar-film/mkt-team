@@ -152,16 +152,13 @@ export default function ReportsPage() {
 
   return (
     <div style={{ padding: '0 0.5rem' }}>
-      <div style={{ marginBottom: '1.5rem', marginTop: '0.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
+      <div style={{ marginBottom: '0.5rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
           <HiChartPie /> รายงานรวม
         </h1>
-        <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem', fontWeight: 500 }}>
-          ดูภาพรวมงานและคอนเทนต์ทั้งหมด พร้อมตัวกรอง
-        </p>
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', marginBottom: '1.5rem' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', marginBottom: '1rem' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#334155' }}>
           <HiFunnel /> ตัวกรองข้อมูล
         </h3>
