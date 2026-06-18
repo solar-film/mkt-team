@@ -415,18 +415,21 @@ export default function TaskBoard() {
               </div>
               
               <div className="task-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: item.itemType === 'task' ? 'var(--color-text-secondary)' : 'var(--color-primary)', backgroundColor: item.itemType === 'task' ? '#f1f5f9' : '#e0e7ff', padding: '0.2rem 0.5rem', borderRadius: '4px', marginRight: '0.25rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: item.itemType === 'task' ? 'var(--color-text-secondary)' : 'var(--color-primary)', backgroundColor: item.itemType === 'task' ? '#f1f5f9' : '#e0e7ff', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
                     {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                   </span>
+                </div>
+                <div className="task-actions" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                   <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-secondary)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleEditClick(item); }} title="แก้ไข">
                     <HiOutlinePencilSquare />
                   </button>
                   <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }} title="ลบ">
                     <HiOutlineTrash />
                   </button>
-                </div>
-                <div className="task-actions">
+                  
+                  <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--color-border)', margin: '0 4px' }}></div>
+                  
                   {status === 'in_progress' || status === 'done' ? (
                     <button className="btn btn-sm btn-secondary" onClick={(e) => { e.stopPropagation(); handleStatusChange(item, status === 'done' ? 'in_progress' : 'todo'); }}>
                       <HiArrowLeft />
