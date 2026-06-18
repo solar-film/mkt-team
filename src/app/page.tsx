@@ -236,29 +236,23 @@ export default function DashboardPage() {
                     </div>
                     <ProgressBar value={memberAvgKpi} showPercentage={false} />
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#f8fafc', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b', marginBottom: '0.2rem' }}>งาน (รอ/เสร็จ)</div>
-                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                        <div title="รอดำเนินการ" style={{ minWidth: '16px' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f97316' }}>{unfinishedTasks}</span>
-                        </div>
-                        <div style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>/</div>
-                        <div title="เสร็จแล้ว" style={{ minWidth: '16px' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981' }}>{doneTasks}</span>
-                        </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', textAlign: 'left', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#fff7ed', padding: '0.4rem 0.6rem', borderRadius: '8px', minWidth: '75px' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ea580c', marginBottom: '0.3rem', textAlign: 'center' }}>รอดำเนินการ</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#475569', gap: '0.5rem' }}>
+                        <span>งาน:</span> <strong style={{ color: '#ea580c' }}>{unfinishedTasks}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#475569', gap: '0.5rem' }}>
+                        <span>คอนเท้น:</span> <strong style={{ color: '#ea580c' }}>{unfinishedContents}</strong>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#f8fafc', padding: '0.3rem 0.5rem', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b', marginBottom: '0.2rem' }}>คอนเท้น (รอ/เสร็จ)</div>
-                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                        <div title="รอดำเนินการ" style={{ minWidth: '16px' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f97316' }}>{unfinishedContents}</span>
-                        </div>
-                        <div style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>/</div>
-                        <div title="เสร็จแล้ว" style={{ minWidth: '16px' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981' }}>{doneContents}</span>
-                        </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#f0fdf4', padding: '0.4rem 0.6rem', borderRadius: '8px', minWidth: '75px' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#16a34a', marginBottom: '0.3rem', textAlign: 'center' }}>เสร็จแล้ว</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#475569', gap: '0.5rem' }}>
+                        <span>งาน:</span> <strong style={{ color: '#16a34a' }}>{doneTasks}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#475569', gap: '0.5rem' }}>
+                        <span>คอนเท้น:</span> <strong style={{ color: '#16a34a' }}>{doneContents}</strong>
                       </div>
                     </div>
                   </div>
