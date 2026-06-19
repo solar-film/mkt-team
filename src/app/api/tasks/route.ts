@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
     if (meetingId) where.meetingId = meetingId
-    if (memberId && memberId !== 'all') where.memberId = memberId
+    if (memberId && memberId !== 'all') {
+      where.OR = [
+        { memberId: memberId },
+        { memberId: 'all' }
+      ]
+    }
 
     const tasks = await prisma.task.findMany({
       where,
