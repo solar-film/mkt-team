@@ -239,7 +239,7 @@ export default function TaskBoard() {
         await fetch('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body })
+          body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
         });
       } else {
         await fetch('/api/tasks', {
@@ -274,7 +274,7 @@ export default function TaskBoard() {
         await fetch('/api/content', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body })
+          body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
         });
       } else {
         await fetch('/api/content', {
@@ -772,13 +772,12 @@ export default function TaskBoard() {
                 />
               </div>
             </div>
-            {/* KPI selection removed from tasks as per user request (automatically handled in backend) */}
-            {!isEditing && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                <input type="checkbox" id="notifyLineTask" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
-                <label htmlFor="notifyLineTask" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 แจ้งเตือนผ่าน LINE</label>
-              </div>
-            )}
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+              <input type="checkbox" id="notifyLineTask" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
+              <label htmlFor="notifyLineTask" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 ส่งแจ้งเตือนไปยังกลุ่ม LINE</label>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
               <button type="submit" className="btn btn-primary">บันทึกงาน</button>
@@ -877,12 +876,10 @@ export default function TaskBoard() {
                 </div>
               )
             ) : null}
-            {!isEditing && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                <input type="checkbox" id="notifyLineContent" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
-                <label htmlFor="notifyLineContent" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 แจ้งเตือนผ่าน LINE</label>
-              </div>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+              <input type="checkbox" id="notifyLineContent" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
+              <label htmlFor="notifyLineContent" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 ส่งแจ้งเตือนไปยังกลุ่ม LINE</label>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
               <button type="submit" className="btn btn-primary">บันทึกคอนเท้น</button>
