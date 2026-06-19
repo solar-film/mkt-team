@@ -92,6 +92,7 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [meetingItems, setMeetingItems] = useState<Record<string, MeetingLinkedItem[]>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -166,6 +167,10 @@ export default function MeetingsPage() {
   useEffect(() => {
     fetchMeetings();
   }, []);
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
+  };
 
   const handleCopySummary = (meeting: Meeting, items: MeetingLinkedItem[]) => {
     const grouped: Record<string, MeetingLinkedItem[]> = {};
@@ -431,6 +436,7 @@ export default function MeetingsPage() {
       ) : (
         <div className="timeline-container">
           {meetings.map(meeting => {
+            const isExpanded = expandedId === meeting.id;
             const items = meetingItems[meeting.id] || [];
             const doneCount = items.filter(i => (i.itemCategory === 'task' ? i.status === 'done' : i.status === 'published')).length;
             const totalCount = items.length;
@@ -441,7 +447,9 @@ export default function MeetingsPage() {
                 <div className="timeline-card">
                   {/* Card Header */}
                   <div
+                    onClick={() => toggleExpand(meeting.id)}
                     style={{
+                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '1rem',
@@ -522,11 +530,13 @@ export default function MeetingsPage() {
                     >
                       <HiOutlineTrash />
                     </button>
+                    {isExpanded ? <HiChevronUp style={{ color: 'var(--color-text-secondary)' }} /> : <HiChevronDown style={{ color: 'var(--color-text-secondary)' }} />}
                   </div>
                 </div>
 
                 {/* Expanded Content */}
-                <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--color-border)' }}>
+                {isExpanded && (
+                  <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--color-border)' }}>
                         {/* Agenda */}
                         {meeting.agenda && (
                           <div style={{ marginTop: '1rem' }}>
@@ -644,6 +654,7 @@ export default function MeetingsPage() {
                           </div>
                         )}
                   </div>
+                )}
                 </div>
               </div>
             );

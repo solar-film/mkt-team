@@ -536,6 +536,9 @@ export default function CalendarPage() {
                 รายสัปดาห์
               </button>
             </div>
+            <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setEventForm({ title: '', date: '', time: '', type: 'event' }); setIsModalOpen(true); }}>
+              <HiPlus /> เพิ่มรายการใหม่
+            </button>
           </div>
         </div>
 
