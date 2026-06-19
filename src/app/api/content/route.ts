@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendLineNotify } from '@/lib/line-notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId } = body
+    const { title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId, notifyLine } = body
 
     if (!title || !memberId) {
       return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
@@ -65,6 +66,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    if (notifyLine) {
+      const memberName = newContent.member?.name || 'ทีมงาน'
+      const dateStr = publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'
+      const message = `\n📢 คอนเทนต์ใหม่: ${title}\nช่องทาง: ${platform || '-'}\nผู้รับผิดชอบ: ${memberName}\nวันที่เผยแพร่: ${dateStr}`
+      await sendLineNotify(message)
+    }
+
     return NextResponse.json({ success: true, content: newContent })
   } catch (error) {
     console.error('API Error:', error)
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId } = body
+    const { id, title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId, notifyLine } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
@@ -98,6 +106,15 @@ export async function PUT(request: NextRequest) {
         member: { select: { id: true, name: true, avatar: true } }
       }
     })
+
+    if (notifyLine) {
+      const memberName = updatedContent.member?.name || 'ทีมงาน'
+      let statStr = 'Draft'
+      if (status === 'published') statStr = '✅ Published'
+      if (status === 'scheduled') statStr = '🗓️ Scheduled'
+      const message = `\nอัปเดตคอนเทนต์: ${title || updatedContent.title}\nสถานะ: ${statStr}\nผู้รับผิดชอบ: ${memberName}`
+      await sendLineNotify(message)
+    }
 
     return NextResponse.json({ success: true, content: updatedContent })
   } catch (error) {

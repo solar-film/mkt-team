@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendLineNotify } from '@/lib/line-notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId } = body
+    const { title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId, notifyLine } = body
 
     if (!title || !memberId) {
       return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
@@ -70,6 +71,16 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    if (notifyLine) {
+      const memberName = newTask.member?.name || 'ทีมงาน'
+      const dateStr = deadline ? new Date(deadline).toLocaleDateString('th-TH') : '-'
+      let pStr = 'ปานกลาง'
+      if (priority === 'high') pStr = 'ด่วนมาก'
+      if (priority === 'low') pStr = 'ปกติ'
+      const message = `\n📋 งานใหม่: ${title}\nผู้รับผิดชอบ: ${memberName}\nกำหนดส่ง: ${dateStr}\nความสำคัญ: ${pStr}`
+      await sendLineNotify(message)
+    }
+
     return NextResponse.json({ success: true, task: newTask })
   } catch (error) {
     console.error('API Error:', error)
@@ -80,7 +91,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId } = body
+    const { id, title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId, notifyLine } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
@@ -103,6 +114,15 @@ export async function PUT(request: NextRequest) {
         member: { select: { id: true, name: true, avatar: true } }
       }
     })
+
+    if (notifyLine) {
+      const memberName = updatedTask.member?.name || 'ทีมงาน'
+      let statStr = 'รอดำเนินการ'
+      if (status === 'done') statStr = '✅ เสร็จสิ้น'
+      if (status === 'in_progress') statStr = '🔄 กำลังทำ'
+      const message = `\nอัปเดตงาน: ${title || updatedTask.title}\nสถานะ: ${statStr}\nผู้รับผิดชอบ: ${memberName}`
+      await sendLineNotify(message)
+    }
 
     return NextResponse.json({ success: true, task: updatedTask })
   } catch (error) {
