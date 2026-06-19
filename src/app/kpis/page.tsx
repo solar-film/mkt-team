@@ -122,6 +122,14 @@ export default function KPIsPage() {
     : members).filter(member => {
       const monthKpis = member.kpis?.filter(k => k.month === filterMonth && k.year === filterYear) || [];
       return monthKpis.length > 0;
+    }).sort((a, b) => {
+      const order = ['แต้ว', 'เพลง', 'นน'];
+      const idxA = order.indexOf(a.name);
+      const idxB = order.indexOf(b.name);
+      if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
     });
   if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
@@ -245,7 +253,11 @@ export default function KPIsPage() {
                 const car = getStats('CAR');
                 const hasStats = gfs.t > 0 || gfs.c > 0 || mhl.t > 0 || mhl.c > 0 || car.t > 0 || car.c > 0;
 
-                const monthKpis = member.kpis.filter(k => k.month === filterMonth && k.year === filterYear);
+                const monthKpis = member.kpis.filter(k => k.month === filterMonth && k.year === filterYear).sort((a, b) => {
+                  if (a.name === 'งานทั่วไป') return -1;
+                  if (b.name === 'งานทั่วไป') return 1;
+                  return a.name.localeCompare(b.name);
+                });
                 return (
                   <>
                     {hasStats && (
