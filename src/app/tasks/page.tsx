@@ -7,7 +7,7 @@ export default function UnifiedTasksPage() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/events').then(res => res.json()).then(data => {
+    fetch('/api/events', { cache: 'no-store' }).then(res => res.json()).then(data => {
       if (Array.isArray(data)) setEvents(data);
     });
   }, []);

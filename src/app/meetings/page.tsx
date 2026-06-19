@@ -134,8 +134,8 @@ export default function MeetingsPage() {
   const fetchMeetings = async () => {
     try {
       const [meetingsRes, membersRes] = await Promise.all([
-        fetch('/api/meetings'),
-        fetch('/api/members'),
+        fetch('/api/meetings', { cache: 'no-store' }),
+        fetch('/api/members', { cache: 'no-store' }),
       ]);
       const meetingsData = await meetingsRes.json();
       const membersData = await membersRes.json();
@@ -152,8 +152,8 @@ export default function MeetingsPage() {
     setLoadingItems(meetingId);
     try {
       const [tasksRes, contentsRes] = await Promise.all([
-        fetch(`/api/tasks?meetingId=${meetingId}`),
-        fetch(`/api/content?meetingId=${meetingId}`)
+        fetch(`/api/tasks?meetingId=${meetingId}`, { cache: 'no-store' }),
+        fetch(`/api/content?meetingId=${meetingId}`, { cache: 'no-store' })
       ]);
       const tasksData = await tasksRes.json();
       const contentsData = await contentsRes.json();

@@ -76,11 +76,11 @@ export default function CalendarPage() {
       setLoading(true);
       const t = Date.now();
       const [resTasks, resContent, resEvents, resMembers, resKpis] = await Promise.all([
-        fetch('/api/tasks'),
-        fetch('/api/content'),
-        fetch('/api/events'),
-        fetch('/api/members'),
-        fetch('/api/kpis')
+        fetch('/api/tasks', { cache: 'no-store' }),
+        fetch('/api/content', { cache: 'no-store' }),
+        fetch('/api/events', { cache: 'no-store' }),
+        fetch('/api/members', { cache: 'no-store' }),
+        fetch('/api/kpis', { cache: 'no-store' })
       ]);
       const tasks = await resTasks.json();
       const contents = await resContent.json();

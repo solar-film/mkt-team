@@ -64,7 +64,7 @@ export default function ReportsPage() {
       .catch(err => {
         console.error(err);
         setLoading(false);
-      });
+      }, { cache: 'no-store' });
   }, []);
 
   if (loading) {

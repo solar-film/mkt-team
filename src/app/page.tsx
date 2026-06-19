@@ -36,7 +36,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = () => {
-    fetch('/api/members?includeRelations=true')
+    fetch('/api/members?includeRelations=true', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data && data.error) {
