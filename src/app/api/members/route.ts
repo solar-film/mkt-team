@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const includeRelations = searchParams.get('includeRelations') === 'true'
 
     const members = await prisma.teamMember.findMany({
+      where: { id: { not: 'all' } },
       orderBy: {
         name: 'asc'
       },
