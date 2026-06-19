@@ -7,8 +7,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
+    const meetingId = searchParams.get('meetingId')
 
     const where: any = {}
+    if (meetingId) where.meetingId = meetingId
     if (memberId && memberId !== 'all') where.memberId = memberId
 
     const contents = await prisma.content.findMany({
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, type, platform, status, publishDate, memberId, company, link, kpiId } = body
+    const { title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId } = body
 
     if (!title || !memberId) {
       return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
@@ -50,7 +52,8 @@ export async function POST(request: NextRequest) {
         company: company || 'GFS',
         memberId,
         link: link || null,
-        kpiId: kpiId || null
+        kpiId: kpiId || null,
+        meetingId: meetingId || null
       },
       include: {
         member: { select: { id: true, name: true, avatar: true } }
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, description, type, platform, status, publishDate, memberId, company, link, kpiId } = body
+    const { id, title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
@@ -83,7 +86,8 @@ export async function PUT(request: NextRequest) {
         company: company !== undefined ? company : undefined,
         memberId: memberId !== undefined ? memberId : undefined,
         link: link !== undefined ? link : undefined,
-        kpiId: kpiId !== undefined ? kpiId : undefined
+        kpiId: kpiId !== undefined ? kpiId : undefined,
+        meetingId: meetingId !== undefined ? meetingId : undefined
       },
       include: {
         member: { select: { id: true, name: true, avatar: true } }

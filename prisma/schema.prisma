@@ -66,6 +66,7 @@ model Content {
   publishDate DateTime?
   link        String?
   kpiId       String?
+  meetingId   String?
   memberId    String
   member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
