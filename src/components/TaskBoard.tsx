@@ -365,9 +365,9 @@ export default function TaskBoard() {
                   <div style={{ flexShrink: 0, display: 'flex' }}>
                     {item.itemType === 'task' ? <HiClipboardDocumentList style={{ color: 'var(--color-text-secondary)' }} /> : <HiDocumentText style={{ color: 'var(--color-primary)' }} />}
                   </div>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
-                    {item.company ? `[${item.company}] ` : ''}{item.title}
-                  </span>
+                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', minWidth: 0, flex: 1, lineHeight: 1.4 }}>
+                      {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
+                    </span>
                   {item.link && (
                     <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', color: 'var(--color-primary)', display: 'inline-flex', padding: '0.2rem', flexShrink: 0 }}>
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
@@ -628,15 +628,17 @@ export default function TaskBoard() {
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-                      <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'flex-start', gap: '0.25rem', minWidth: 0 }}>
-                        <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', minWidth: 0, flex: 1, lineHeight: 1.4 }}>{item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}</span>
-                        {item.link && (
-                          <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', flexShrink: 0 }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                            </svg>
-                          </a>
-                        )}
+                      <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', minWidth: 0 }}>
+                        <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                          {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
+                          {item.link && (
+                            <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--color-primary)', display: 'inline-flex', marginLeft: '6px', verticalAlign: 'text-bottom' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.1rem', height: '1.1rem' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                              </svg>
+                            </a>
+                          )}
+                        </span>
                       </h3>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', lineHeight: 1.5 }}>
                         {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : item.contentType === 'graphic' ? 'กราฟิก' : item.contentType === 'reel' ? 'Reel' : 'โพสต์'} - ${item.company}`}
