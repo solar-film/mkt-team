@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     if (notifyLine) {
       const memberName = newContent.member?.name || 'ทีมงาน'
       const dateStr = publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'
-      const message = `\n📢 คอนเทนต์ใหม่: ${title}\nช่องทาง: ${platform || '-'}\nผู้รับผิดชอบ: ${memberName}\nวันที่เผยแพร่: ${dateStr}`
+      const message = `\n📢 คอนเทนต์ใหม่: ${title}\nรายละเอียด: ${description || '-'}\nช่องทาง: ${platform || '-'}\nผู้รับผิดชอบ: ${memberName}\nวันที่เผยแพร่: ${dateStr}`
       await sendLineNotify(message)
     }
 
@@ -112,7 +112,8 @@ export async function PUT(request: NextRequest) {
       let statStr = 'Draft'
       if (status === 'published') statStr = '✅ Published'
       if (status === 'scheduled') statStr = '🗓️ Scheduled'
-      const message = `\nอัปเดตคอนเทนต์: ${title || updatedContent.title}\nสถานะ: ${statStr}\nผู้รับผิดชอบ: ${memberName}`
+      const descStr = description !== undefined ? (description || '-') : (updatedContent.description || '-')
+      const message = `\nอัปเดตคอนเทนต์: ${title || updatedContent.title}\nรายละเอียด: ${descStr}\nสถานะ: ${statStr}\nผู้รับผิดชอบ: ${memberName}`
       await sendLineNotify(message)
     }
 

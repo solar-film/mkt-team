@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       let pStr = 'ปานกลาง'
       if (priority === 'high') pStr = 'ด่วนมาก'
       if (priority === 'low') pStr = 'ปกติ'
-      const message = `\n📋 งานใหม่: ${title}\nผู้รับผิดชอบ: ${memberName}\nกำหนดส่ง: ${dateStr}\nความสำคัญ: ${pStr}`
+      const message = `\n📋 งานใหม่: ${title}\nรายละเอียด: ${description || '-'}\nผู้รับผิดชอบ: ${memberName}\nกำหนดส่ง: ${dateStr}\nความสำคัญ: ${pStr}`
       await sendLineNotify(message)
     }
 
@@ -120,7 +120,8 @@ export async function PUT(request: NextRequest) {
       let statStr = 'รอดำเนินการ'
       if (status === 'done') statStr = '✅ เสร็จสิ้น'
       if (status === 'in_progress') statStr = '🔄 กำลังทำ'
-      const message = `\nอัปเดตงาน: ${title || updatedTask.title}\nสถานะ: ${statStr}\nผู้รับผิดชอบ: ${memberName}`
+      const descStr = description !== undefined ? (description || '-') : (updatedTask.description || '-')
+      const message = `\nอัปเดตงาน: ${title || updatedTask.title}\nรายละเอียด: ${descStr}\nสถานะ: ${statStr}\nผู้รับผิดชอบ: ${memberName}`
       await sendLineNotify(message)
     }
 
