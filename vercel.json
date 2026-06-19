@@ -4,5 +4,6 @@
       "path": "/api/cron/deadline",
       "schedule": "0 1 * * *"
     }
-  ]
+  ],
+  "regions": ["syd1"]
 }
