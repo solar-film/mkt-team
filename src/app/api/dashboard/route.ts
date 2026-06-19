@@ -27,22 +27,18 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const [tasks, contents, members, kpis, meetings] = await Promise.all([
+    const [tasks, contents, members, kpis, meetings, events] = await Promise.all([
       prisma.task.findMany({
         where: taskWhere,
         include: {
-          member: { select: { id: true, name: true, avatar: true } },
-          meeting: { select: { id: true, title: true } },
-          kpi: { select: { id: true, title: true } }
+          member: { select: { id: true, name: true, avatar: true } }
         },
         orderBy: { deadline: 'asc' }
       }),
       prisma.content.findMany({
         where: contentWhere,
         include: {
-          member: { select: { id: true, name: true, avatar: true } },
-          meeting: { select: { id: true, title: true } },
-          kpi: { select: { id: true, title: true } }
+          member: { select: { id: true, name: true, avatar: true } }
         },
         orderBy: { publishDate: 'asc' }
       }),

@@ -403,11 +403,14 @@ export default function TaskBoard() {
               )}
               
               <div className="task-meta">
-                {item.memberId === 'all' ? (
-                <div className="task-member">
-                  {item.memberId === 'all' ? <span style={{ fontSize: '1.1rem' }}>👥</span> : <MemberAvatar name={item.member?.name || 'ไม่ระบุ'} size="sm" />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {item.memberId === 'all' ? (
+                    <span style={{ fontSize: '1.1rem' }}>👥</span>
+                  ) : item.member ? (
+                    <MemberAvatar name={item.member.name} size="sm" />
+                  ) : null}
+                  <span>{item.memberId === 'all' ? 'ทุกคน' : (item.member?.name || 'ไม่ระบุ')}</span>
                 </div>
-                <span>{item.member?.name || ''}</span>
                 {item.itemType === 'task' && item.deadline && (
                   <span style={{ marginLeft: 'auto', color: new Date(item.deadline) < new Date() ? 'var(--color-danger)' : 'inherit' }}>
                     ถึง {formatDateTime(item.deadline)}

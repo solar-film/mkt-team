@@ -55,7 +55,7 @@ export default function ReportsPage() {
   const [dateDay, setDateDay] = useState(currentDate.toISOString().split('T')[0]);
 
   useEffect(() => {
-    fetch('/api/members?includeRelations=true&t=' + Date.now())
+    fetch('/api/members?includeRelations=true&t=' + Date.now(), { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setMembers(data);
@@ -64,7 +64,7 @@ export default function ReportsPage() {
       .catch(err => {
         console.error(err);
         setLoading(false);
-      }, { cache: 'no-store' });
+      });
   }, []);
 
   if (loading) {

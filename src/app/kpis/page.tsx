@@ -81,7 +81,7 @@ export default function KPIsPage() {
   };
 
   useEffect(() => {
-    fetchMembers(, { cache: 'no-store' });
+    fetchMembers();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
