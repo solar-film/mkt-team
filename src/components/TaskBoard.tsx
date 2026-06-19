@@ -96,14 +96,14 @@ export default function TaskBoard() {
   });
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const t = Date.now();
       const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes] = await Promise.all([
-        fetch('/api/tasks?t=' + t + (filterMemberId ? `&memberId=${filterMemberId}` : '')),
-        fetch('/api/content?t=' + t + (filterMemberId ? `&memberId=${filterMemberId}` : '')),
-        fetch('/api/members?t=' + t),
-        fetch('/api/kpis?t=' + t),
-        fetch('/api/meetings?t=' + t)
+        fetch('/api/tasks' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
+        fetch('/api/content' + (filterMemberId ? `?memberId=${filterMemberId}` : '')),
+        fetch('/api/members'),
+        fetch('/api/kpis'),
+        fetch('/api/meetings')
       ]);
       const tasksData = await tasksRes.json();
       const contentsData = await contentsRes.json();
