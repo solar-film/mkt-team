@@ -3,12 +3,20 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const includeRelations = searchParams.get('includeRelations') === 'true'
+
     const members = await prisma.teamMember.findMany({
       orderBy: {
         name: 'asc'
-      }
+      },
+      include: includeRelations ? {
+        tasks: true,
+        kpis: true,
+        contents: true
+      } : undefined
     })
     return NextResponse.json(members)
   } catch (error) {
