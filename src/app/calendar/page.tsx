@@ -74,12 +74,13 @@ export default function CalendarPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const t = Date.now();
       const [resTasks, resContent, resEvents, resMembers, resKpis] = await Promise.all([
-        fetch('/api/tasks'),
-        fetch('/api/content'),
-        fetch('/api/events'),
-        fetch('/api/members'),
-        fetch('/api/kpis')
+        fetch('/api/tasks?t=' + t),
+        fetch('/api/content?t=' + t),
+        fetch('/api/events?t=' + t),
+        fetch('/api/members?t=' + t),
+        fetch('/api/kpis?t=' + t)
       ]);
       const tasks = await resTasks.json();
       const contents = await resContent.json();

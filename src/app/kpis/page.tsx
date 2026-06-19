@@ -69,7 +69,8 @@ export default function KPIsPage() {
 
   const fetchMembers = async () => {
     try {
-      const res = await fetch('/api/members?includeRelations=true');
+      setLoading(true);
+      const res = await fetch('/api/members?includeRelations=true&t=' + Date.now());
       const data = await res.json();
       setMembers(data);
     } catch (err) {

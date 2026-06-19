@@ -55,7 +55,7 @@ export default function ReportsPage() {
   const [dateDay, setDateDay] = useState(currentDate.toISOString().split('T')[0]);
 
   useEffect(() => {
-    fetch('/api/members?includeRelations=true')
+    fetch('/api/members?includeRelations=true&t=' + Date.now())
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setMembers(data);
