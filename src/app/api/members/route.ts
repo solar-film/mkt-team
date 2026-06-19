@@ -20,9 +20,12 @@ export async function GET(request: NextRequest) {
       } : undefined
     })
     return NextResponse.json(members)
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch members', 
+      details: error?.message || String(error) 
+    }, { status: 500 })
   }
 }
 

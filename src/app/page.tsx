@@ -40,7 +40,7 @@ export default function DashboardPage() {
       .then(res => res.json())
       .then(data => {
         if (data && data.error) {
-          setError(data.error);
+          setError(data.details ? `[Error]: ${data.details}` : data.error);
           setMembers([]);
         } else if (Array.isArray(data)) {
           setMembers(data);
@@ -80,8 +80,8 @@ export default function DashboardPage() {
       <div className="card" style={{ margin: '2rem', padding: '2rem', textAlign: 'center', borderColor: 'var(--color-danger)' }}>
         <h2 style={{ color: 'var(--color-danger)' }}>เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</h2>
         <p style={{ marginTop: '1rem' }}>{error}</p>
-        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-          ระบบไม่สามารถเชื่อมต่อกับฐานข้อมูล Supabase ได้ กรุณาตรวจสอบการตั้งค่า DATABASE_URL ใน Vercel
+        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)', wordBreak: 'break-all', textAlign: 'left', background: '#ffebee', padding: '10px', borderRadius: '5px' }}>
+          {error.includes('[Error]') ? error : 'ระบบไม่สามารถเชื่อมต่อกับฐานข้อมูล Supabase ได้ กรุณาตรวจสอบการตั้งค่า DATABASE_URL ใน Vercel'}
         </p>
       </div>
     );
