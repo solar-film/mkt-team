@@ -1162,3 +1162,16 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .meeting-notes-content h1 { font-size: 1.5em; }
 .meeting-notes-content h2 { font-size: 1.2em; }
 .meeting-notes-content h3 { font-size: 1.1em; }
+
+/* Fix ReactQuill background color to match form inputs */
+.ql-container {
+  background-color: var(--color-surface) !important;
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  font-family: inherit !important;
+}
+.ql-toolbar {
+  background-color: var(--color-surface) !important;
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+}
