@@ -24,7 +24,26 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(meetings)
+    // Fetch related tasks and contents
+    const meetingIds = meetings.map(m => m.id)
+    const [tasks, contents] = await Promise.all([
+      prisma.task.findMany({
+        where: { meetingId: { in: meetingIds } },
+        include: { member: { select: { id: true, name: true, role: true, avatar: true } } }
+      }),
+      prisma.content.findMany({
+        where: { meetingId: { in: meetingIds } },
+        include: { member: { select: { id: true, name: true, role: true, avatar: true } } }
+      })
+    ])
+
+    const meetingsWithItems = meetings.map(m => ({
+      ...m,
+      tasks: tasks.filter(t => t.meetingId === m.id),
+      contents: contents.filter(c => c.meetingId === m.id)
+    }))
+
+    return NextResponse.json(meetingsWithItems)
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch meetings' }, { status: 500 })

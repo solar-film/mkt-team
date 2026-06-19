@@ -92,9 +92,7 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [meetingItems, setMeetingItems] = useState<Record<string, MeetingLinkedItem[]>>({});
-  const [loadingItems, setLoadingItems] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Modal states
@@ -139,7 +137,24 @@ export default function MeetingsPage() {
       ]);
       const meetingsData = await meetingsRes.json();
       const membersData = await membersRes.json();
-      setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
+      
+      if (Array.isArray(meetingsData)) {
+        setMeetings(meetingsData);
+        const newItems: Record<string, MeetingLinkedItem[]> = {};
+        meetingsData.forEach((m: any) => {
+          const tasks = (m.tasks || []).map((t: any) => ({ ...t, itemCategory: 'task' }));
+          const contents = (m.contents || []).map((c: any) => ({ ...c, itemCategory: 'content' }));
+          const allItems = [...tasks, ...contents].sort((a, b) => {
+            const dateA = new Date(a.deadline || a.publishDate || a.createdAt || 0).getTime();
+            const dateB = new Date(b.deadline || b.publishDate || b.createdAt || 0).getTime();
+            return dateA - dateB;
+          });
+          newItems[m.id] = allItems;
+        });
+        setMeetingItems(newItems);
+      } else {
+        setMeetings([]);
+      }
       setMembers(Array.isArray(membersData) ? membersData : []);
     } catch (err) {
       console.error(err);
@@ -148,53 +163,9 @@ export default function MeetingsPage() {
     }
   };
 
-  const fetchItems = async (meetingId: string) => {
-    setLoadingItems(meetingId);
-    try {
-      const [tasksRes, contentsRes] = await Promise.all([
-        fetch(`/api/tasks?meetingId=${meetingId}`, { cache: 'no-store' }),
-        fetch(`/api/content?meetingId=${meetingId}`, { cache: 'no-store' })
-      ]);
-      const tasksData = await tasksRes.json();
-      const contentsData = await contentsRes.json();
-      
-      const tasks = Array.isArray(tasksData) ? tasksData.map(t => ({ ...t, itemCategory: 'task' })) : [];
-      const contents = Array.isArray(contentsData) ? contentsData.map(c => ({ ...c, itemCategory: 'content' })) : [];
-      
-      const allItems = [...tasks, ...contents].sort((a, b) => {
-        const dateA = new Date(a.deadline || a.publishDate || a.createdAt || 0).getTime();
-        const dateB = new Date(b.deadline || b.publishDate || b.createdAt || 0).getTime();
-        return dateA - dateB;
-      });
-      
-      setMeetingItems(prev => ({ ...prev, [meetingId]: allItems }));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingItems(null);
-    }
-  };
-
   useEffect(() => {
     fetchMeetings();
   }, []);
-
-  useEffect(() => {
-    if (expandedId && !meetingItems[expandedId] && loadingItems !== expandedId) {
-      fetchItems(expandedId);
-    }
-  }, [expandedId, meetingItems, loadingItems]);
-
-  const toggleExpand = (id: string) => {
-    if (expandedId === id) {
-      setExpandedId(null);
-    } else {
-      setExpandedId(id);
-      if (!meetingItems[id]) {
-        fetchItems(id);
-      }
-    }
-  };
 
   const handleCopySummary = (meeting: Meeting, items: MeetingLinkedItem[]) => {
     const grouped: Record<string, MeetingLinkedItem[]> = {};
@@ -379,7 +350,6 @@ export default function MeetingsPage() {
         delete next[deleteId];
         return next;
       });
-      if (expandedId === deleteId) setExpandedId(null);
     } catch (err) {
       console.error(err);
     }
@@ -461,7 +431,6 @@ export default function MeetingsPage() {
       ) : (
         <div className="timeline-container">
           {meetings.map(meeting => {
-            const isExpanded = expandedId === meeting.id;
             const items = meetingItems[meeting.id] || [];
             const doneCount = items.filter(i => (i.itemCategory === 'task' ? i.status === 'done' : i.status === 'published')).length;
             const totalCount = items.length;
@@ -472,9 +441,7 @@ export default function MeetingsPage() {
                 <div className="timeline-card">
                   {/* Card Header */}
                   <div
-                    onClick={() => toggleExpand(meeting.id)}
                     style={{
-                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '1rem',
@@ -555,19 +522,11 @@ export default function MeetingsPage() {
                     >
                       <HiOutlineTrash />
                     </button>
-                    {isExpanded ? <HiChevronUp style={{ color: 'var(--color-text-secondary)' }} /> : <HiChevronDown style={{ color: 'var(--color-text-secondary)' }} />}
                   </div>
                 </div>
 
                 {/* Expanded Content */}
-                {isExpanded && (
-                  <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--color-border)' }}>
-                    {loadingItems === meeting.id ? (
-                      <div style={{ textAlign: 'center', padding: '2rem' }}>
-                        <div className="loading-spinner" style={{ width: '1.5rem', height: '1.5rem' }}></div>
-                      </div>
-                    ) : (
-                      <>
+                <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--color-border)' }}>
                         {/* Agenda */}
                         {meeting.agenda && (
                           <div style={{ marginTop: '1rem' }}>
@@ -684,10 +643,7 @@ export default function MeetingsPage() {
                             ไม่มีงานที่เกี่ยวข้อง
                           </div>
                         )}
-                      </>
-                    )}
                   </div>
-                )}
                 </div>
               </div>
             );
