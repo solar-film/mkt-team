@@ -188,7 +188,15 @@ export default function KPIsPage() {
               onChange={(e) => setFilterMemberId(e.target.value)}
             >
               <option value="">-- ทั้งหมด --</option>
-              {members.filter(m => m.status !== 'inactive').map(m => (
+              {members.filter(m => m.status !== 'inactive').sort((a, b) => {
+                const order = ['แต้ว', 'เพลง', 'นน'];
+                const idxA = order.indexOf(a.name);
+                const idxB = order.indexOf(b.name);
+                if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name);
+                if (idxA === -1) return 1;
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+              }).map(m => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
@@ -328,9 +336,7 @@ export default function KPIsPage() {
             <label className="form-label">พนักงาน *</label>
             <select className="form-select" required value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})}>
               <option value="">-- เลือกพนักงาน --</option>
-              {members.filter(m => m.status !== 'inactive').map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
+              {members.filter(m => m.status !== 'inactive').sort((a, b) => { const order = ['แต้ว', 'เพลง', 'นน']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </div>
           <div className="form-row">
