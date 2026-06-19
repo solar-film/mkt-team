@@ -81,7 +81,7 @@ export default function DashboardPage() {
         <h2 style={{ color: 'var(--color-danger)' }}>เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</h2>
         <p style={{ marginTop: '1rem' }}>{error}</p>
         <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-          ระบบไม่สามารถอ่านข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบว่าคุณได้ <b>Enable (เปิดใช้งาน) Google Sheets API</b> ในหน้า Google Cloud Console ตามขั้นตอนที่ 2 แล้วหรือยัง
+          ระบบไม่สามารถเชื่อมต่อกับฐานข้อมูล Supabase ได้ กรุณาตรวจสอบการตั้งค่า DATABASE_URL ใน Vercel
         </p>
       </div>
     );
