@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, date, time, company, status } = body
+    const { title, date, time, company, status, attendees, agenda, notes, createdBy } = body
 
     if (!title || !date) {
       return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
@@ -46,7 +46,11 @@ export async function POST(request: NextRequest) {
         date: new Date(date),
         time: time || null,
         company: company || 'GFS',
-        status: status || 'upcoming'
+        status: status || 'upcoming',
+        attendees: attendees || null,
+        agenda: agenda || null,
+        notes: notes || null,
+        createdBy: createdBy || null
       }
     })
 
@@ -60,7 +64,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, date, time, company, status } = body
+    const { id, title, date, time, company, status, attendees, agenda, notes, createdBy } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
@@ -71,7 +75,11 @@ export async function PUT(request: NextRequest) {
         date: date !== undefined ? new Date(date) : undefined,
         time: time !== undefined ? time : undefined,
         company: company !== undefined ? company : undefined,
-        status: status !== undefined ? status : undefined
+        status: status !== undefined ? status : undefined,
+        attendees: attendees !== undefined ? attendees : undefined,
+        agenda: agenda !== undefined ? agenda : undefined,
+        notes: notes !== undefined ? notes : undefined,
+        createdBy: createdBy !== undefined ? createdBy : undefined
       }
     })
 

@@ -79,6 +79,10 @@ async function main() {
           time: row.get('time') || null,
           company: row.get('company') || 'GFS',
           status: row.get('status') || 'upcoming',
+          attendees: row.get('attendees') || null,
+          agenda: row.get('agenda') || null,
+          notes: row.get('notes') || null,
+          createdBy: row.get('createdBy') || null,
           createdAt: new Date(row.get('createdAt') || Date.now()),
         },
         create: {
@@ -88,6 +92,10 @@ async function main() {
           time: row.get('time') || null,
           company: row.get('company') || 'GFS',
           status: row.get('status') || 'upcoming',
+          attendees: row.get('attendees') || null,
+          agenda: row.get('agenda') || null,
+          notes: row.get('notes') || null,
+          createdBy: row.get('createdBy') || null,
           createdAt: new Date(row.get('createdAt') || Date.now()),
         }
       })
@@ -200,6 +208,7 @@ async function main() {
           publishDate: row.get('publishDate') ? new Date(row.get('publishDate')) : null,
           link: row.get('link') || null,
           kpiId: row.get('kpiId') || null,
+          meetingId: row.get('meetingId') || null,
           memberId: row.get('memberId'),
           createdAt: new Date(row.get('createdAt') || Date.now()),
         },
@@ -214,6 +223,7 @@ async function main() {
           publishDate: row.get('publishDate') ? new Date(row.get('publishDate')) : null,
           link: row.get('link') || null,
           kpiId: row.get('kpiId') || null,
+          meetingId: row.get('meetingId') || null,
           memberId: row.get('memberId'),
           createdAt: new Date(row.get('createdAt') || Date.now()),
         }
