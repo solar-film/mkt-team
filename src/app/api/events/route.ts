@@ -1,33 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initDoc, generateId } from '@/lib/google-sheets'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-async function getOrCreateSheet(doc: any) {
-  let sheet = doc.sheetsByTitle['Event'];
-  if (!sheet) {
-    sheet = await doc.addSheet({
-      title: 'Event',
-      headerValues: ['id', 'title', 'date', 'time', 'type', 'createdAt']
-    });
-  }
-  return sheet;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
-    
-    const rows = await sheet.getRows()
-    let events = rows.map((row: any) => ({
-      id: row.get('id'),
-      title: row.get('title'),
-      date: row.get('date'),
-      time: row.get('time') || '',
-      type: row.get('type') || 'event',
-      createdAt: row.get('createdAt'),
-    }))
+    const { searchParams } = new URL(request.url)
+    const start = searchParams.get('start')
+    const end = searchParams.get('end')
+
+    const where: any = {}
+    if (start && end) {
+      where.date = {
+        gte: new Date(start),
+        lte: new Date(end)
+      }
+    }
+
+    const events = await prisma.event.findMany({
+      where,
+      orderBy: {
+        date: 'asc'
+      }
+    })
 
     return NextResponse.json(events)
   } catch (error) {
@@ -39,55 +34,48 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, date, time, type } = body
+    const { title, date, time, type, company } = body
 
     if (!title || !date) {
       return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
     }
 
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
+    const newEvent = await prisma.event.create({
+      data: {
+        title,
+        date: new Date(date),
+        time: time || null,
+        type: type || 'event',
+        company: company || 'GFS'
+      }
+    })
 
-    const newEvent = {
-      id: generateId(),
-      title,
-      date,
-      time: time || '',
-      type: type || 'event',
-      createdAt: new Date().toISOString()
-    }
-
-    await sheet.addRow(newEvent)
-    
-    return NextResponse.json(newEvent, { status: 201 })
+    return NextResponse.json({ success: true, event: newEvent })
   } catch (error) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Failed to create event' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to add event' }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, date, time, type } = body
+    const { id, title, date, time, type, company } = body
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
+    const updatedEvent = await prisma.event.update({
+      where: { id },
+      data: {
+        title: title !== undefined ? title : undefined,
+        date: date !== undefined ? new Date(date) : undefined,
+        time: time !== undefined ? time : undefined,
+        type: type !== undefined ? type : undefined,
+        company: company !== undefined ? company : undefined
+      }
+    })
 
-    const rows = await sheet.getRows()
-    const row = rows.find((r: any) => r.get('id') === id)
-    if (!row) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
-
-    if (title !== undefined) row.set('title', title)
-    if (date !== undefined) row.set('date', date)
-    if (time !== undefined) row.set('time', time)
-    if (type !== undefined) row.set('type', type)
-
-    await row.save()
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, event: updatedEvent })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
@@ -99,16 +87,11 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
-
-    const rows = await sheet.getRows()
-    const row = rows.find((r: any) => r.get('id') === id)
-    if (!row) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
-
-    await row.delete()
+    await prisma.event.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

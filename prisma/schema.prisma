@@ -3,20 +3,23 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   role      String
-  company   String   @default("GFS")
+  company   String    @default("GFS")
+  status    String    @default("active")
   avatar    String?
   tasks     Task[]
   kpis      KPI[]
   contents  Content[]
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Task {
@@ -25,7 +28,12 @@ model Task {
   description String?
   status      String     @default("todo")
   priority    String     @default("medium")
+  startDate   DateTime?
   deadline    DateTime?
+  company     String     @default("GFS")
+  link        String?
+  kpiId       String?
+  meetingId   String?
   memberId    String
   member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
@@ -40,6 +48,7 @@ model KPI {
   unit        String
   month       Int
   year        Int
+  company     String     @default("GFS")
   memberId    String
   member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
@@ -49,13 +58,38 @@ model KPI {
 model Content {
   id          String     @id @default(cuid())
   title       String
+  description String?
   type        String
   platform    String
   company     String     @default("GFS")
   status      String     @default("draft")
   publishDate DateTime?
+  link        String?
+  kpiId       String?
   memberId    String
   member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  time        String?
+  type        String
+  company     String   @default("GFS")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  time        String?
+  company     String   @default("GFS")
+  status      String   @default("upcoming")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

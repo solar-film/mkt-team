@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initDoc, generateId } from '@/lib/google-sheets'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,65 +10,22 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month')
     const year = searchParams.get('year')
 
-    const doc = await initDoc()
-    const sheet = doc.sheetsByTitle['KPI']
-    const membersSheet = doc.sheetsByTitle['TeamMember']
-    
-    if (!sheet) return NextResponse.json([])
+    const where: any = {}
+    if (memberId && memberId !== 'all') where.memberId = memberId
+    if (month) where.month = parseInt(month)
+    if (year) where.year = parseInt(year)
 
-    await sheet.loadHeaderRow()
-    const headers = sheet.headerValues;
-    if (!headers.includes('id')) {
-      const newHeaders = [...headers, 'id'];
-      try { await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length }); } catch(e) {}
-      await sheet.setHeaderRow(newHeaders);
-    }
-
-    const rows = await sheet.getRows()
-    let kpis = []
-    
-    for (const row of rows) {
-      let rowId = row.get('id');
-      if (!rowId) {
-        rowId = generateId();
-        row.assign({ id: rowId });
-        await row.save();
-      }
-      kpis.push({
-        id: rowId,
-        name: row.get('name'),
-      target: parseFloat(row.get('target') || '0'),
-      current: parseFloat(row.get('current') || '0'),
-      unit: row.get('unit'),
-      month: parseInt(row.get('month') || '0', 10),
-      year: parseInt(row.get('year') || '0', 10),
-        company: row.get('company'),
-        memberId: row.get('memberId'),
-        createdAt: row.get('createdAt')
-      });
-    }
-
-    if (memberId) kpis = kpis.filter(k => k.memberId === memberId)
-    if (month) kpis = kpis.filter(k => k.month === parseInt(month, 10))
-    if (year) kpis = kpis.filter(k => k.year === parseInt(year, 10))
-
-    if (membersSheet) {
-      const memberRows = await membersSheet.getRows()
-      kpis.forEach(kpi => {
-        const mRow = memberRows.find(m => m.get('id') === kpi.memberId)
-        if (mRow) {
-          (kpi as any).member = {
-            id: mRow.get('id'),
-            name: mRow.get('name'),
-            role: mRow.get('role'),
-            avatar: mRow.get('avatar')
-          }
+    const kpis = await prisma.kPI.findMany({
+      where,
+      include: {
+        member: {
+          select: { id: true, name: true, avatar: true }
         }
-      })
-    }
-
-    // Sort by created at descending
-    kpis.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
     return NextResponse.json(kpis)
   } catch (error) {
@@ -80,85 +37,60 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, target, current, unit, month, year, memberId, company } = body
+    const { name, target, unit, month, year, memberId, company } = body
 
     if (!name || !memberId) {
       return NextResponse.json({ error: 'Name and memberId are required' }, { status: 400 })
     }
 
-    const doc = await initDoc()
-    const sheet = doc.sheetsByTitle['KPI']
-    if (!sheet) return NextResponse.json({ error: 'Sheet KPI not found' }, { status: 404 })
+    const newKpi = await prisma.kPI.create({
+      data: {
+        name,
+        target: parseFloat(target) || 0,
+        current: 0,
+        unit: unit || '',
+        month: parseInt(month) || new Date().getMonth() + 1,
+        year: parseInt(year) || new Date().getFullYear(),
+        company: company || 'GFS',
+        memberId
+      },
+      include: {
+        member: { select: { id: true, name: true, avatar: true } }
+      }
+    })
 
-    await sheet.loadHeaderRow()
-    let newHeaders = [...sheet.headerValues]
-    let headerChanged = false
-    const requiredHeaders = ['id', 'name', 'target', 'current', 'unit', 'month', 'year', 'company', 'memberId', 'createdAt'];
-    requiredHeaders.forEach(h => {
-      if (!newHeaders.includes(h)) { newHeaders.push(h); headerChanged = true; }
-    });
-
-    if (headerChanged) {
-      try { await sheet.resize({ rowCount: Math.max(sheet.rowCount, 100), columnCount: newHeaders.length }) } catch(e) {}
-      await sheet.setHeaderRow(newHeaders)
-    }
-
-    const newKpi = {
-      id: generateId(),
-      name,
-      target: (target || 0).toString(),
-      current: (current || 0).toString(),
-      unit: unit || '',
-      month: (month || new Date().getMonth() + 1).toString(),
-      year: (year || new Date().getFullYear()).toString(),
-      company: company || 'GFS',
-      memberId: memberId || '',
-      createdAt: new Date().toISOString()
-    }
-
-    await sheet.addRow(newKpi)
-    
-    // Return parsed numbers for the frontend
-    return NextResponse.json({
-      ...newKpi,
-      target: parseFloat(newKpi.target),
-      current: parseFloat(newKpi.current),
-      month: parseInt(newKpi.month, 10),
-      year: parseInt(newKpi.year, 10)
-    }, { status: 201 })
+    return NextResponse.json({ success: true, kpi: newKpi })
   } catch (error) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Failed to create KPI' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to add KPI' }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, ...data } = body
+    const { id, name, target, current, unit, month, year, memberId, company } = body
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const doc = await initDoc()
-    const sheet = doc.sheetsByTitle['KPI']
-    if (!sheet) return NextResponse.json({ error: 'Sheet KPI not found' }, { status: 404 })
-
-    const rows = await sheet.getRows()
-    const row = rows.find(r => r.get('id') === id)
-    if (!row) return NextResponse.json({ error: 'KPI not found' }, { status: 404 })
-
-    const stringFields = ['name', 'unit', 'company', 'memberId']
-    stringFields.forEach(f => {
-      if (data[f] !== undefined) row.assign({ [f]: data[f] })
+    const updatedKpi = await prisma.kPI.update({
+      where: { id },
+      data: {
+        name: name !== undefined ? name : undefined,
+        target: target !== undefined ? parseFloat(target) : undefined,
+        current: current !== undefined ? parseFloat(current) : undefined,
+        unit: unit !== undefined ? unit : undefined,
+        month: month !== undefined ? parseInt(month) : undefined,
+        year: year !== undefined ? parseInt(year) : undefined,
+        company: company !== undefined ? company : undefined,
+        memberId: memberId !== undefined ? memberId : undefined
+      },
+      include: {
+        member: { select: { id: true, name: true, avatar: true } }
+      }
     })
 
-    const numberFields = ['target', 'current', 'month', 'year']
-    numberFields.forEach(f => {
-      if (data[f] !== undefined) row.assign({ [f]: data[f].toString() })
-    })
-
-    await row.save()
-    return NextResponse.json({ id, ...data })
+    return NextResponse.json({ success: true, kpi: updatedKpi })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update KPI' }, { status: 500 })
@@ -169,19 +101,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    const doc = await initDoc()
-    const sheet = doc.sheetsByTitle['KPI']
-    if (!sheet) return NextResponse.json({ error: 'Sheet KPI not found' }, { status: 404 })
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const rows = await sheet.getRows()
-    const row = rows.find(r => r.get('id') === id)
-    if (row) {
-      await row.delete()
-      return NextResponse.json({ success: true })
-    }
-    return NextResponse.json({ error: 'KPI not found' }, { status: 404 })
+    await prisma.kPI.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete KPI' }, { status: 500 })

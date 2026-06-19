@@ -1,60 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initDoc, generateId } from '@/lib/google-sheets'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-async function getOrCreateSheet(doc: any) {
-  let sheet = doc.sheetsByTitle['Meeting'];
-  if (!sheet) {
-    sheet = await doc.addSheet({
-      title: 'Meeting',
-      headerValues: ['id', 'title', 'date', 'time', 'attendees', 'agenda', 'notes', 'createdBy', 'createdAt']
-    });
-  }
-  return sheet;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
-    const membersSheet = doc.sheetsByTitle['TeamMember'];
-    
-    const rows = await sheet.getRows()
-    let meetings = rows.map((row: any) => ({
-      id: row.get('id'),
-      title: row.get('title'),
-      date: row.get('date'),
-      time: row.get('time') || '',
-      attendees: row.get('attendees') || '',
-      agenda: row.get('agenda') || '',
-      notes: row.get('notes') || '',
-      createdBy: row.get('createdBy') || '',
-      createdAt: row.get('createdAt'),
-    }))
+    const { searchParams } = new URL(request.url)
+    const start = searchParams.get('start')
+    const end = searchParams.get('end')
 
-    if (membersSheet) {
-      const memberRows = await membersSheet.getRows()
-      meetings.forEach((meeting: any) => {
-        if (meeting.attendees) {
-          const attendeeIds = meeting.attendees.split(',').filter(Boolean)
-          const names = attendeeIds.map((id: string) => {
-            const mRow = memberRows.find((m: any) => m.get('id') === id)
-            return mRow ? mRow.get('name') : id
-          })
-          meeting.attendeeNames = names
-        } else {
-          meeting.attendeeNames = []
-        }
-      })
+    const where: any = {}
+    if (start && end) {
+      where.date = {
+        gte: new Date(start),
+        lte: new Date(end)
+      }
     }
 
-    // Sort by date descending, then time descending
-    meetings.sort((a: any, b: any) => {
-      const dateA = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
-      const dateB = new Date(`${b.date}T${b.time || '00:00'}`).getTime();
-      return dateB - dateA;
-    });
+    const meetings = await prisma.meeting.findMany({
+      where,
+      orderBy: {
+        date: 'asc'
+      }
+    })
 
     return NextResponse.json(meetings)
   } catch (error) {
@@ -66,58 +34,48 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, date, time, attendees, agenda, notes, createdBy } = body
+    const { title, date, time, company, status } = body
 
     if (!title || !date) {
       return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
     }
 
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
+    const newMeeting = await prisma.meeting.create({
+      data: {
+        title,
+        date: new Date(date),
+        time: time || null,
+        company: company || 'GFS',
+        status: status || 'upcoming'
+      }
+    })
 
-    const newMeeting = {
-      id: generateId(),
-      title,
-      date,
-      time: time || '',
-      attendees: attendees || '',
-      agenda: agenda || '',
-      notes: notes || '',
-      createdBy: createdBy || '',
-      createdAt: new Date().toISOString()
-    }
-
-    await sheet.addRow(newMeeting)
-    
-    return NextResponse.json(newMeeting, { status: 201 })
+    return NextResponse.json({ success: true, meeting: newMeeting })
   } catch (error) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Failed to create meeting' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to add meeting' }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, date, time, attendees, agenda, notes } = body
+    const { id, title, date, time, company, status } = body
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
-
-    const rows = await sheet.getRows()
-    const row = rows.find((r: any) => r.get('id') === id)
-    if (!row) return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
-
-    const fields = ['title', 'date', 'time', 'attendees', 'agenda', 'notes'];
-    fields.forEach(f => {
-      if (body[f] !== undefined) row.set(f, body[f])
+    const updatedMeeting = await prisma.meeting.update({
+      where: { id },
+      data: {
+        title: title !== undefined ? title : undefined,
+        date: date !== undefined ? new Date(date) : undefined,
+        time: time !== undefined ? time : undefined,
+        company: company !== undefined ? company : undefined,
+        status: status !== undefined ? status : undefined
+      }
     })
 
-    await row.save()
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, meeting: updatedMeeting })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update meeting' }, { status: 500 })
@@ -129,16 +87,11 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const doc = await initDoc()
-    const sheet = await getOrCreateSheet(doc);
-
-    const rows = await sheet.getRows()
-    const row = rows.find((r: any) => r.get('id') === id)
-    if (!row) return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
-
-    await row.delete()
+    await prisma.meeting.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

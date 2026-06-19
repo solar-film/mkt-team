@@ -1,117 +1,104 @@
-import { NextResponse } from 'next/server';
-import { initDoc } from '@/lib/google-sheets';
-import { sendLineNotify } from '@/lib/line-notify';
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
-// Vercel cron uses GET
-export async function GET(request: Request) {
-  // Optional security: check authorization header if provided by Vercel
-  const authHeader = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
+export const dynamic = 'force-dynamic'
 
+export async function GET() {
   try {
-    const doc = await initDoc();
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
     
-    // Fetch members for names
-    const membersSheet = doc.sheetsByTitle['TeamMember'];
-    let members: {id: string, name: string}[] = [];
-    if (membersSheet) {
-      const mRows = await membersSheet.getRows();
-      members = mRows.map(r => ({ id: r.get('id') || '', name: r.get('name') || '' }));
-    }
-
-    // Fetch tasks
-    const tasksSheet = doc.sheetsByTitle['Task'];
-    if (!tasksSheet) return NextResponse.json({ message: 'No tasks sheet' });
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
     
-    const rows = await tasksSheet.getRows();
-    const now = new Date();
-    // Normalize to start of day for comparison
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const next3Days = new Date(today)
+    next3Days.setDate(next3Days.getDate() + 3)
 
-    let upcomingTasks: { title: string, deadline: Date, memberName: string, diffDays: number }[] = [];
-
-    rows.forEach(row => {
-      const status = row.get('status');
-      if (status === 'done') return; // skip done
-
-      const deadlineStr = row.get('deadline');
-      if (!deadlineStr) return;
-
-      const deadline = new Date(deadlineStr);
-      const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-
-      // If deadline is today, tomorrow
-      const diffTime = deadlineDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 1 || diffDays === 0) { // Notify 1 day before and today
-        const memberId = row.get('memberId');
-        const member = members.find(m => m.id === memberId);
-        const memberName = member ? member.name : 'ไม่ระบุ';
-        
-        upcomingTasks.push({
-          title: `[งาน] ${row.get('title') || ''}`,
-          deadline: deadlineDate,
-          memberName: memberName,
-          diffDays
-        });
+    const pendingTasks = await prisma.task.findMany({
+      where: {
+        status: { not: 'done' },
+        deadline: { not: null }
+      },
+      include: {
+        member: { select: { id: true, name: true } }
       }
-    });
+    })
 
-    // Fetch contents
-    const contentsSheet = doc.sheetsByTitle['Content'];
-    if (contentsSheet) {
-      const cRows = await contentsSheet.getRows();
-      cRows.forEach(row => {
-        const status = row.get('status');
-        if (status === 'done' || status === 'published') return; // skip done
+    const tasksDueSoon = pendingTasks.filter(task => {
+      if (!task.deadline) return false
+      const deadline = new Date(task.deadline)
+      deadline.setHours(0, 0, 0, 0)
+      
+      const diffTime = deadline.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      return diffDays === 1 || diffDays === 3 || diffDays < 0
+    })
 
-        const deadlineStr = row.get('publishDate');
-        if (!deadlineStr) return;
-
-        const deadline = new Date(deadlineStr);
-        const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-        const diffTime = deadlineDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 1 || diffDays === 0) {
-          const memberId = row.get('memberId');
-          const member = members.find(m => m.id === memberId);
-          const memberName = member ? member.name : 'ไม่ระบุ';
-          
-          upcomingTasks.push({
-            title: `[คอนเทนต์] ${row.get('title') || ''}`,
-            deadline: deadlineDate,
-            memberName: memberName,
-            diffDays
-          });
-        }
-      });
+    if (tasksDueSoon.length === 0) {
+      return NextResponse.json({ message: 'No tasks due soon' })
     }
 
-    if (upcomingTasks.length > 0) {
-      // Sort by overdue first
-      upcomingTasks.sort((a, b) => a.diffDays - b.diffDays);
-      
-      let message = `\n⏰ แจ้งเตือนงานใกล้กำหนดส่ง/เกินกำหนด!\n`;
-      upcomingTasks.forEach(t => {
-        let statusStr = '';
-        if (t.diffDays < 0) statusStr = '🚨 (เลยกำหนด)';
-        else if (t.diffDays === 0) statusStr = '🔥 (ส่งวันนี้)';
-        else if (t.diffDays === 1) statusStr = '⚠️ (พรุ่งนี้)';
-        else if (t.diffDays === 2) statusStr = '⏳ (อีก 2 วัน)';
-        
-        message += `\n- ${t.title} ${statusStr}\n👤 รับผิดชอบ: ${t.memberName}\n`;
-      });
-      
-      await sendLineNotify(message);
+    let messageText = '🚨 *แจ้งเตือนกำหนดส่งงาน* 🚨\n\n'
+    
+    const dueTomorrow = tasksDueSoon.filter(t => {
+      const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDays === 1
+    })
+    
+    const due3Days = tasksDueSoon.filter(t => {
+      const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDays === 3
+    })
+    
+    const overdue = tasksDueSoon.filter(t => {
+      const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDays < 0
+    })
+
+    if (overdue.length > 0) {
+      messageText += '🔥 *เลยกำหนดแล้ว:*\n'
+      overdue.forEach(t => {
+        messageText += `- ${t.title} (@${t.member.name})\n`
+      })
+      messageText += '\n'
     }
 
-    return NextResponse.json({ success: true, notified: upcomingTasks.length });
+    if (dueTomorrow.length > 0) {
+      messageText += '⏰ *ต้องส่งพรุ่งนี้:*\n'
+      dueTomorrow.forEach(t => {
+        messageText += `- ${t.title} (@${t.member.name})\n`
+      })
+      messageText += '\n'
+    }
+
+    if (due3Days.length > 0) {
+      messageText += '⏳ *ต้องส่งในอีก 3 วัน:*\n'
+      due3Days.forEach(t => {
+        messageText += `- ${t.title} (@${t.member.name})\n`
+      })
+    }
+
+    const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN
+    const LINE_GROUP_ID = process.env.LINE_GROUP_ID
+    
+    if (LINE_TOKEN && LINE_GROUP_ID) {
+      await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LINE_TOKEN}`
+        },
+        body: JSON.stringify({
+          to: LINE_GROUP_ID,
+          messages: [{ type: 'text', text: messageText }]
+        })
+      })
+    }
+
+    return NextResponse.json({ success: true, notifiedCount: tasksDueSoon.length })
   } catch (error) {
-    console.error('Cron Error:', error);
-    return NextResponse.json({ error: 'Failed to run cron' }, { status: 500 });
+    console.error('Cron Error:', error)
+    return NextResponse.json({ error: 'Failed to process cron' }, { status: 500 })
   }
 }
