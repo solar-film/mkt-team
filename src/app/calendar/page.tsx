@@ -74,19 +74,15 @@ export default function CalendarPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const t = Date.now();
-      const [resTasks, resContent, resEvents, resMembers, resKpis] = await Promise.all([
-        fetch('/api/tasks', { cache: 'no-store' }),
-        fetch('/api/content', { cache: 'no-store' }),
-        fetch('/api/events', { cache: 'no-store' }),
-        fetch('/api/members', { cache: 'no-store' }),
-        fetch('/api/kpis', { cache: 'no-store' })
-      ]);
-      const tasks = await resTasks.json();
-      const contents = await resContent.json();
-      const events = await resEvents.json();
-      const members: TeamMember[] = await resMembers.json();
-      const kpisData = await resKpis.json();
+      const res = await fetch('/api/dashboard', { cache: 'no-store' });
+      const data = await res.json();
+      
+      const tasks = data.tasks;
+      const contents = data.contents;
+      const events = data.events;
+      const members = data.members;
+      const kpisData = data.kpis;
+      
       setMembersList(Array.isArray(members) ? members : []);
       setKpis(Array.isArray(kpisData) ? kpisData : []);
 

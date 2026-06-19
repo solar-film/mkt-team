@@ -98,18 +98,14 @@ export default function TaskBoard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [tasksRes, contentsRes, membersRes, kpisRes, meetingsRes] = await Promise.all([
-        fetch('/api/tasks' + (filterMemberId ? `?memberId=${filterMemberId}` : ''), { cache: 'no-store' }),
-        fetch('/api/content' + (filterMemberId ? `?memberId=${filterMemberId}` : ''), { cache: 'no-store' }),
-        fetch('/api/members', { cache: 'no-store' }),
-        fetch('/api/kpis', { cache: 'no-store' }),
-        fetch('/api/meetings', { cache: 'no-store' })
-      ]);
-      const tasksData = await tasksRes.json();
-      const contentsData = await contentsRes.json();
-      const membersData = await membersRes.json();
-      const kpisData = await kpisRes.json();
-      const meetingsData = await meetingsRes.json();
+      const res = await fetch('/api/dashboard' + (filterMemberId ? `?memberId=${filterMemberId}` : ''), { cache: 'no-store' });
+      const data = await res.json();
+      
+      const tasksData = data.tasks;
+      const contentsData = data.contents;
+      const membersData = data.members;
+      const kpisData = data.kpis;
+      const meetingsData = data.meetings;
       
       const tasksArr = Array.isArray(tasksData) ? tasksData : [];
       const contentsArr = Array.isArray(contentsData) ? contentsData : [];
