@@ -36,7 +36,7 @@ interface Member {
 const navLinks = [
   { path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
   { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
-  { path: '/ideas', label: 'โน๊ตไอเดียงาน', icon: <HiLightBulb /> },
+  { path: '/ideas', label: 'โน๊ตงาน', icon: <HiLightBulb /> },
   { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
