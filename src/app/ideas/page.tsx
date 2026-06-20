@@ -94,11 +94,15 @@ export default function IdeasPage() {
   const [filterOwnerId, setFilterOwnerId] = useState<string>('my_tasks'); // Default
 
   useEffect(() => {
-    if (currentUserId && filterOwnerId === 'my_tasks') {
-       // Wait, we need to initialize it to the user's ID
-       setFilterOwnerId(currentUserId);
+    if (currentUserId && filterOwnerId === 'my_tasks' && members.length > 0) {
+      const user = members.find(m => m.id === currentUserId);
+      if (user?.role === 'Admin') {
+        setFilterOwnerId('all');
+      } else {
+        setFilterOwnerId(currentUserId);
+      }
     }
-  }, [currentUserId]);
+  }, [currentUserId, members]);
 
   const finalFilteredIdeas = filteredIdeas.filter(idea => {
     if (filterOwnerId === 'all') return true;

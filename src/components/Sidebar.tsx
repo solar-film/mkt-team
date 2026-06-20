@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   HiChartBarSquare,
   HiClipboardDocumentList,
@@ -15,11 +16,21 @@ import {
   HiChevronLeft,
   HiChevronRight,
   HiCalendarDays,
+  HiArrowRightOnRectangle,
+  HiEllipsisVertical,
   HiLockClosed,
   HiLockOpen,
   HiChartPie,
-  HiLightBulb
+  HiLightBulb,
+  HiUserCircle
 } from 'react-icons/hi2';
+
+interface Member {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string | null;
+}
 
 const navLinks = [
   { path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
@@ -37,30 +48,28 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    // Read from localStorage on mount
-    const adminStatus = localStorage.getItem('isAdmin') === 'true';
-    setIsAdmin(adminStatus);
-  }, []);
+  const { currentUserId, logout } = useAuth();
+  const [currentUser, setCurrentUser] = useState<Member | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const handleLockClick = () => {
-    if (isAdmin) {
-      if (confirm('ต้องการออกจากโหมดผู้ดูแลระบบหรือไม่?')) {
-        localStorage.removeItem('isAdmin');
-        setIsAdmin(false);
-        // Force reload to apply access restrictions
-        window.location.reload();
-      }
-    } else {
-      const pin = prompt('กรุณาใส่รหัสผ่านลับ (PIN) เพื่อเข้าถึงเมนูผู้ดูแล:');
-      if (pin === '8888') {
-        localStorage.setItem('isAdmin', 'true');
-        setIsAdmin(true);
-        alert('ปลดล็อคสำเร็จ!');
-      } else if (pin !== null) {
-        alert('รหัสผ่านไม่ถูกต้อง');
-      }
+  useEffect(() => {
+    if (currentUserId) {
+      fetch('/api/members')
+        .then(res => res.json())
+        .then((data: Member[]) => {
+          const user = data.find(m => m.id === currentUserId);
+          if (user) {
+            setCurrentUser(user);
+            if (user.role === 'Admin') {
+              setIsAdmin(true);
+            }
+          }
+        });
     }
+  }, [currentUserId]);
+
+  const handleLogout = () => {
+    logout();
   };
 
   const visibleLinks = navLinks.filter(link => {
@@ -109,17 +118,68 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`}>
-        {!isCollapsed && <small>© 2026 Marketing Team</small>}
-        <button 
-          onClick={handleLockClick}
-          className={`lock-btn ${isAdmin ? 'admin' : ''}`}
-          title={isAdmin ? "ล็อคระบบ" : "ปลดล็อคระบบ"}
-          onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
-          onMouseOut={(e) => e.currentTarget.style.opacity = '0.5'}
-        >
-          {isAdmin ? <HiLockOpen size={14} /> : <HiLockClosed size={14} />}
-        </button>
+      <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', position: 'relative' }}>
+        {currentUser ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', cursor: 'pointer' }} onClick={() => setShowUserMenu(!showUserMenu)}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+              {currentUser.avatar ? (
+                <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <HiUserCircle size={36} color="#94a3b8" />
+              )}
+            </div>
+            {!isCollapsed && (
+              <>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{currentUser.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{currentUser.role}</div>
+                </div>
+                <HiEllipsisVertical size={20} color="#64748b" />
+              </>
+            )}
+          </div>
+        ) : (
+          !isCollapsed && <small>© 2026 Marketing Team</small>
+        )}
+        
+        {showUserMenu && !isCollapsed && (
+          <div style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '1rem',
+            right: '1rem',
+            marginBottom: '0.5rem',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden',
+            zIndex: 50
+          }}>
+            <button 
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: 'none',
+                background: 'none',
+                color: '#ef4444',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <HiArrowRightOnRectangle size={18} />
+              ออกจากระบบ
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

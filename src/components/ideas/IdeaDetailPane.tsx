@@ -14,7 +14,9 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   const [newComment, setNewComment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const currentUser = members.find(m => m.id === currentUserId);
   const owner = members.find(m => m.id === idea.memberId);
+  const canEdit = currentUser?.role === 'Admin' || currentUserId === idea.memberId;
 
   const handleAddChecklist = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,8 +85,12 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>รายละเอียดโน๊ตงาน</h2>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiPencil size={20} /></button>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiEllipsisVertical size={20} /></button>
+          {canEdit && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiPencil size={20} /></button>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiEllipsisVertical size={20} /></button>
+            </div>
+          )}
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiXMark size={24} /></button>
         </div>
       </div>
@@ -152,12 +158,13 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <button 
-                    onClick={() => handleToggleChecklist(item.id, item.isDone)}
+                    onClick={() => canEdit && handleToggleChecklist(item.id, item.isDone)}
+                    disabled={!canEdit}
                     style={{ 
                       width: 20, height: 20, borderRadius: '4px', 
-                      backgroundColor: item.isDone ? '#4f46e5' : 'white',
+                      backgroundColor: item.isDone ? '#4f46e5' : (canEdit ? 'white' : '#f1f5f9'),
                       border: item.isDone ? 'none' : '1px solid #cbd5e1',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: canEdit ? 'pointer' : 'default'
                     }}
                   >
                     {item.isDone && <HiCheck color="white" size={14} />}
@@ -170,18 +177,20 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             ))}
           </div>
 
-          <form onSubmit={handleAddChecklist} style={{ display: 'flex', gap: '0.5rem' }}>
-            <input 
-              type="text" 
-              value={newChecklist} 
-              onChange={e => setNewChecklist(e.target.value)} 
-              placeholder="เพิ่มสิ่งที่ต้องทำ..." 
-              style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem' }}
-            />
-            <button type="submit" style={{ backgroundColor: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: '#475569' }}>
-              <HiPlus size={20} />
-            </button>
-          </form>
+          {canEdit && (
+            <form onSubmit={handleAddChecklist} style={{ display: 'flex', gap: '0.5rem' }}>
+              <input 
+                type="text" 
+                value={newChecklist} 
+                onChange={e => setNewChecklist(e.target.value)} 
+                placeholder="เพิ่มสิ่งที่ต้องทำ..." 
+                style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem' }}
+              />
+              <button type="submit" style={{ backgroundColor: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: '#475569' }}>
+                <HiPlus size={20} />
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Attachments */}
@@ -201,14 +210,18 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               </div>
             ))}
             
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              style={{ width: '80px', height: '80px', borderRadius: '8px', border: '1px dashed #cbd5e1', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
-            >
-              <HiPlus size={20} />
-              <span style={{ fontSize: '0.7rem', marginTop: '4px' }}>เพิ่มไฟล์</span>
-            </button>
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
+            {canEdit && (
+              <>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ width: '80px', height: '80px', borderRadius: '8px', border: '1px dashed #cbd5e1', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
+                >
+                  <HiPlus size={20} />
+                  <span style={{ fontSize: '0.7rem', marginTop: '4px' }}>เพิ่มไฟล์</span>
+                </button>
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
+              </>
+            )}
           </div>
         </div>
 
