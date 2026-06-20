@@ -268,7 +268,11 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             </h1>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>{idea.company || 'บริษัท'}</span>
-              <span style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>
+              <span style={{ 
+                backgroundColor: idea.category === 'task' ? '#eef2ff' : idea.category === 'content' ? '#f3e8ff' : '#fffbeb', 
+                color: idea.category === 'task' ? '#4f46e5' : idea.category === 'content' ? '#7e22ce' : '#d97706', 
+                padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' 
+              }}>
                 {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}
               </span>
 

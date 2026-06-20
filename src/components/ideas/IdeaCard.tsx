@@ -107,7 +107,11 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
           </span>
         )}
         {idea.category && (
-          <span style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+          <span style={{ 
+            backgroundColor: idea.category === 'task' ? '#eef2ff' : idea.category === 'content' ? '#f3e8ff' : '#fffbeb', 
+            color: idea.category === 'task' ? '#4f46e5' : idea.category === 'content' ? '#7e22ce' : '#d97706', 
+            padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 
+          }}>
             {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}
           </span>
         )}
