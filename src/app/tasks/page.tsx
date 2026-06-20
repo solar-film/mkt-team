@@ -7,9 +7,15 @@ export default function UnifiedTasksPage() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/events', { cache: 'no-store' }).then(res => res.json()).then(data => {
-      if (Array.isArray(data)) setEvents(data);
-    });
+    Promise.all([
+      fetch('/api/events', { cache: 'no-store' }).then(res => res.json()),
+      fetch('/api/meetings', { cache: 'no-store' }).then(res => res.json())
+    ]).then(([eventsData, meetingsData]) => {
+      const combined = [];
+      if (Array.isArray(eventsData)) combined.push(...eventsData);
+      if (Array.isArray(meetingsData)) combined.push(...meetingsData);
+      setEvents(combined);
+    }).catch(err => console.error(err));
   }, []);
 
   const todayEvents = events.filter(e => {
