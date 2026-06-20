@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { HiPlus, HiBriefcase, HiCheckCircle, HiDocumentText, HiOutlineTrash, HiPencilSquare, HiLockClosed } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -25,21 +26,10 @@ interface TeamMember {
 }
 
 export default function TeamPage() {
+  const { currentUserId } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    // Check admin status
-    const adminStatus = localStorage.getItem('isAdmin') === 'true';
-    setIsAdmin(adminStatus);
-    
-    if (adminStatus) {
-      fetchMembers();
-    } else {
-      setLoading(false);
-    }
-  }, []);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,16 +44,28 @@ export default function TeamPage() {
       const res = await fetch('/api/members?includeRelations=true', { cache: 'no-store' });
       const data = await res.json();
       setMembers(data);
+      if (currentUserId && Array.isArray(data)) {
+        const user = data.find((m: any) => m.id === currentUserId);
+        setIsAdmin(user?.role === 'Admin');
+      } else {
+        setIsAdmin(false);
+      }
     } catch (err) {
       console.error(err);
+      setIsAdmin(false);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMembers();
-  }, []);
+    if (currentUserId) {
+      fetchMembers();
+    } else {
+      setIsAdmin(false);
+      setLoading(false);
+    }
+  }, [currentUserId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
