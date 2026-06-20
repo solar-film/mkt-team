@@ -103,12 +103,11 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#64748b', fontSize: '0.8rem' }}>
           {assignees.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               {assignees.map((assignee, idx) => (
                 <div key={assignee.id} style={{ 
-                  marginLeft: idx > 0 ? '-8px' : '0',
                   zIndex: 10 - idx,
-                  border: '2px solid white',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '50%',
                   width: 24,
                   height: 24,
