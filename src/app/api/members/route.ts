@@ -10,15 +10,23 @@ export async function GET(request: NextRequest) {
 
     const members = await prisma.teamMember.findMany({
       where: { id: { not: 'all' } },
-      orderBy: {
-        name: 'asc'
-      },
       include: includeRelations ? {
         tasks: true,
         kpis: true,
         contents: true
       } : undefined
     })
+
+    const order = ['OIL', 'TEW', 'PLENG', 'NON']
+    members.sort((a, b) => {
+      const indexA = order.findIndex(name => a.name.toUpperCase().includes(name));
+      const indexB = order.findIndex(name => b.name.toUpperCase().includes(name));
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    })
+
     return NextResponse.json(members)
   } catch (error: any) {
     console.error('API Error:', error)
