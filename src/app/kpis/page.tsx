@@ -14,8 +14,8 @@ interface KPI {
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
   kpis: KPI[];
-  tasks?: { id: string; status: string; company?: string; deadline?: string }[];
-  contents?: { id: string; status: string; company?: string; publishDate?: string }[];
+  tasks?: { id: string; status: string; company?: string; deadline?: string; kpiId?: string | null }[];
+  contents?: { id: string; status: string; company?: string; publishDate?: string; kpiId?: string | null }[];
 }
 
 export default function KPIsPage() {

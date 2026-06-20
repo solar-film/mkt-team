@@ -21,7 +21,7 @@ import { getCompanyColor } from '@/lib/colors';
 interface Task {
   id: string; title: string; description: string | null; status: string;
   priority: string; deadline: string | null; memberId: string; company?: string;
-  createdAt?: string; updatedAt?: string;
+  createdAt?: string; updatedAt?: string; kpiId?: string | null;
 }
 interface KPI {
   id: string; name: string; target: number; current: number;
@@ -30,7 +30,7 @@ interface KPI {
 interface Content {
   id: string; title: string; type: string; platform: string;
   status: string; publishDate: string | null; memberId: string; company?: string;
-  createdAt?: string; updatedAt?: string;
+  createdAt?: string; updatedAt?: string; kpiId?: string | null;
 }
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
