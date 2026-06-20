@@ -156,7 +156,7 @@ export default function IdeasPage() {
   if (loading || authLoading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   return (
-    <div style={{ padding: '2rem', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+    <div className="app-page-container" style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0, minWidth: 'max-content' }}>โน๊ตงาน</h1>
