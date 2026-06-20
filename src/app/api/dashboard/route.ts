@@ -32,42 +32,38 @@ export async function GET(request: NextRequest) {
       ideaWhere.memberId = { contains: memberId };
     }
 
-    const tasks = await prisma.task.findMany({
-      where: taskWhere,
-      include: {
-        member: { select: { id: true, name: true, avatar: true } }
-      },
-      orderBy: { deadline: 'asc' }
-    });
-    
-    const contents = await prisma.content.findMany({
-      where: contentWhere,
-      include: {
-        member: { select: { id: true, name: true, avatar: true } }
-      },
-      orderBy: { publishDate: 'asc' }
-    });
-    
-    const members = await prisma.teamMember.findMany({
-      where: { id: { not: 'all' } },
-      orderBy: { name: 'asc' }
-    });
-    
-    const kpis = await prisma.kPI.findMany({
-      orderBy: { month: 'desc' }
-    });
-    
-    const meetings = await prisma.meeting.findMany({
-      orderBy: { date: 'desc' }
-    });
-    
-    const events = await prisma.event.findMany({
-      orderBy: { date: 'asc' }
-    });
-    
-    const ideas = await prisma.ideaNote.findMany({
-      where: ideaWhere
-    });
+    const [tasks, contents, members, kpis, meetings, events, ideas] = await Promise.all([
+      prisma.task.findMany({
+        where: taskWhere,
+        include: {
+          member: { select: { id: true, name: true, avatar: true } }
+        },
+        orderBy: { deadline: 'asc' }
+      }),
+      prisma.content.findMany({
+        where: contentWhere,
+        include: {
+          member: { select: { id: true, name: true, avatar: true } }
+        },
+        orderBy: { publishDate: 'asc' }
+      }),
+      prisma.teamMember.findMany({
+        where: { id: { not: 'all' } },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.kPI.findMany({
+        orderBy: { month: 'desc' }
+      }),
+      prisma.meeting.findMany({
+        orderBy: { date: 'desc' }
+      }),
+      prisma.event.findMany({
+        orderBy: { date: 'asc' }
+      }),
+      prisma.ideaNote.findMany({
+        where: ideaWhere
+      })
+    ]);
 
     // Map Ideas to Tasks/Contents
     const finalTasks: any[] = [...tasks];
