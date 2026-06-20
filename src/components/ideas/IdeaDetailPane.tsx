@@ -21,9 +21,22 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     message: '',
     onConfirm: () => {}
   });
+  const descStr = idea.description || '';
+  let initialDesc = descStr;
+  let initialLink = '';
+  if (descStr.includes('\n\n🔗 ')) {
+    const parts = descStr.split('\n\n🔗 ');
+    initialDesc = parts[0];
+    initialLink = parts[1];
+  } else if (descStr.startsWith('🔗 ')) {
+    initialDesc = '';
+    initialLink = descStr.replace('🔗 ', '');
+  }
+
   const [editForm, setEditForm] = useState({
     title: idea.title,
-    description: idea.description || '',
+    description: initialDesc,
+    link: initialLink,
     company: idea.company || '',
     priority: idea.priority || 'ด่วนมาก',
     deadline: idea.deadline ? new Date(idea.deadline).toISOString().split('T')[0] : '',
@@ -168,10 +181,19 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   };
 
   const handleSaveEdit = async () => {
+    const payload = { ...editForm };
+    if (payload.link) {
+      payload.description = payload.description 
+        ? `${payload.description}\n\n🔗 ${payload.link}`
+        : `🔗 ${payload.link}`;
+    }
+    const finalPayload = { ...payload } as any;
+    delete finalPayload.link; // Remove link before sending to API
+
     await fetch('/api/ideas', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: idea.id, ...editForm })
+      body: JSON.stringify({ id: idea.id, ...finalPayload })
     });
     setIsEditing(false);
     onUpdate();
@@ -369,16 +391,39 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>รายละเอียด</h3>
           {isEditing ? (
-            <textarea 
-              className="form-textarea" 
-              rows={5} 
-              value={editForm.description} 
-              onChange={e => setEditForm({...editForm, description: e.target.value})} 
-            />
+            <>
+              <textarea 
+                className="form-textarea" 
+                rows={5} 
+                value={editForm.description} 
+                onChange={e => setEditForm({...editForm, description: e.target.value})} 
+                style={{ marginBottom: '1rem' }}
+              />
+              <div className="form-group">
+                <label className="form-label">ลิงก์ที่เกี่ยวข้อง (URL)</label>
+                <input 
+                  type="url"
+                  className="form-input"
+                  value={editForm.link || ''} 
+                  onChange={e => setEditForm({...editForm, link: e.target.value})} 
+                  placeholder="https://..."
+                />
+              </div>
+            </>
           ) : (
-            <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}>
-              {idea.description || '-'}
-            </p>
+            <div>
+              {initialDesc && (
+                <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.95rem', margin: 0 }}>
+                  {initialDesc}
+                </p>
+              )}
+              {initialLink && (
+                <a href={initialLink} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: initialDesc ? '1rem' : '0', padding: '0.5rem 1rem', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, wordBreak: 'break-all' }}>
+                  🔗 {initialLink}
+                </a>
+              )}
+              {!initialDesc && !initialLink && <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: 0 }}>-</p>}
+            </div>
           )}
         </div>
 
