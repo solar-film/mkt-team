@@ -202,8 +202,13 @@ export default function TaskBoard() {
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
-      const endpoint = itemToDelete.type === 'task' ? '/api/tasks' : '/api/content';
-      await fetch(`${endpoint}?id=${itemToDelete.id}`, { method: 'DELETE' });
+      if (itemToDelete.id.startsWith('idea_')) {
+        const payloadId = itemToDelete.id.replace('idea_', '');
+        await fetch(`/api/ideas?id=${payloadId}`, { method: 'DELETE' });
+      } else {
+        const endpoint = itemToDelete.type === 'task' ? '/api/tasks' : '/api/content';
+        await fetch(`${endpoint}?id=${itemToDelete.id}`, { method: 'DELETE' });
+      }
       setItemToDelete(null);
       fetchData();
     } catch (err) {
@@ -257,11 +262,20 @@ export default function TaskBoard() {
       };
       
       if (isEditing && editingItemId) {
-        await fetch('/api/tasks', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
-        });
+        if (editingItemId.startsWith('idea_')) {
+          const payloadId = editingItemId.replace('idea_', '');
+          await fetch('/api/ideas', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: payloadId, title: taskForm.title.replace('💡 ', ''), description: taskForm.description, memberId: taskForm.memberId, priority: taskForm.priority, deadline: body.deadline, company: taskForm.company })
+          });
+        } else {
+          await fetch('/api/tasks', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
+          });
+        }
       } else {
         await fetch('/api/tasks', {
           method: 'POST',
@@ -292,11 +306,20 @@ export default function TaskBoard() {
       };
       
       if (isEditing && editingItemId) {
-        await fetch('/api/content', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
-        });
+        if (editingItemId.startsWith('idea_')) {
+          const payloadId = editingItemId.replace('idea_', '');
+          await fetch('/api/ideas', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: payloadId, title: contentForm.title.replace('💡 ', ''), description: contentForm.description, memberId: contentForm.memberId, platform: contentForm.platform, deadline: body.publishDate, company: contentForm.company })
+          });
+        } else {
+          await fetch('/api/content', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
+          });
+        }
       } else {
         await fetch('/api/content', {
           method: 'POST',
@@ -412,6 +435,15 @@ export default function TaskBoard() {
                 </div>
               )}
               
+              {item.id.startsWith('idea_') && (
+                <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b' }}>
+                  <span style={{ fontSize: '1rem' }}>💡</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                    โน๊ตไอเดีย
+                  </span>
+                </div>
+              )}
+              
               {item.meetingId && (
                 <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--color-secondary)' }}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '1rem', height: '1rem' }}>
@@ -451,16 +483,12 @@ export default function TaskBoard() {
                   </span>
                 </div>
                 <div className="task-actions" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                  {!item.id.startsWith('idea_') && (
-                    <>
-                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-secondary)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleEditClick(item); }} title="แก้ไข">
-                        <HiOutlinePencilSquare />
-                      </button>
-                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }} title="ลบ">
-                        <HiOutlineTrash />
-                      </button>
-                    </>
-                  )}
+                  <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-secondary)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleEditClick(item); }} title="แก้ไข">
+                    <HiOutlinePencilSquare />
+                  </button>
+                  <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }} title="ลบ">
+                    <HiOutlineTrash />
+                  </button>
                   
                   <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--color-border)', margin: '0 4px' }}></div>
                   
@@ -676,10 +704,14 @@ export default function TaskBoard() {
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', lineHeight: 1.5 }}>
                         {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : item.contentType === 'graphic' ? 'กราฟิก' : item.contentType === 'reel' ? 'Reel' : 'โพสต์'} - ${item.company}`}
                       </p>
+                      {item.id.startsWith('idea_') && (
+                        <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b' }}>
+                          <span style={{ fontSize: '0.9rem' }}>💡</span>
+                          <span style={{ fontWeight: 600 }}>โน๊ตไอเดีย</span>
+                        </div>
+                      )}
                     </div>
-                    {!item.id.startsWith('idea_') && (
-                      <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiEllipsisVertical size={20} /></button>
-                    )}
+                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiEllipsisVertical size={20} /></button>
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
