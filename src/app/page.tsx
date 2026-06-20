@@ -21,6 +21,7 @@ import { getCompanyColor } from '@/lib/colors';
 interface Task {
   id: string; title: string; description: string | null; status: string;
   priority: string; deadline: string | null; memberId: string; company?: string;
+  createdAt?: string; updatedAt?: string;
 }
 interface KPI {
   id: string; name: string; target: number; current: number;
@@ -29,6 +30,7 @@ interface KPI {
 interface Content {
   id: string; title: string; type: string; platform: string;
   status: string; publishDate: string | null; memberId: string; company?: string;
+  createdAt?: string; updatedAt?: string;
 }
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -142,10 +144,10 @@ export default function DashboardPage() {
   // 1. "From Yesterday" Stats (Items created/updated in last 24h)
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  // (We'll mock this slightly or just use real created data if available, but for now let's just use a static mock or simple filter)
-  const tasksCreatedYesterday = 2;
-  const contentCreatedYesterday = 5;
-  const tasksCompletedYesterday = 3;
+  
+  const tasksCreatedYesterday = allTasks.filter(t => t.createdAt && new Date(t.createdAt) >= yesterday).length;
+  const contentCreatedYesterday = allContents.filter(c => c.createdAt && new Date(c.createdAt) >= yesterday).length;
+  const tasksCompletedYesterday = allTasks.filter(t => t.status === 'done' && t.updatedAt && new Date(t.updatedAt) >= yesterday).length;
 
   // 2. 7-Day Trend Data
   const trendData = Array.from({ length: 7 }).map((_, i) => {
