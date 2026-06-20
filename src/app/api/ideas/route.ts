@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(ideas)
   } catch (error) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch idea notes' }, { status: 500 })
+    return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }
 
