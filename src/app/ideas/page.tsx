@@ -159,7 +159,7 @@ export default function IdeasPage() {
     <div className="app-page-container" style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0, minWidth: 'max-content' }}>โน๊ตงาน</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0, minWidth: 'max-content' }}>โน๊ตไอเดียงาน</h1>
         <div style={{ position: 'relative', flex: 1, minWidth: '250px', maxWidth: '400px' }}>
           <HiMagnifyingGlass style={{ position: 'absolute', left: 12, top: 10, color: '#94a3b8' }} size={20} />
           <input 
