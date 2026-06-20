@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const { currentUserId } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterMemberId, setFilterMemberId] = useState<string>('my_tasks');
+  const [filterMemberId, setFilterMemberId] = useState<string>('all');
 
   const [error, setError] = useState<string | null>(null);
 
@@ -70,11 +70,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (currentUserId && filterMemberId === 'my_tasks' && members.length > 0) {
-      setFilterMemberId(currentUserId);
-    }
-  }, [currentUserId, members]);
+
 
   if (loading) {
     return (
