@@ -187,6 +187,8 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     switch (status) {
       case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
       case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316' };
+      case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5' };
+      case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b' };
       default: return { bg: '#f1f5f9', text: '#64748b' };
     }
   };

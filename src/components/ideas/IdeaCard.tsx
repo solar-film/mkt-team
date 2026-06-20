@@ -35,6 +35,8 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
     switch (status) {
       case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
       case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316' };
+      case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5' };
+      case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b' };
       default: return { bg: '#f1f5f9', text: '#64748b' };
     }
   };
@@ -96,7 +98,7 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
         )}
         {idea.category && (
           <span style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-            {idea.category}
+            {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}
           </span>
         )}
         <span style={{ backgroundColor: sColor.bg, color: sColor.text, padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
