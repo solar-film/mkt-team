@@ -197,8 +197,11 @@ export default function KPIsPage() {
             let avgKpi = 0;
             if (monthKpis.length > 0) {
               const totalPercent = monthKpis.reduce((sum, k) => {
-                const target = Number(k.target) || 1;
-                const percent = k.target === 0 ? (k.current > 0 ? 100 : 0) : Math.min((k.current / target) * 100, 100);
+                const linkedTasksDone = member.tasks?.filter(t => t.kpiId === k.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+                const linkedContentsDone = member.contents?.filter(c => c.kpiId === k.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+                const autoCurrent = linkedTasksDone + linkedContentsDone;
+                const displayCurrent = Math.max(Number(k.current) || 0, autoCurrent);
+                const percent = k.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / k.target) * 100, 100);
                 return sum + percent;
               }, 0);
               avgKpi = Math.round(totalPercent / monthKpis.length);
@@ -267,14 +270,23 @@ export default function KPIsPage() {
                     )}
                     {monthKpis.length > 0 ? (
                       monthKpis.map(kpi => {
-                    const target = Number(kpi.target) || 1;
-                    const percent = kpi.target === 0 ? (kpi.current > 0 ? 100 : 0) : Math.min((kpi.current / kpi.target) * 100, 100);
-                    const color = getProgressColor(percent);
+                        const target = Number(kpi.target) || 1;
+                        
+                        // Auto-calculate from system tasks/contents
+                        const linkedTasksDone = member.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+                        const linkedContentsDone = member.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+                        const autoCurrent = linkedTasksDone + linkedContentsDone;
+                        
+                        // Use whichever is higher: manually entered value or automatically counted value
+                        const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
+                        
+                        const percent = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / kpi.target) * 100, 100);
+                        const color = getProgressColor(percent);
                     
                     return (
                       <div key={kpi.id} className="kpi-item">
                         <div className="kpi-meta">
-                          <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                             {kpi.name}
                             {isAdmin && (
                               <button onClick={() => openEditModal(kpi)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, display: 'flex' }}>
@@ -282,7 +294,12 @@ export default function KPIsPage() {
                               </button>
                             )}
                           </span>
-                          <span>{kpi.current} / {kpi.target} {kpi.unit}</span>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            {autoCurrent > 0 && autoCurrent > Number(kpi.current) ? (
+                              <span style={{ fontSize: '0.75rem', color: '#10b981', marginRight: '0.25rem' }}>(นับออโต้)</span>
+                            ) : null}
+                            {displayCurrent} / {kpi.target} {kpi.unit}
+                          </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <div style={{ flex: 1 }}>

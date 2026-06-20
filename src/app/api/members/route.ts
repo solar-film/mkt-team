@@ -17,6 +17,54 @@ export async function GET(request: NextRequest) {
       } : undefined
     })
 
+    if (includeRelations) {
+      const ideas = await prisma.ideaNote.findMany({
+        where: { category: { in: ['task', 'content'] } }
+      });
+      
+      const mapIdeaStatus = (s: string) => {
+        if (!s || s === 'รอดำเนินการ') return 'todo';
+        if (s === 'เสร็จแล้ว') return 'done';
+        return 'in_progress';
+      };
+
+      ideas.forEach(idea => {
+        const assignees = idea.memberId ? idea.memberId.split(',') : [];
+        const boardStatus = mapIdeaStatus(idea.status);
+        
+        assignees.forEach(memberId => {
+          const member = members.find(m => m.id === memberId);
+          if (member) {
+            const mappedIdea = {
+              id: `idea_${idea.id}`,
+              title: `💡 ${idea.title}`,
+              description: idea.description,
+              status: boardStatus,
+              priority: idea.priority,
+              startDate: null,
+              deadline: idea.deadline,
+              company: idea.company || 'GFS',
+              link: null,
+              kpiId: idea.kpiId,
+              meetingId: null,
+              memberId: idea.memberId,
+              createdAt: idea.createdAt,
+              updatedAt: idea.updatedAt,
+              type: 'Idea',
+              platform: idea.platform || 'General',
+              publishDate: idea.deadline
+            };
+            
+            if (idea.category === 'task' && member.tasks) {
+              member.tasks.push(mappedIdea as any);
+            } else if (idea.category === 'content' && member.contents) {
+              member.contents.push(mappedIdea as any);
+            }
+          }
+        });
+      });
+    }
+
     const order = ['OIL', 'TEW', 'PLENG', 'NON']
     members.sort((a, b) => {
       const indexA = order.findIndex(name => a.name.toUpperCase().includes(name));

@@ -123,9 +123,13 @@ export default function DashboardPage() {
   const avgKPI = currentMonthKpis.length > 0 
     ? currentMonthKpis.reduce((sum, kpi) => {
         const target = Number(kpi.target) || 1;
-        const current = Number(kpi.current) || 0;
-        const percentage = (current / target) * 100;
-        return sum + (isNaN(percentage) ? 0 : Math.min(percentage, 100));
+        const member = filteredMembers.find(m => m.id === kpi.memberId);
+        const linkedTasksDone = member?.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+        const linkedContentsDone = member?.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+        const autoCurrent = linkedTasksDone + linkedContentsDone;
+        const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
+        const percentage = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : (displayCurrent / target) * 100;
+        return sum + Math.min(percentage, 100);
       }, 0) / currentMonthKpis.length 
     : 0;
 
