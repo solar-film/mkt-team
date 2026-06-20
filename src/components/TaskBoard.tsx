@@ -10,6 +10,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { getCompanyColor, getMemberColor } from '@/lib/colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchDashboardCached } from '@/lib/fetchDashboard';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -105,7 +106,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/dashboard' + (filterMemberId ? `?memberId=${filterMemberId}` : ''), { cache: 'no-store' });
+      const res = await fetchDashboardCached('/api/dashboard' + (filterMemberId ? `?memberId=${filterMemberId}` : ''));
       const data = await res.json();
       
       const tasksData = data.tasks;

@@ -38,6 +38,7 @@ interface TeamMember {
 }
 
 import Link from 'next/link';
+import { fetchDashboardCached } from '@/lib/fetchDashboard';
 
 export default function DashboardPage() {
   const { currentUserId } = useAuth();
@@ -49,7 +50,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = () => {
-    fetch('/api/dashboard', { cache: 'no-store' })
+    fetchDashboardCached('/api/dashboard')
       .then(res => res.json())
       .then(data => {
         if (data && data.error) {
