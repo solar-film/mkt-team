@@ -106,10 +106,33 @@ export default function IdeasPage() {
 
   const finalFilteredIdeas = filteredIdeas.filter(idea => {
     if (filterOwnerId === 'all') return true;
-    return idea.memberId === filterOwnerId;
+    return idea.memberId?.includes(filterOwnerId);
   });
 
   const selectedIdea = ideas.find(i => i.id === selectedIdeaId);
+
+  const handleToggleStar = async (ideaId: string) => {
+    const idea = ideas.find(i => i.id === ideaId);
+    if (!idea || !currentUserId) return;
+    
+    const starredBy = idea.recommendedFor ? idea.recommendedFor.split(',') : [];
+    let newStarredBy;
+    if (starredBy.includes(currentUserId)) {
+      newStarredBy = starredBy.filter(id => id !== currentUserId);
+    } else {
+      newStarredBy = [...starredBy, currentUserId];
+    }
+    
+    // Optimistic UI update
+    setIdeas(ideas.map(i => i.id === ideaId ? { ...i, recommendedFor: newStarredBy.join(',') } : i));
+    
+    await fetch('/api/ideas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: ideaId, title: idea.title, recommendedFor: newStarredBy.join(',') })
+    });
+    fetchData();
+  };
 
   if (loading || authLoading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
@@ -187,6 +210,8 @@ export default function IdeasPage() {
                 members={members} 
                 isSelected={selectedIdeaId === idea.id} 
                 onClick={() => setSelectedIdeaId(idea.id)} 
+                currentUserId={currentUserId || undefined}
+                onToggleStar={handleToggleStar}
               />
             ))
           )}

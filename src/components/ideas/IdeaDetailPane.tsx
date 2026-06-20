@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { HiXMark, HiEllipsisVertical, HiPencil, HiCheck, HiPaperClip, HiPaperAirplane, HiPlus, HiDocumentText } from 'react-icons/hi2';
+import { HiXMark, HiPencil, HiEllipsisVertical, HiPlus, HiCheck, HiDocumentText, HiPaperAirplane, HiTrash } from 'react-icons/hi2';
 
 interface IdeaDetailPaneProps {
   idea: any;
@@ -96,6 +96,41 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     onUpdate();
   };
 
+  const handleDeleteIdea = async () => {
+    if (!confirm('ยืนยันการลบโน๊ตนี้?')) return;
+    await fetch(`/api/ideas?id=${idea.id}`, { method: 'DELETE' });
+    onClose();
+    onUpdate();
+  };
+
+  const handleDeleteChecklist = async (checklistId: string) => {
+    if (!confirm('ยืนยันการลบ Checklist นี้?')) return;
+    await fetch(`/api/ideas/${idea.id}/checklists?checklistId=${checklistId}`, { method: 'DELETE' });
+    onUpdate();
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('ยืนยันการลบความคิดเห็นนี้?')) return;
+    await fetch(`/api/ideas/${idea.id}/comments?commentId=${commentId}`, { method: 'DELETE' });
+    onUpdate();
+  };
+
+  const selectedAssignees = idea.memberId ? idea.memberId.split(',') : [];
+  const handleToggleAssignee = async (mId: string) => {
+    let newAssignees;
+    if (selectedAssignees.includes(mId)) {
+      newAssignees = selectedAssignees.filter(id => id !== mId);
+    } else {
+      newAssignees = [...selectedAssignees, mId];
+    }
+    await fetch('/api/ideas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: idea.id, title: idea.title, memberId: newAssignees.join(',') })
+    });
+    onUpdate();
+  };
+
   const handleSaveEdit = async () => {
     await fetch('/api/ideas', {
       method: 'PUT',
@@ -115,6 +150,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
           {canEdit && !isEditing && (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="แก้ไขโน๊ต"><HiPencil size={20} /></button>
+              <button onClick={handleDeleteIdea} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="ลบโน๊ต"><HiTrash size={20} /></button>
             </div>
           )}
           {isEditing && (
@@ -169,20 +205,40 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', marginBottom: '2rem', fontSize: '0.9rem', alignItems: 'center' }}>
           <div style={{ color: '#64748b' }}>🔔 ผู้รับผิดชอบ</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}>
-            {owner?.avatar ? <img src={owner.avatar} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} /> : <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: '#e2e8f0' }} />}
             {canEdit ? (
-              <select 
-                value={idea.memberId || ''} 
-                onChange={(e) => updateAssignee(e.target.value)}
-                style={{ padding: '4px 8px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#0f172a', fontSize: '0.85rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
-              >
-                <option value="">ไม่ระบุ</option>
-                {members.filter(m => m.status !== 'inactive').map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                {members.filter(m => m.status !== 'inactive').map(m => {
+                  const isSelected = selectedAssignees.includes(m.id);
+                  return (
+                    <div 
+                      key={m.id} 
+                      onClick={() => handleToggleAssignee(m.id)}
+                      style={{ 
+                        padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', cursor: 'pointer',
+                        backgroundColor: isSelected ? '#3b82f6' : '#f1f5f9',
+                        color: isSelected ? 'white' : '#64748b',
+                        border: isSelected ? 'none' : '1px solid #e2e8f0'
+                      }}
+                    >
+                      {m.name}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              owner?.name || '-'
+              <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {selectedAssignees.map(id => {
+                   const m = members.find(x => x.id === id);
+                   if (!m) return null;
+                   return (
+                     <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '4px 8px', borderRadius: '12px', backgroundColor: '#f1f5f9' }}>
+                       {m.avatar ? <img src={m.avatar} alt="" style={{ width: 16, height: 16, borderRadius: '50%' }} /> : <div style={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: '#cbd5e1' }} />}
+                       <span style={{ fontSize: '0.75rem', color: '#0f172a' }}>{m.name}</span>
+                     </div>
+                   );
+                })}
+                {selectedAssignees.length === 0 && <span style={{ color: '#94a3b8' }}>-</span>}
+              </div>
             )}
           </div>
 
@@ -264,6 +320,11 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                     {item.title}
                   </span>
                 </div>
+                {canEdit && (
+                  <button onClick={() => handleDeleteChecklist(item.id)} style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer' }}>
+                    <HiTrash size={16} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -334,6 +395,11 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                       {comment.text}
                     </div>
                   </div>
+                  {(currentUser?.role === 'Admin' || currentUserId === comment.memberId) && (
+                    <button onClick={() => handleDeleteComment(comment.id)} style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '0.5rem' }}>
+                      <HiTrash size={16} />
+                    </button>
+                  )}
                 </div>
               );
             })}

@@ -4,19 +4,22 @@ import { HiStar, HiChatBubbleLeftEllipsis, HiCalendar } from 'react-icons/hi2';
 interface Member {
   id: string;
   name: string;
-  avatar?: string | null;
+  avatar: string | null;
 }
 
 interface IdeaCardProps {
   idea: any;
   members: Member[];
-  isSelected: boolean;
   onClick: () => void;
+  isSelected?: boolean;
+  currentUserId?: string;
+  onToggleStar?: (id: string) => void;
 }
 
-export default function IdeaCard({ idea, members, isSelected, onClick }: IdeaCardProps) {
+export default function IdeaCard({ idea, members, onClick, isSelected, currentUserId, onToggleStar }: IdeaCardProps) {
   const owner = members.find(m => m.id === idea.memberId);
   const recommended = members.find(m => m.id === idea.recommendedFor);
+  const isStarred = currentUserId && idea.recommendedFor?.includes(currentUserId);
 
   // Status/Priority Colors
   const getPriorityColor = (priority: string) => {
@@ -72,7 +75,13 @@ export default function IdeaCard({ idea, members, isSelected, onClick }: IdeaCar
             {idea.priority || 'ปกติ'}
           </span>
         </div>
-        <HiStar color={idea.priority === 'ด่วนมาก' ? '#f59e0b' : '#cbd5e1'} size={20} />
+        <div 
+          onClick={(e) => { e.stopPropagation(); onToggleStar?.(idea.id); }}
+          style={{ cursor: onToggleStar ? 'pointer' : 'default' }}
+          title={isStarred ? "เลิกติดดาว" : "ติดดาว"}
+        >
+          <HiStar color={isStarred ? '#f59e0b' : '#cbd5e1'} size={20} />
+        </div>
       </div>
 
       <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem', lineHeight: 1.4 }}>
