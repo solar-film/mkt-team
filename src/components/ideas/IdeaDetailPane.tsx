@@ -166,6 +166,24 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     onUpdate();
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'ด่วนมาก': return { bg: '#fee2e2', text: '#ef4444' };
+      case 'ด่วน': return { bg: '#fef3c7', text: '#f59e0b' };
+      default: return { bg: '#e0f2fe', text: '#3b82f6' };
+    }
+  };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
+      case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316' };
+      default: return { bg: '#f1f5f9', text: '#64748b' };
+    }
+  };
+  
+  const pColor = getPriorityColor(idea.priority || 'ปกติ');
+  const sColor = getStatusColor(idea.status || 'รอดำเนินการ');
+
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '16px', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
       {/* Header */}
@@ -191,8 +209,8 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       {/* Content Scrollable */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-          <span style={{ backgroundColor: '#fee2e2', color: '#ef4444', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600 }}>
-            {idea.priority || 'ด่วนมาก'}
+          <span style={{ backgroundColor: pColor.bg, color: pColor.text, padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600 }}>
+            {idea.priority || 'ปกติ'}
           </span>
         </div>
 
@@ -221,7 +239,6 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             </h1>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
               <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>{idea.company || 'บริษัท'}</span>
-              <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>Content</span>
             </div>
           </>
         )}
@@ -281,7 +298,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             <select 
               value={idea.status || 'รอดำเนินการ'} 
               onChange={(e) => updateStatus(e.target.value)}
-              style={{ padding: '4px 8px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', color: '#0f172a', fontSize: '0.85rem', fontWeight: 600, outline: 'none' }}
+              style={{ padding: '4px 8px', borderRadius: '12px', border: `1px solid ${sColor.text}`, backgroundColor: sColor.bg, color: sColor.text, fontSize: '0.85rem', fontWeight: 600, outline: 'none' }}
             >
               <option value="รอดำเนินการ">รอดำเนินการ</option>
               <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
