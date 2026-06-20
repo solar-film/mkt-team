@@ -12,6 +12,14 @@ interface IdeaDetailPaneProps {
 export default function IdeaDetailPane({ idea, members, onClose, onUpdate, currentUserId }: IdeaDetailPaneProps) {
   const [newChecklist, setNewChecklist] = useState('');
   const [newComment, setNewComment] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: idea.title,
+    description: idea.description || '',
+    company: idea.company || '',
+    priority: idea.priority || 'ด่วนมาก',
+    deadline: idea.deadline ? new Date(idea.deadline).toISOString().split('T')[0] : '',
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentUser = members.find(m => m.id === currentUserId);
@@ -79,19 +87,43 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     onUpdate();
   };
 
+  const updateAssignee = async (memberId: string) => {
+    await fetch('/api/ideas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: idea.id, title: idea.title, memberId })
+    });
+    onUpdate();
+  };
+
+  const handleSaveEdit = async () => {
+    await fetch('/api/ideas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: idea.id, ...editForm })
+    });
+    setIsEditing(false);
+    onUpdate();
+  };
+
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '16px', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
       {/* Header */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>รายละเอียดโน๊ตงาน</h2>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {canEdit && (
+          {canEdit && !isEditing && (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiPencil size={20} /></button>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiEllipsisVertical size={20} /></button>
+              <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }} title="แก้ไขโน๊ต"><HiPencil size={20} /></button>
             </div>
           )}
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><HiXMark size={24} /></button>
+          {isEditing && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={() => setIsEditing(false)} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem' }}>ยกเลิก</button>
+              <button onClick={handleSaveEdit} className="btn btn-primary" style={{ padding: '0.25rem 0.75rem' }}>บันทึก</button>
+            </div>
+          )}
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', marginLeft: '0.5rem' }}><HiXMark size={24} /></button>
         </div>
       </div>
 
@@ -103,25 +135,65 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
           </span>
         </div>
 
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', lineHeight: 1.3 }}>
-          {idea.title}
-        </h1>
-
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>{idea.company || 'บริษัท'}</span>
-          <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>Content</span>
-        </div>
+        {isEditing ? (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <input 
+              type="text" 
+              className="form-input" 
+              value={editForm.title} 
+              onChange={e => setEditForm({...editForm, title: e.target.value})} 
+              style={{ fontSize: '1.5rem', fontWeight: 800, padding: '0.5rem', marginBottom: '1rem' }} 
+            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select className="form-select" value={editForm.company} onChange={e => setEditForm({...editForm, company: e.target.value})} style={{ width: 'auto' }}>
+                <option value="">ไม่ระบุบริษัท</option>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="CAR">CAR</option>
+              </select>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', lineHeight: 1.3 }}>
+              {idea.title}
+            </h1>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+              <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>{idea.company || 'บริษัท'}</span>
+              <span style={{ backgroundColor: '#e0f2fe', color: '#0284c7', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>Content</span>
+            </div>
+          </>
+        )}
 
         {/* Info Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', marginBottom: '2rem', fontSize: '0.9rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', marginBottom: '2rem', fontSize: '0.9rem', alignItems: 'center' }}>
           <div style={{ color: '#64748b' }}>🔔 ผู้รับผิดชอบ</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}>
             {owner?.avatar ? <img src={owner.avatar} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} /> : <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: '#e2e8f0' }} />}
-            {owner?.name || '-'}
+            {canEdit ? (
+              <select 
+                value={idea.memberId || ''} 
+                onChange={(e) => updateAssignee(e.target.value)}
+                style={{ padding: '4px 8px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#0f172a', fontSize: '0.85rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="">ไม่ระบุ</option>
+                {members.filter(m => m.status !== 'inactive').map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            ) : (
+              owner?.name || '-'
+            )}
           </div>
 
           <div style={{ color: '#64748b' }}>🕒 Deadline</div>
-          <div style={{ fontWeight: 500 }}>{idea.deadline ? new Date(idea.deadline).toLocaleDateString('th-TH') : '-'}</div>
+          <div style={{ fontWeight: 500 }}>
+            {isEditing ? (
+              <input type="date" className="form-input" value={editForm.deadline} onChange={e => setEditForm({...editForm, deadline: e.target.value})} style={{ padding: '4px 8px', width: 'auto' }} />
+            ) : (
+              idea.deadline ? new Date(idea.deadline).toLocaleDateString('th-TH') : '-'
+            )}
+          </div>
 
           <div style={{ color: '#64748b' }}>💬 สถานะ</div>
           <div>
@@ -138,15 +210,34 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
           </div>
 
           <div style={{ color: '#64748b' }}>⭐ Priority</div>
-          <div style={{ fontWeight: 500, color: '#ef4444' }}>{idea.priority || 'ด่วนมาก'}</div>
+          <div style={{ fontWeight: 500, color: '#ef4444' }}>
+            {isEditing ? (
+              <select className="form-select" value={editForm.priority} onChange={e => setEditForm({...editForm, priority: e.target.value})} style={{ padding: '4px 8px', width: 'auto' }}>
+                <option value="ปกติ">ปกติ</option>
+                <option value="ด่วน">ด่วน</option>
+                <option value="ด่วนมาก">ด่วนมาก</option>
+              </select>
+            ) : (
+              idea.priority || 'ด่วนมาก'
+            )}
+          </div>
         </div>
 
         {/* Description */}
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>รายละเอียด</h3>
-          <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}>
-            {idea.description || '-'}
-          </p>
+          {isEditing ? (
+            <textarea 
+              className="form-textarea" 
+              rows={5} 
+              value={editForm.description} 
+              onChange={e => setEditForm({...editForm, description: e.target.value})} 
+            />
+          ) : (
+            <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}>
+              {idea.description || '-'}
+            </p>
+          )}
         </div>
 
         {/* Checklist */}
