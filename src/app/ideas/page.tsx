@@ -27,7 +27,8 @@ export default function IdeasPage() {
   const [loading, setLoading] = useState(true);
   
   // Filter state
-  const [filterMemberId, setFilterMemberId] = useState('');
+  const [filterCompany, setFilterCompany] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +46,7 @@ export default function IdeasPage() {
     setLoading(true);
     try {
       const [ideasRes, membersRes] = await Promise.all([
-        fetch('/api/ideas' + (filterMemberId ? `?memberId=${filterMemberId}` : ''), { cache: 'no-store' }),
+        fetch('/api/ideas', { cache: 'no-store' }),
         fetch('/api/members', { cache: 'no-store' })
       ]);
       
@@ -67,7 +68,19 @@ export default function IdeasPage() {
 
   useEffect(() => {
     fetchData();
-  }, [filterMemberId]);
+  }, []);
+
+  const filteredIdeas = ideas.filter(idea => {
+    const matchCompany = filterCompany ? idea.company === filterCompany : true;
+    const searchLower = searchQuery.toLowerCase();
+    const matchSearch = searchQuery 
+      ? (idea.title.toLowerCase().includes(searchLower) || 
+         (idea.description && idea.description.toLowerCase().includes(searchLower)) ||
+         (idea.recommendedFor && idea.recommendedFor.toLowerCase().includes(searchLower)) ||
+         (idea.memberId && getMemberName(idea.memberId).toLowerCase().includes(searchLower)))
+      : true;
+    return matchCompany && matchSearch;
+  });
 
   const openAddModal = () => {
     setFormData({ title: '', description: '', memberId: '', recommendedFor: '', company: '' });
@@ -152,32 +165,37 @@ export default function IdeasPage() {
         </button>
       </div>
 
-      <div className="filter-bar" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <label className="form-label" style={{ marginBottom: 0 }}>ดูไอเดียของ:</label>
-        <select 
-          className="form-select" 
-          style={{ width: '200px' }}
-          value={filterMemberId}
-          onChange={(e) => setFilterMemberId(e.target.value)}
-        >
-          <option value="">-- ทั้งหมด --</option>
-          {members.filter(m => m.status !== 'inactive').sort((a, b) => {
-            const order = ['แต้ว', 'เพลง', 'นน'];
-            const idxA = order.indexOf(a.name);
-            const idxB = order.indexOf(b.name);
-            if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name);
-            if (idxA === -1) return 1;
-            if (idxB === -1) return -1;
-            return idxA - idxB;
-          }).map(m => (
-            <option key={m.id} value={m.name}>{m.name}</option>
-          ))}
-        </select>
+      <div className="filter-bar" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label className="form-label" style={{ marginBottom: 0 }}>ดูไอเดียของบริษัท:</label>
+          <select 
+            className="form-select" 
+            style={{ width: '150px' }}
+            value={filterCompany}
+            onChange={(e) => setFilterCompany(e.target.value)}
+          >
+            <option value="">-- ทั้งหมด --</option>
+            <option value="GFS">GFS</option>
+            <option value="MHL">MHL</option>
+            <option value="CAR">CAR</option>
+          </select>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '200px' }}>
+          <input 
+            type="text" 
+            className="form-input" 
+            placeholder="ค้นหาไอเดีย..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '100%' }}
+          />
+        </div>
       </div>
 
       {loading ? (
         <div className="loading-container"><div className="loading-spinner"></div></div>
-      ) : ideas.length === 0 ? (
+      ) : filteredIdeas.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--color-text-secondary)' }}>
           <HiLightBulb style={{ fontSize: '4rem', color: '#cbd5e1', marginBottom: '1rem' }} />
           <p style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>ยังไม่มีไอเดียถูกบันทึกไว้</p>
@@ -190,7 +208,7 @@ export default function IdeasPage() {
           gap: '1.5rem',
           alignItems: 'start'
         }}>
-          {ideas.map((idea, index) => (
+          {filteredIdeas.map((idea, index) => (
             <div 
               key={idea.id} 
               style={{ 
