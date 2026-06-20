@@ -207,10 +207,25 @@ export default function DashboardPage() {
       const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
       const mCompleted = mItems.filter(t => t.status === 'done').length;
       const mTotal = mItems.length;
-      const percent = mTotal > 0 ? Math.round((mCompleted / mTotal) * 100) : 0;
+      
+      const mKpis = m.kpis.filter(k => k.month === currentMonth && k.year === currentYear);
+      let kpiPercent = 0;
+      if (mKpis.length > 0) {
+        const totalPercent = mKpis.reduce((sum, kpi) => {
+          const target = Number(kpi.target) || 1;
+          const linkedTasksDone = m.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+          const linkedContentsDone = m.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+          const autoCurrent = linkedTasksDone + linkedContentsDone;
+          const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
+          const percentage = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / target) * 100, 100);
+          return sum + percentage;
+        }, 0);
+        kpiPercent = Math.round(totalPercent / mKpis.length);
+      }
+
       return {
         name: m.name,
-        percent,
+        percent: kpiPercent,
         completed: mCompleted,
         pending: mTotal - mCompleted
       };
