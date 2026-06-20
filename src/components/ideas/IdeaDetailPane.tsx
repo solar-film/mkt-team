@@ -183,6 +183,15 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       default: return { bg: '#e0f2fe', text: '#3b82f6' };
     }
   };
+  const formatStatus = (s: string) => {
+    if (!s) return 'รอดำเนินการ';
+    if (s === 'pending' || s === 'todo') return 'รอดำเนินการ';
+    if (s === 'in_progress') return 'กำลังดำเนินการ';
+    if (s === 'review') return 'รอตรวจ';
+    if (s === 'done' || s === 'completed') return 'เสร็จแล้ว';
+    return s;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
@@ -194,7 +203,8 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   };
   
   const pColor = getPriorityColor(idea.priority || 'ปกติ');
-  const sColor = getStatusColor(idea.status || 'รอดำเนินการ');
+  const displayStatus = formatStatus(idea.status);
+  const sColor = getStatusColor(displayStatus);
 
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '16px', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
@@ -342,7 +352,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
           <div style={{ color: '#64748b' }}>💬 สถานะ</div>
           <div>
             <select 
-              value={idea.status || 'รอดำเนินการ'} 
+              value={displayStatus} 
               onChange={(e) => updateStatus(e.target.value)}
               style={{ padding: '4px 8px', borderRadius: '12px', border: `1px solid ${sColor.text}`, backgroundColor: sColor.bg, color: sColor.text, fontSize: '0.85rem', fontWeight: 600, outline: 'none' }}
             >

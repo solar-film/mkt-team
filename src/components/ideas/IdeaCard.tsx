@@ -31,6 +31,15 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
     }
   };
 
+  const formatStatus = (s: string) => {
+    if (!s) return 'รอดำเนินการ';
+    if (s === 'pending' || s === 'todo') return 'รอดำเนินการ';
+    if (s === 'in_progress') return 'กำลังดำเนินการ';
+    if (s === 'review') return 'รอตรวจ';
+    if (s === 'done' || s === 'completed') return 'เสร็จแล้ว';
+    return s;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
@@ -42,7 +51,8 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
   };
 
   const pColor = getPriorityColor(idea.priority || 'ปกติ');
-  const sColor = getStatusColor(idea.status || 'รอดำเนินการ');
+  const displayStatus = formatStatus(idea.status);
+  const sColor = getStatusColor(displayStatus);
 
   return (
     <div 
@@ -102,7 +112,7 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
           </span>
         )}
         <span style={{ backgroundColor: sColor.bg, color: sColor.text, padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
-          {idea.status || 'รอดำเนินการ'}
+          {displayStatus}
         </span>
       </div>
 
