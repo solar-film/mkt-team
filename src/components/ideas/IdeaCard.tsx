@@ -90,8 +90,13 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         {idea.company && (
-          <span style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>
+          <span style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
             {idea.company}
+          </span>
+        )}
+        {idea.category && (
+          <span style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+            {idea.category}
           </span>
         )}
         <span style={{ backgroundColor: sColor.bg, color: sColor.text, padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
