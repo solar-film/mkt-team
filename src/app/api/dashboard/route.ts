@@ -36,14 +36,14 @@ export async function GET(request: NextRequest) {
       prisma.task.findMany({
         where: taskWhere,
         include: {
-          member: { select: { id: true, name: true, avatar: true } }
+          member: { select: { id: true, name: true } }
         },
         orderBy: { deadline: 'asc' }
       }),
       prisma.content.findMany({
         where: contentWhere,
         include: {
-          member: { select: { id: true, name: true, avatar: true } }
+          member: { select: { id: true, name: true } }
         },
         orderBy: { publishDate: 'asc' }
       }),
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       const boardStatus = mapIdeaStatus(idea.status);
       const isMultiple = assignees.length > 1;
       const mem = members.find(m => m.id === assignees[0]);
-      const memberObj = isMultiple ? null : (mem ? { id: mem.id, name: mem.name, avatar: mem.avatar } : null);
+      const memberObj = isMultiple ? null : (mem ? { id: mem.id, name: mem.name } : null);
 
       if (idea.category === 'task') {
         finalTasks.push({
