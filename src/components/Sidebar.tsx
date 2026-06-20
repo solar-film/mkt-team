@@ -22,7 +22,8 @@ import {
   HiLockOpen,
   HiChartPie,
   HiLightBulb,
-  HiUserCircle
+  HiUserCircle,
+  HiEllipsisHorizontal
 } from 'react-icons/hi2';
 
 interface Member {
@@ -51,6 +52,7 @@ export default function Sidebar() {
   const { currentUserId, logout } = useAuth();
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMore, setShowMobileMore] = useState(false);
 
   useEffect(() => {
     if (currentUserId) {
@@ -106,25 +108,84 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {visibleLinks.map((link) => (
+        {visibleLinks.map((link, index) => (
           <Link
             key={link.path}
             href={link.path}
-            className={`sidebar-link${pathname === link.path ? ' active' : ''}`}
+            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 4 ? 'desktop-only' : ''}`}
           >
             {link.icon}
             <span>{link.label}</span>
           </Link>
         ))}
-        {/* Mobile Logout Button */}
-        <button 
-          className="sidebar-link mobile-only" 
-          onClick={handleLogout}
-          style={{ border: 'none', cursor: 'pointer', color: '#ef4444' }}
-        >
-          <HiArrowRightOnRectangle />
-          <span>ออกจากระบบ</span>
-        </button>
+        {/* Mobile More Button */}
+        {visibleLinks.length > 4 && (
+          <div className="mobile-only" style={{ position: 'relative' }}>
+            <button 
+              className={`sidebar-link ${showMobileMore ? 'active' : ''}`} 
+              onClick={() => setShowMobileMore(!showMobileMore)}
+              style={{ border: 'none', cursor: 'pointer', background: 'transparent', width: '100%', alignItems: 'center' }}
+            >
+              <HiEllipsisHorizontal />
+              <span>เพิ่มเติม</span>
+            </button>
+            
+            {showMobileMore && (
+              <>
+                <div 
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 }} 
+                  onClick={() => setShowMobileMore(false)} 
+                />
+                <div style={{
+                  position: 'fixed',
+                  bottom: '70px',
+                  right: '10px',
+                  backgroundColor: 'white',
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  padding: '0.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                  minWidth: '200px',
+                  zIndex: 100,
+                  border: '1px solid #e2e8f0'
+                }}>
+                  {visibleLinks.slice(4).map((link) => (
+                    <Link
+                      key={link.path}
+                      href={link.path}
+                      onClick={() => setShowMobileMore(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.75rem 1rem', borderRadius: '10px',
+                        textDecoration: 'none', color: pathname === link.path ? '#4f46e5' : '#475569',
+                        backgroundColor: pathname === link.path ? '#eef2ff' : 'transparent',
+                        fontWeight: pathname === link.path ? 600 : 500,
+                        fontSize: '0.95rem'
+                      }}
+                    >
+                      {link.icon}
+                      {link.label}
+                    </Link>
+                  ))}
+                  <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '0.25rem 0' }} />
+                  <button 
+                    onClick={() => { setShowMobileMore(false); handleLogout(); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.75rem 1rem', borderRadius: '10px', border: 'none', background: 'transparent',
+                      color: '#ef4444', fontWeight: 500, fontSize: '0.95rem', cursor: 'pointer', textAlign: 'left'
+                    }}
+                  >
+                    <HiArrowRightOnRectangle size={20} />
+                    ออกจากระบบ
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </nav>
 
       <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', position: 'relative' }}>

@@ -853,23 +853,15 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   .sidebar-nav { 
     flex-direction: row; 
     padding: 0 0.5rem; 
-    justify-content: flex-start; 
+    justify-content: space-around; 
     width: 100%; 
     gap: 0; 
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-  .sidebar-nav::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
   }
   .sidebar-link { 
     flex-direction: column; 
-    padding: 0.5rem; 
+    padding: 0.5rem 0.25rem; 
     border-radius: 8px; 
-    min-width: 64px;
+    width: 100%;
     justify-content: center; 
     background: transparent !important;
   }
