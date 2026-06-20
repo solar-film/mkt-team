@@ -35,11 +35,14 @@ interface TeamMember {
   tasks: Task[]; kpis: KPI[]; contents: Content[];
 }
 
+import Link from 'next/link';
+
 export default function DashboardPage() {
   const { currentUserId } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
+  const [perfTab, setPerfTab] = useState<'tasks' | 'contents'>('tasks');
 
   const [error, setError] = useState<string | null>(null);
 
@@ -163,9 +166,9 @@ export default function DashboardPage() {
   const teamPerformance = members
     .filter(m => ['OIL', 'TEW', 'PLENG', 'NON'].includes(m.name))
     .map(m => {
-      const mTasks = m.tasks;
-      const mCompleted = mTasks.filter(t => t.status === 'done').length;
-      const mTotal = mTasks.length;
+      const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
+      const mCompleted = mItems.filter(t => t.status === 'done').length;
+      const mTotal = mItems.length;
       const percent = mTotal > 0 ? Math.round((mCompleted / mTotal) * 100) : 0;
       return {
         name: m.name,
@@ -363,24 +366,37 @@ export default function DashboardPage() {
               <p style={{ fontSize: '0.75rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
                 ทีมของคุณทำงานได้ดีขึ้น งานเสร็จแล้วเพิ่มขึ้น <strong style={{ color: '#10b981' }}>23%</strong> และคอนเทนต์ที่ผลิตเพิ่มขึ้น <strong style={{ color: '#3b82f6' }}>17%</strong> เมื่อเทียบกับ 7 วันที่ผ่านมา
               </p>
-              <button style={{ marginTop: 'auto', backgroundColor: 'white', border: '1px solid #c7d2fe', color: '#6366f1', padding: '0.5rem', borderRadius: '24px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+              <Link href="/kpis" style={{ marginTop: 'auto', backgroundColor: 'white', border: '1px solid #c7d2fe', color: '#6366f1', padding: '0.5rem', borderRadius: '24px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', textDecoration: 'none', textAlign: 'center' }}>
                 ดูรายงานเต็มรูปแบบ →
-              </button>
+              </Link>
             </div>
           </div>
         </div>
 
         {/* Team Performance */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <HiOutlineUserGroup size={24} color="#6366f1" />
               <div>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Team Performance</h2>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>ผลงานรายบุคคล (เทียบกับเป้าหมายรายเดือน)</p>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  <button 
+                    onClick={() => setPerfTab('tasks')}
+                    style={{ background: perfTab === 'tasks' ? '#e0e7ff' : 'transparent', color: perfTab === 'tasks' ? '#4f46e5' : '#64748b', border: 'none', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    งานทั่วไป
+                  </button>
+                  <button 
+                    onClick={() => setPerfTab('contents')}
+                    style={{ background: perfTab === 'contents' ? '#e0e7ff' : 'transparent', color: perfTab === 'contents' ? '#4f46e5' : '#64748b', border: 'none', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    คอนเท้น
+                  </button>
+                </div>
               </div>
             </div>
-            <button style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>ดูทั้งหมด &gt;</button>
+            <Link href="/team" style={{ textDecoration: 'none', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>ดูทั้งหมด &gt;</Link>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -410,11 +426,11 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Bottom Row: 3 columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
+      {/* Bottom Row: 2 columns (Expanded Upcoming Tasks) */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
         
         {/* Upcoming Tasks */}
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: '2 1 500px', backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <HiOutlineExclamationTriangle size={22} color="#ef4444" />
@@ -437,7 +453,7 @@ export default function DashboardPage() {
             <tbody>
               {upcomingTasks.map((t, i) => (
                 <tr key={t.id} style={{ borderBottom: i < upcomingTasks.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
-                  <td style={{ padding: '0.75rem 0', maxWidth: '140px' }}>
+                  <td style={{ padding: '0.75rem 0', maxWidth: '200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <div style={{ width: '20px', height: '20px', backgroundColor: t.itemType === 'task' ? '#fff7ed' : '#eff6ff', color: t.itemType === 'task' ? '#f97316' : '#3b82f6', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {t.itemType === 'task' ? <HiClipboardDocumentList size={12} /> : <HiDocumentText size={12} />}
@@ -454,11 +470,11 @@ export default function DashboardPage() {
               ))}
             </tbody>
           </table>
-          <button style={{ marginTop: 'auto', alignSelf: 'flex-start', background: 'none', border: 'none', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '1rem 0 0 0' }}>ดูทั้งหมด &gt;</button>
+          <Link href="/tasks" style={{ marginTop: 'auto', alignSelf: 'flex-start', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '1rem 0 0 0', textDecoration: 'none' }}>ดูทั้งหมด &gt;</Link>
         </div>
 
         {/* Company Breakdown */}
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: '1 1 300px', backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
             <HiOutlineChartBarSquare size={24} color="#8b5cf6" />
             <div>
@@ -501,60 +517,6 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Decisions Today */}
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.25rem' }}>💡</span>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>ประเด็นตัดสินใจวันนี้</h2>
-            </div>
-            <span style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.15rem 0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
-              3 เรื่อง
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            
-            {/* Item 1 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', padding: '0.85rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ color: '#3b82f6' }}><HiOutlinePaperAirplane size={20} /></div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>อนุมัติคอนเทนต์โปรโมชัน</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>รอการอนุมัติ {contentsPendingReview || 3} ชิ้นงาน</div>
-                </div>
-              </div>
-              <div style={{ color: '#cbd5e1' }}>&gt;</div>
-            </div>
-
-            {/* Item 2 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', padding: '0.85rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ color: '#3b82f6' }}><HiOutlineUserGroup size={20} /></div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>จัดสรรทรัพยากรเพิ่มเติม</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>มีงานล่าช้าในทีม PLENG</div>
-                </div>
-              </div>
-              <div style={{ color: '#cbd5e1' }}>&gt;</div>
-            </div>
-
-            {/* Item 3 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', padding: '0.85rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ color: '#8b5cf6' }}><HiChartBar size={20} /></div>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>ทบทวนเป้าหมาย KPI รายเดือน</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>ใกล้สิ้นเดือน โปรดพิจารณาปรับเป้าหมาย</div>
-                </div>
-              </div>
-              <div style={{ color: '#cbd5e1' }}>&gt;</div>
-            </div>
-
-          </div>
-          <button style={{ marginTop: 'auto', alignSelf: 'flex-start', background: 'none', border: 'none', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '1rem 0 0 0' }}>ดูทั้งหมด &gt;</button>
         </div>
 
       </div>
