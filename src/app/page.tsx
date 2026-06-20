@@ -44,7 +44,7 @@ export default function DashboardPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
-  const [perfTab, setPerfTab] = useState<'tasks' | 'contents'>('tasks');
+  const [perfTab, setPerfTab] = useState<'tasks' | 'contents'>('contents');
 
   const [error, setError] = useState<string | null>(null);
 
