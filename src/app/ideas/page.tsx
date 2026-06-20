@@ -73,10 +73,14 @@ export default function IdeasPage() {
   };
 
   const openEditModal = (idea: IdeaNote) => {
+    let displayName = idea.memberId || '';
+    const m = members.find(member => member.id === idea.memberId);
+    if (m) displayName = m.name;
+
     setFormData({
       title: idea.title,
       description: idea.description || '',
-      memberId: idea.memberId || ''
+      memberId: displayName
     });
     setIsEditing(true);
     setEditingId(idea.id);
@@ -124,7 +128,7 @@ export default function IdeasPage() {
   const getMemberName = (id: string | null) => {
     if (!id) return 'ไม่ระบุ';
     const m = members.find(m => m.id === id);
-    return m ? m.name : 'ไม่ระบุ';
+    return m ? m.name : id;
   };
 
   const colors = ['#fef3c7', '#dcfce7', '#dbeafe', '#f3e8ff', '#ffe4e6'];
@@ -160,7 +164,7 @@ export default function IdeasPage() {
             if (idxB === -1) return -1;
             return idxA - idxB;
           }).map(m => (
-            <option key={m.id} value={m.id}>{m.name}</option>
+            <option key={m.id} value={m.name}>{m.name}</option>
           ))}
         </select>
       </div>
@@ -264,12 +268,15 @@ export default function IdeasPage() {
           
           <div className="form-group">
             <label className="form-label">เจ้าของไอเดีย (ตัวเลือก)</label>
-            <select 
-              className="form-select" 
+            <input 
+              type="text"
+              list="idea-members"
+              className="form-input" 
               value={formData.memberId} 
               onChange={e => setFormData({...formData, memberId: e.target.value})}
-            >
-              <option value="">-- ไม่ระบุ (ไอเดียส่วนรวม) --</option>
+              placeholder="-- ระบุชื่อ หรือเลือกจากรายชื่อ --"
+            />
+            <datalist id="idea-members">
               {members.filter(m => m.status !== 'inactive').sort((a, b) => {
                 const order = ['แต้ว', 'เพลง', 'นน'];
                 const idxA = order.indexOf(a.name);
@@ -279,9 +286,9 @@ export default function IdeasPage() {
                 if (idxB === -1) return -1;
                 return idxA - idxB;
               }).map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.name} />
               ))}
-            </select>
+            </datalist>
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
