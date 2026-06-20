@@ -216,6 +216,9 @@ export default function KPIsPage() {
               }, 0);
               avgKpi = Math.round(totalPercent / monthKpis.length);
             }
+            return { ...member, avgKpi, monthKpis };
+          }).sort((a, b) => b.avgKpi - a.avgKpi).map(member => {
+            const { avgKpi, monthKpis } = member;
             const color = avgKpi >= 100 ? '#10b981' : avgKpi >= 80 ? '#3b82f6' : avgKpi >= 50 ? '#f59e0b' : '#ef4444';
 
             return (
