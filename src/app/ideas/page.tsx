@@ -23,6 +23,7 @@ export default function IdeasPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    link: '',
     company: '',
     priority: 'ปกติ',
     memberId: ''
@@ -57,13 +58,21 @@ export default function IdeasPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const payload = { ...formData };
+    if (payload.link) {
+      payload.description = payload.description 
+        ? `${payload.description}\n\n🔗 ${payload.link}`
+        : `🔗 ${payload.link}`;
+    }
+
     await fetch('/api/ideas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...formData })
+      body: JSON.stringify(payload)
     });
     setIsModalOpen(false);
-    setFormData({ title: '', description: '', company: '', priority: 'ปกติ', memberId: currentUserId || '' });
+    setFormData({ title: '', description: '', link: '', company: '', priority: 'ปกติ', memberId: currentUserId || '' });
     fetchData();
   };
 
@@ -285,6 +294,15 @@ export default function IdeasPage() {
           </div>
 
           <div className="form-group">
+            <label className="form-label">ลิงก์ที่เกี่ยวข้อง (URL)</label>
+            <input 
+              type="url"
+              className="form-input"
+              value={formData.link || ''} 
+              onChange={e => setFormData({...formData, link: e.target.value})}
+              placeholder="https://..."
+              style={{ marginBottom: '1rem' }}
+            />
             <label className="form-label">รายละเอียด</label>
             <textarea 
               rows={4}
