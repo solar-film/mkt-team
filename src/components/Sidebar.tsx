@@ -56,6 +56,10 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (currentUserId) {
+      if (currentUserId === 'GUEST') {
+        setCurrentUser({ id: 'GUEST', name: 'ผู้เยี่ยมชม', role: 'Guest', avatar: null });
+        return;
+      }
       fetch('/api/members')
         .then(res => res.json())
         .then((data: Member[]) => {

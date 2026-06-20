@@ -194,6 +194,31 @@ export default function LoginPage() {
             ))}
           </div>
         )}
+
+        <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => login('GUEST')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+          >
+            <HiUser size={18} />
+            เข้าดูโดยไม่ระบุชื่อ (มีสิทธิ์ดูอย่างเดียว)
+          </button>
+        </div>
       </div>
 
       <input 

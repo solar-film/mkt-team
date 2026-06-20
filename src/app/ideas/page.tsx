@@ -104,21 +104,23 @@ export default function IdeasPage() {
     // Because this is for "each person sees their own tasks by default" but "can view others",
     // wait! We didn't add a filter for "My Tasks" vs "All Tasks". The screenshot has a dropdown for "ผู้รับผิดชอบ" (Owner).
     // The requirement says "เข้าหน้ามาเห็นแค่งานตัวเองเป็นค่าเริ่มต้น แต่เปิดดูคนอื่นได้"
-    // Let's add an explicit filter for this. We will use a local state that defaults to currentUserId.
-
     return matchesSearch && matchesStatus;
   });
 
   // Adding Owner filter to meet requirement
-  const [filterOwnerId, setFilterOwnerId] = useState<string>('my_tasks'); // Default
+  const [filterOwnerId, setFilterOwnerId] = useState<string>('my_tasks');
 
   useEffect(() => {
     if (currentUserId && filterOwnerId === 'my_tasks' && members.length > 0) {
-      const user = members.find(m => m.id === currentUserId);
-      if (user?.role === 'Admin') {
+      if (currentUserId === 'GUEST') {
         setFilterOwnerId('all');
       } else {
-        setFilterOwnerId(currentUserId);
+        const user = members.find(m => m.id === currentUserId);
+        if (user?.role === 'Admin') {
+          setFilterOwnerId('all');
+        } else {
+          setFilterOwnerId(currentUserId);
+        }
       }
     }
   }, [currentUserId, members]);
@@ -208,12 +210,14 @@ export default function IdeasPage() {
               <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
             ))}
           </select>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
-          >
-            <HiPlus size={18} /> เพิ่มโน๊ตใหม่
-          </button>
+          {currentUserId !== 'GUEST' && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
+            >
+              <HiPlus size={18} /> เพิ่มโน๊ตใหม่
+            </button>
+          )}
         </div>
       </div>
 

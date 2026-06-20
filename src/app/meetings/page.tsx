@@ -15,6 +15,7 @@ import {
   HiXMark,
   HiArrowPath,
 } from 'react-icons/hi2';
+import { useAuth } from '@/contexts/AuthContext';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -89,6 +90,7 @@ function formatTime(timeStr: string) {
 }
 
 export default function MeetingsPage() {
+  const { currentUserId } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -421,9 +423,11 @@ export default function MeetingsPage() {
             จัดการวาระประชุม, สิ่งที่ต้องทำ และสิ่งที่ต้องติดตาม
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          <HiPlus /> สร้างบันทึกประชุม
-        </button>
+        {currentUserId !== 'GUEST' && (
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <HiPlus /> สร้างบันทึกประชุม
+          </button>
+        )}
       </div>
 
       {/* Meeting List */}

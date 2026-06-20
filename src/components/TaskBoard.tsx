@@ -71,7 +71,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterMemberId, setFilterMemberId] = useState(currentUserId || '');
+  const [filterMemberId, setFilterMemberId] = useState(currentUserId === 'GUEST' ? '' : (currentUserId || ''));
   const [filterType, setFilterType] = useState('all');
   const [filterCompany, setFilterCompany] = useState('all');
   const [filterPlatform, setFilterPlatform] = useState('all');
@@ -149,7 +149,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
   useEffect(() => {
     if (currentUserId && !filterMemberId) {
-      setFilterMemberId(currentUserId);
+      setFilterMemberId(currentUserId === 'GUEST' ? '' : currentUserId);
     }
   }, [currentUserId]);
 
