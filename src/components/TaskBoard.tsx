@@ -557,9 +557,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       if (filterExactDate && isNaN(new Date(filterExactDate).getTime())) return;
       onEventsChange(displayEvents.map(e => ({
         ...e,
-        dateLabel: filterExactDate 
-          ? `นัดหมายวันที่ ${format(filterExactDate, 'dd/MM/yyyy')}${e.time ? ` ${e.time}` : ''}:` 
-          : `วันนี้${e.time ? ` ${e.time}` : ''}:`
+        dateLabel: `วันนี้${e.time ? ` ${e.time} น.` : ''} :`
       })));
     }
   }, [displayEvents, filterExactDate, onEventsChange]);
