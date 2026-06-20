@@ -17,7 +17,8 @@ interface IdeaCardProps {
 }
 
 export default function IdeaCard({ idea, members, onClick, isSelected, currentUserId, onToggleStar }: IdeaCardProps) {
-  const owner = members.find(m => m.id === idea.memberId);
+  const selectedAssignees = idea.memberId ? idea.memberId.split(',') : [];
+  const assignees = members.filter(m => selectedAssignees.includes(m.id));
   const recommended = members.find(m => m.id === idea.recommendedFor);
   const isStarred = currentUserId && idea.recommendedFor?.includes(currentUserId);
 
@@ -101,14 +102,30 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#64748b', fontSize: '0.8rem' }}>
-          {owner && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              {owner.avatar ? (
-                <img src={owner.avatar} alt={owner.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: 20, height: 20, borderRadius: '50%', backgroundColor: '#e2e8f0' }} />
-              )}
-              <span className="truncate" style={{ maxWidth: '80px' }}>{owner.name}</span>
+          {assignees.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {assignees.map((assignee, idx) => (
+                <div key={assignee.id} style={{ 
+                  marginLeft: idx > 0 ? '-8px' : '0',
+                  zIndex: 10 - idx,
+                  border: '2px solid white',
+                  borderRadius: '50%',
+                  width: 24,
+                  height: 24,
+                  backgroundColor: '#e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                }} title={assignee.name}>
+                  {assignee.avatar ? (
+                    <img src={assignee.avatar} alt={assignee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold' }}>{assignee.name.charAt(0)}</span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
           

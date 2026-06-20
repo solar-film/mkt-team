@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { HiXMark, HiPencil, HiEllipsisVertical, HiPlus, HiCheck, HiDocumentText, HiPaperAirplane, HiTrash } from 'react-icons/hi2';
+import ConfirmModal from '../ConfirmModal';
 
 interface IdeaDetailPaneProps {
   idea: any;
@@ -13,6 +14,12 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   const [newChecklist, setNewChecklist] = useState('');
   const [newComment, setNewComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
   const [editForm, setEditForm] = useState({
     title: idea.title,
     description: idea.description || '',
@@ -97,22 +104,40 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   };
 
   const handleDeleteIdea = async () => {
-    if (!confirm('ยืนยันการลบโน๊ตนี้?')) return;
-    await fetch(`/api/ideas?id=${idea.id}`, { method: 'DELETE' });
-    onClose();
-    onUpdate();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'ลบโน๊ตไอเดีย',
+      message: 'ยืนยันการลบโน๊ตนี้?',
+      onConfirm: async () => {
+        await fetch(`/api/ideas?id=${idea.id}`, { method: 'DELETE' });
+        onClose();
+        onUpdate();
+      }
+    });
   };
 
   const handleDeleteChecklist = async (checklistId: string) => {
-    if (!confirm('ยืนยันการลบ Checklist นี้?')) return;
-    await fetch(`/api/ideas/${idea.id}/checklists?checklistId=${checklistId}`, { method: 'DELETE' });
-    onUpdate();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'ลบ Checklist',
+      message: 'ยืนยันการลบ Checklist นี้?',
+      onConfirm: async () => {
+        await fetch(`/api/ideas/${idea.id}/checklists?checklistId=${checklistId}`, { method: 'DELETE' });
+        onUpdate();
+      }
+    });
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm('ยืนยันการลบความคิดเห็นนี้?')) return;
-    await fetch(`/api/ideas/${idea.id}/comments?commentId=${commentId}`, { method: 'DELETE' });
-    onUpdate();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'ลบความคิดเห็น',
+      message: 'ยืนยันการลบความคิดเห็นนี้?',
+      onConfirm: async () => {
+        await fetch(`/api/ideas/${idea.id}/comments?commentId=${commentId}`, { method: 'DELETE' });
+        onUpdate();
+      }
+    });
   };
 
   const selectedAssignees = idea.memberId ? idea.memberId.split(',') : [];
@@ -422,6 +447,11 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
           </button>
         </form>
       </div>
+
+      <ConfirmModal 
+        {...confirmConfig} 
+        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })} 
+      />
     </div>
   );
 }

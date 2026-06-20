@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
+import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -41,6 +42,13 @@ export default function CalendarPage() {
   const [kpis, setKpis] = useState<any[]>([]);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -308,14 +316,20 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (!confirm('ยืนยันการลบกิจกรรม/แจ้งเตือนนี้?')) return;
-    try {
-      await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
-      setIsModalOpen(false);
-      fetchData();
-    } catch (err) {
-      console.error(err);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'ลบกิจกรรม/แจ้งเตือน',
+      message: 'ยืนยันการลบกิจกรรม/แจ้งเตือนนี้?',
+      onConfirm: async () => {
+        try {
+          await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+          setIsModalOpen(false);
+          fetchData();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
   };
 
   // --- Desktop Calendar Grid Logic ---
@@ -1034,11 +1048,16 @@ export default function CalendarPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
               {isEditing && editingItemId ? (
                 <button type="button" className="btn btn-danger" onClick={() => {
-                  if (confirm('ยืนยันการลบคอนเท้นนี้?')) {
-                    fetch(`/api/content?id=${editingItemId}`, { method: 'DELETE' }).then(() => {
-                      setIsModalOpen(false); fetchData();
-                    });
-                  }
+                  setConfirmConfig({
+                    isOpen: true,
+                    title: 'ลบคอนเท้น',
+                    message: 'ยืนยันการลบคอนเท้นนี้?',
+                    onConfirm: () => {
+                      fetch(`/api/content?id=${editingItemId}`, { method: 'DELETE' }).then(() => {
+                        setIsModalOpen(false); fetchData();
+                      });
+                    }
+                  });
                 }}>ลบคอนเท้น</button>
               ) : <div></div>}
               <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1197,6 +1216,10 @@ export default function CalendarPage() {
         </Modal>
       )}
 
+      <ConfirmModal 
+        {...confirmConfig} 
+        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })} 
+      />
     </div>
   );
 }
