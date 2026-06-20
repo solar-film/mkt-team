@@ -55,10 +55,10 @@ export async function GET(request: NextRequest) {
               publishDate: idea.deadline
             };
             
-            if (idea.category === 'task' && member.tasks) {
-              member.tasks.push(mappedIdea as any);
-            } else if (idea.category === 'content' && member.contents) {
-              member.contents.push(mappedIdea as any);
+            if (idea.category === 'task' && (member as any).tasks) {
+              (member as any).tasks.push(mappedIdea as any);
+            } else if (idea.category === 'content' && (member as any).contents) {
+              (member as any).contents.push(mappedIdea as any);
             }
           }
         });
