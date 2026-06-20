@@ -540,7 +540,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   };
 
   const displayEvents = useMemo(() => {
-    return [...events, ...meetings].filter(e => {
+    return [...events].filter(e => {
       const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
       if (isNaN(targetDate.getTime())) return false;
       targetDate.setHours(0,0,0,0);
@@ -549,7 +549,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       eventDate.setHours(0,0,0,0);
       return eventDate.getTime() === targetDate.getTime();
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [events, meetings, filterExactDate]);
+  }, [events, filterExactDate]);
 
   // Call onEventsChange when displayEvents changes
   useEffect(() => {
