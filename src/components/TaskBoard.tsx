@@ -167,12 +167,20 @@ export default function TaskBoard() {
       // Optimistic update
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: newStatus } : i));
       
-      const endpoint = item.itemType === 'task' ? '/api/tasks' : '/api/content';
+      let endpoint = item.itemType === 'task' ? '/api/tasks' : '/api/content';
+      let payloadId = item.id;
+      let body: any = { id: payloadId, status: newStatus };
+
+      if (item.id.startsWith('idea_')) {
+        endpoint = '/api/ideas';
+        payloadId = item.id.replace('idea_', '');
+        body = { id: payloadId, title: item.title.replace('💡 ', ''), status: newStatus };
+      }
       
       await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, status: newStatus })
+        body: JSON.stringify(body)
       });
       // Optionally re-fetch
     } catch (err) {
@@ -438,12 +446,16 @@ export default function TaskBoard() {
                   </span>
                 </div>
                 <div className="task-actions" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                  <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-secondary)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleEditClick(item); }} title="แก้ไข">
-                    <HiOutlinePencilSquare />
-                  </button>
-                  <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }} title="ลบ">
-                    <HiOutlineTrash />
-                  </button>
+                  {!item.id.startsWith('idea_') && (
+                    <>
+                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-secondary)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleEditClick(item); }} title="แก้ไข">
+                        <HiOutlinePencilSquare />
+                      </button>
+                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', backgroundColor: 'transparent' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }} title="ลบ">
+                        <HiOutlineTrash />
+                      </button>
+                    </>
+                  )}
                   
                   <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--color-border)', margin: '0 4px' }}></div>
                   
@@ -660,7 +672,9 @@ export default function TaskBoard() {
                         {isTask ? item.description || 'ไม่มีรายละเอียด' : `${item.contentType === 'video' ? 'วิดีโอ' : item.contentType === 'article' ? 'บทความ' : item.contentType === 'graphic' ? 'กราฟิก' : item.contentType === 'reel' ? 'Reel' : 'โพสต์'} - ${item.company}`}
                       </p>
                     </div>
-                    <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiEllipsisVertical size={20} /></button>
+                    {!item.id.startsWith('idea_') && (
+                      <button style={{ background: 'none', border: 'none', color: '#94a3b8', padding: '0', cursor: 'pointer', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(item.id, item.itemType); }}><HiEllipsisVertical size={20} /></button>
+                    )}
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
@@ -969,9 +983,11 @@ export default function TaskBoard() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
               <button className="btn btn-secondary" onClick={() => setViewItem(null)}>ปิด</button>
-              <button className="btn btn-primary" onClick={() => { setViewItem(null); handleEditClick(viewItem); }}>
-                <HiOutlinePencilSquare /> แก้ไข
-              </button>
+              {!viewItem.id.startsWith('idea_') && (
+                <button className="btn btn-primary" onClick={() => { setViewItem(null); handleEditClick(viewItem); }}>
+                  <HiOutlinePencilSquare /> แก้ไข
+                </button>
+              )}
             </div>
           </div>
         </Modal>

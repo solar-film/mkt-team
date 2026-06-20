@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, memberId, recommendedFor, company, status, priority, deadline } = body
+    const { title, description, memberId, recommendedFor, company, status, priority, deadline, category, platform, kpiId } = body
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -50,7 +50,10 @@ export async function POST(request: NextRequest) {
         company: company || null,
         status: status || 'pending',
         priority: priority || 'normal',
-        deadline: deadline ? new Date(deadline) : null
+        deadline: deadline ? new Date(deadline) : null,
+        category: category || 'idea',
+        platform: platform || null,
+        kpiId: kpiId || null
       }
     })
 
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, description, memberId, recommendedFor, company, status, priority, deadline } = body
+    const { id, title, description, memberId, recommendedFor, company, status, priority, deadline, category, platform, kpiId } = body
 
     if (!id || !title) {
       return NextResponse.json({ error: 'ID and title are required' }, { status: 400 })
@@ -80,7 +83,10 @@ export async function PUT(request: NextRequest) {
         company: company !== undefined ? (company || null) : undefined,
         status: status || undefined,
         priority: priority || undefined,
-        deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined
+        deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined,
+        category: category !== undefined ? (category || 'idea') : undefined,
+        platform: platform !== undefined ? (platform || null) : undefined,
+        kpiId: kpiId !== undefined ? (kpiId || null) : undefined
       }
     })
 

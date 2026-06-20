@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { HiXMark, HiPencil, HiEllipsisVertical, HiPlus, HiCheck, HiDocumentText, HiPaperAirplane, HiTrash } from 'react-icons/hi2';
 import ConfirmModal from '../ConfirmModal';
 
@@ -26,8 +26,18 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     company: idea.company || '',
     priority: idea.priority || 'ด่วนมาก',
     deadline: idea.deadline ? new Date(idea.deadline).toISOString().split('T')[0] : '',
+    category: idea.category || 'idea',
+    platform: idea.platform || '',
+    kpiId: idea.kpiId || ''
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [kpis, setKpis] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/kpis').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setKpis(d);
+    }).catch(console.error);
+  }, []);
 
   const currentUser = members.find(m => m.id === currentUserId);
   const owner = members.find(m => m.id === idea.memberId);
@@ -223,13 +233,39 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               onChange={e => setEditForm({...editForm, title: e.target.value})} 
               style={{ fontSize: '1.5rem', fontWeight: 800, padding: '0.5rem', marginBottom: '1rem' }} 
             />
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <select className="form-select" value={editForm.company} onChange={e => setEditForm({...editForm, company: e.target.value})} style={{ width: 'auto' }}>
                 <option value="">ไม่ระบุบริษัท</option>
                 <option value="GFS">GFS</option>
                 <option value="MHL">MHL</option>
                 <option value="CAR">CAR</option>
               </select>
+              
+              <select className="form-select" value={editForm.category} onChange={e => setEditForm({...editForm, category: e.target.value})} style={{ width: 'auto' }}>
+                <option value="idea">💡 โน๊ตไอเดีย</option>
+                <option value="task">📝 งานทั่วไป</option>
+                <option value="content">🎬 คอนเท้น</option>
+              </select>
+
+              {editForm.category === 'content' && (
+                <>
+                  <select className="form-select" value={editForm.platform} onChange={e => setEditForm({...editForm, platform: e.target.value})} style={{ width: 'auto' }}>
+                    <option value="">ระบุแพลตฟอร์ม</option>
+                    <option value="Facebook">Facebook</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="IG">IG</option>
+                    <option value="Lemon8">Lemon8</option>
+                  </select>
+
+                  <select className="form-select" value={editForm.kpiId} onChange={e => setEditForm({...editForm, kpiId: e.target.value})} style={{ width: 'auto' }}>
+                    <option value="">ไม่เชื่อมโยง KPI</option>
+                    {kpis.map(kpi => (
+                      <option key={kpi.id} value={kpi.id}>{kpi.name} ({kpi.month}/{kpi.year})</option>
+                    ))}
+                  </select>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -237,8 +273,16 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', lineHeight: 1.3 }}>
               {idea.title}
             </h1>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>{idea.company || 'บริษัท'}</span>
+              <span style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>
+                {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}
+              </span>
+              {idea.category === 'content' && idea.platform && (
+                <span style={{ backgroundColor: '#fce7f3', color: '#db2777', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>
+                  {idea.platform}
+                </span>
+              )}
             </div>
           </>
         )}
