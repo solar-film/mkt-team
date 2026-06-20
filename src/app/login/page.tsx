@@ -216,7 +216,7 @@ export default function LoginPage() {
             onMouseOut={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
           >
             <HiUser size={18} />
-            เข้าดูโดยไม่ระบุชื่อ (มีสิทธิ์ดูอย่างเดียว)
+            เข้าดูโดยไม่ระบุชื่อ
           </button>
         </div>
       </div>
