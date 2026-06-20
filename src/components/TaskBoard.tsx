@@ -59,7 +59,11 @@ const isKpiMatchPlatform = (kpiName: string, platform: string) => {
   return k.includes(p);
 };
 
-export default function TaskBoard() {
+interface TaskBoardProps {
+  onEventsChange?: (events: any[]) => void;
+}
+
+export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const { currentUserId } = useAuth();
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -545,6 +549,19 @@ export default function TaskBoard() {
     return eventDate.getTime() === targetDate.getTime();
   }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  // Call onEventsChange when displayEvents changes
+  useEffect(() => {
+    if (onEventsChange) {
+      onEventsChange(displayEvents.map(e => ({
+        ...e,
+        dateLabel: filterExactDate 
+          ? `นัดหมายวันที่ ${format(filterExactDate, 'dd/MM/yyyy')}${e.time ? ` ${e.time}` : ''}:` 
+          : `วันนี้${e.time ? ` ${e.time}` : ''}:`
+      })));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(displayEvents), filterExactDate]);
+
   return (
     <div style={{ padding: '0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -644,18 +661,6 @@ export default function TaskBoard() {
           </button>
         </div>
       </div>
-
-      {displayEvents.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1.5rem', animation: 'fadeIn 0.3s ease-out' }}>
-          {displayEvents.map(e => (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#fff1f2', border: '2px solid #fda4af', padding: '0.5rem 1rem', borderRadius: '12px', fontSize: '0.9rem', color: '#be123c', boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.2), 0 2px 4px -1px rgba(225, 29, 72, 0.1)', whiteSpace: 'nowrap', fontWeight: 500 }}>
-              <span className="animate-custom-pulse" style={{ width: '8px', height: '8px', backgroundColor: '#e11d48', borderRadius: '50%', display: 'inline-block' }}></span>
-              <strong style={{ fontWeight: 800 }}>{filterExactDate ? `นัดหมายวันที่ ${format(filterExactDate, 'dd/MM/yyyy')}${e.time ? ` ${e.time}` : ''}:` : `วันนี้${e.time ? ` ${e.time}` : ''}:`}</strong>
-              <span>{e.title}</span>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="desktop-only">
         <div className="kanban-board">
