@@ -98,17 +98,63 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result as string;
+    if (file.type.startsWith('image/')) {
+      const compressedBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max_size = 1200; // Larger max size for content attachments
+  
+            if (width > height) {
+              if (width > max_size) {
+                height = Math.round(height *= max_size / width);
+                width = max_size;
+              }
+            } else {
+              if (height > max_size) {
+                width = Math.round(width *= max_size / height);
+                height = max_size;
+              }
+            }
+  
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+          };
+          img.src = event.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      });
+
       await fetch(`/api/ideas/${idea.id}/attachments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: file.name, type: file.type, url: base64String })
+        body: JSON.stringify({ name: file.name, type: 'image/jpeg', url: compressedBase64 })
       });
       onUpdate();
-    };
-    reader.readAsDataURL(file);
+    } else {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('ไฟล์เอกสารทั่วไปต้องมีขนาดไม่เกิน 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        await fetch(`/api/ideas/${idea.id}/attachments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: file.name, type: file.type, url: base64String })
+        });
+        onUpdate();
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const updateStatus = async (status: string) => {

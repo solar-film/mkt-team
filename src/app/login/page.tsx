@@ -45,40 +45,65 @@ export default function LoginPage() {
     const file = e.target.files?.[0];
     if (!file || !selectedMember) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 2MB');
-      return;
-    }
-
     setUploading(true);
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result as string;
-      
-      try {
-        const res = await fetch('/api/members', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: selectedMember.id,
-            avatar: base64String
-          })
-        });
+    
+    try {
+      // Compress image
+      const compressedBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max_size = 200; // Small size for avatars
+  
+            if (width > height) {
+              if (width > max_size) {
+                height = Math.round(height *= max_size / width);
+                width = max_size;
+              }
+            } else {
+              if (height > max_size) {
+                width = Math.round(width *= max_size / height);
+                height = max_size;
+              }
+            }
+  
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7)); // 70% quality JPEG
+          };
+          img.src = event.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      });
 
-        if (res.ok) {
-          const updated = await res.json();
-          setMembers(members.map(m => m.id === updated.member.id ? updated.member : m));
-          setSelectedMember(updated.member);
-        } else {
-          alert('ไม่สามารถบันทึกรูปภาพได้');
-        }
-      } catch (error) {
-        console.error('Upload error:', error);
-      } finally {
-        setUploading(false);
+      const res = await fetch('/api/members', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedMember.id,
+          avatar: compressedBase64
+        })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setMembers(members.map(m => m.id === updated.member.id ? updated.member : m));
+        setSelectedMember(updated.member);
+      } else {
+        alert('ไม่สามารถบันทึกรูปภาพได้');
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('เกิดข้อผิดพลาดในการอัปโหลด');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const triggerFileInput = (e: React.MouseEvent, member: Member) => {
