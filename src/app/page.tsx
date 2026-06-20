@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   HiClipboardDocumentList, 
   HiCheckCircle, 
@@ -30,8 +31,10 @@ interface TeamMember {
 }
 
 export default function DashboardPage() {
+  const { currentUserId } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterMemberId, setFilterMemberId] = useState<string>('my_tasks');
 
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +70,12 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (currentUserId && filterMemberId === 'my_tasks' && members.length > 0) {
+      setFilterMemberId(currentUserId);
+    }
+  }, [currentUserId, members]);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -87,16 +96,24 @@ export default function DashboardPage() {
     );
   }
 
+  const currentUser = members.find(m => m.id === currentUserId);
+  const selectedUser = members.find(m => m.id === filterMemberId);
+  const targetName = filterMemberId === 'all' ? 'ทีมงาน' : (selectedUser?.name || '');
+
+  const filteredMembers = filterMemberId === 'all' 
+    ? members 
+    : members.filter(m => m.id === filterMemberId);
+
   // Calculate overall stats
-  const totalTasks = members.reduce((sum, m) => sum + m.tasks.length, 0);
-  const completedTasks = members.reduce((sum, m) => sum + m.tasks.filter(t => t.status === 'done').length, 0);
-  const totalContent = members.reduce((sum, m) => sum + m.contents.length, 0);
+  const totalTasks = filteredMembers.reduce((sum, m) => sum + m.tasks.length, 0);
+  const completedTasks = filteredMembers.reduce((sum, m) => sum + m.tasks.filter(t => t.status === 'done').length, 0);
+  const totalContent = filteredMembers.reduce((sum, m) => sum + m.contents.length, 0);
   
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
 
-  const currentMonthKpis = members.flatMap(m => m.kpis).filter(k => k.month === currentMonth && k.year === currentYear);
+  const currentMonthKpis = filteredMembers.flatMap(m => m.kpis).filter(k => k.month === currentMonth && k.year === currentYear);
   const avgKPI = currentMonthKpis.length > 0 
     ? currentMonthKpis.reduce((sum, kpi) => {
         const target = Number(kpi.target) || 1;
@@ -107,8 +124,8 @@ export default function DashboardPage() {
     : 0;
 
   // Get recent tasks sorted by deadline
-  const allTasks = members.flatMap(m => m.tasks.map(t => ({ ...t, memberName: m.name, itemType: 'task' })));
-  const allContents = members.flatMap(m => m.contents.map(c => ({ ...c, memberName: m.name, itemType: 'content', deadline: c.publishDate })));
+  const allTasks = filteredMembers.flatMap(m => m.tasks.map(t => ({ ...t, memberName: m.name, itemType: 'task' })));
+  const allContents = filteredMembers.flatMap(m => m.contents.map(c => ({ ...c, memberName: m.name, itemType: 'content', deadline: c.publishDate })));
   const upcomingTasks = [...allTasks, ...allContents]
     .filter(t => t.deadline && t.status !== 'done')
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
@@ -134,13 +151,28 @@ export default function DashboardPage() {
 
   return (
     <div style={{ padding: '0 0.5rem', margin: '0 auto' }}>
-      <div style={{ marginBottom: '1.5rem', marginTop: '0.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
-          สวัสดีวันนี้ 👋
-        </h1>
-        <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem', fontWeight: 500 }}>
-          พร้อมลุยงานให้เป้าหมายวันนี้กัน!
-        </p>
+      <div style={{ marginBottom: '1.5rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
+            สวัสดีวันนี้คุณ {currentUser?.name || ''} 👋
+          </h1>
+          <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem', fontWeight: 500 }}>
+            พร้อมลุยงานให้เป้าหมายวันนี้กัน!
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>กำลังดูข้อมูลของ:</span>
+          <select 
+            value={filterMemberId}
+            onChange={e => setFilterMemberId(e.target.value)}
+            style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', fontWeight: 600 }}
+          >
+            <option value="all">ดูผลรวมของทีม</option>
+            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map(m => (
+              <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
@@ -205,13 +237,13 @@ export default function DashboardPage() {
         {/* Team Performance */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>ผลงานทีมงาน</h2>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>ผลงาน{targetName}</h2>
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.2rem 0.5rem', fontSize: '0.7rem', color: '#64748b' }}>
               เดือนนี้ <span>▼</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
+            {filteredMembers.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
               const memberKpis = member.kpis.filter(k => k.month === currentMonth && k.year === currentYear);
               const memberAvgKpi = memberKpis.length > 0 
                 ? memberKpis.reduce((sum, k) => {
@@ -265,7 +297,7 @@ export default function DashboardPage() {
         {/* Company Work Summary */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>สรุปผลงานรายบุคคลแยกตามบริษัท</h2>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>สรุปผลงาน{filterMemberId !== 'all' ? 'ของ ' + targetName : 'รายบุคคล'}แยกตามบริษัท</h2>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
@@ -278,7 +310,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
+                {filteredMembers.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
                   const getStats = (company: string) => {
                     const cTasks = member.tasks.filter(t => t.company === company);
                     const cContents = member.contents.filter(c => c.company === company);
