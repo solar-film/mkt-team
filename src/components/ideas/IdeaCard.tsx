@@ -47,11 +47,11 @@ export default function IdeaCard({ idea, members, isSelected, onClick }: IdeaCar
         padding: '1.25rem',
         marginBottom: '1rem',
         cursor: 'pointer',
-        borderLeft: \`4px solid \${pColor.border}\`,
+        borderLeft: `4px solid ${pColor.border}`,
         boxShadow: isSelected ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
         transform: isSelected ? 'translateY(-2px)' : 'none',
         transition: 'all 0.2s ease',
-        border: isSelected ? \`1px solid \${pColor.border}\` : '1px solid #e2e8f0',
+        border: isSelected ? `1px solid ${pColor.border}` : '1px solid #e2e8f0',
         borderLeftWidth: '4px'
       }}
     >

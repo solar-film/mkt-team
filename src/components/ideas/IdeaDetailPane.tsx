@@ -20,7 +20,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     e.preventDefault();
     if (!newChecklist.trim()) return;
     
-    await fetch(\`/api/ideas/\${idea.id}/checklists\`, {
+    await fetch(`/api/ideas/${idea.id}/checklists`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newChecklist, assigneeId: currentUserId })
@@ -30,7 +30,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   };
 
   const handleToggleChecklist = async (checklistId: string, isDone: boolean) => {
-    await fetch(\`/api/ideas/\${idea.id}/checklists\`, {
+    await fetch(`/api/ideas/${idea.id}/checklists`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: checklistId, isDone: !isDone })
@@ -42,7 +42,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     e.preventDefault();
     if (!newComment.trim() || !currentUserId) return;
 
-    await fetch(\`/api/ideas/\${idea.id}/comments\`, {
+    await fetch(`/api/ideas/${idea.id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: newComment, memberId: currentUserId })
@@ -58,7 +58,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64String = reader.result as string;
-      await fetch(\`/api/ideas/\${idea.id}/attachments\`, {
+      await fetch(`/api/ideas/${idea.id}/attachments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: file.name, type: file.type, url: base64String })
