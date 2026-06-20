@@ -539,8 +539,6 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
     );
   };
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
-
   const displayEvents = useMemo(() => {
     return [...events, ...meetings].filter(e => {
       const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
@@ -565,6 +563,8 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       })));
     }
   }, [displayEvents, filterExactDate, onEventsChange]);
+
+  if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   return (
     <div style={{ padding: '0' }}>
