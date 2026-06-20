@@ -153,20 +153,52 @@ export default function DashboardPage() {
   const trendData = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
+    d.setHours(0, 0, 0, 0);
+    const nextD = new Date(d);
+    nextD.setDate(d.getDate() + 1);
+
     const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
     
-    // Approximation for visual effect
+    // Real data calculation
+    const completed = allTasks.filter(t => t.status === 'done' && t.updatedAt && new Date(t.updatedAt) >= d && new Date(t.updatedAt) < nextD).length;
+    const content = allContents.filter(c => c.createdAt && new Date(c.createdAt) >= d && new Date(c.createdAt) < nextD).length;
+    const pending = allTasks.filter(t => t.status !== 'done' && t.createdAt && new Date(t.createdAt) >= d && new Date(t.createdAt) < nextD).length;
+
     return {
       name: dateStr,
-      pending: Math.floor(Math.random() * 20) + 10,
-      content: Math.floor(Math.random() * 15) + 5,
-      completed: Math.floor(Math.random() * 10) + 5,
+      pending,
+      content,
+      completed,
     };
   });
 
+  // Calculate 7-Day Comparisons for Insight Text
+  const last7DaysStart = new Date();
+  last7DaysStart.setDate(last7DaysStart.getDate() - 7);
+  last7DaysStart.setHours(0, 0, 0, 0);
+
+  const prev7DaysStart = new Date();
+  prev7DaysStart.setDate(prev7DaysStart.getDate() - 14);
+  prev7DaysStart.setHours(0, 0, 0, 0);
+
+  const tasksCompletedLast7Days = allTasks.filter(t => t.status === 'done' && t.updatedAt && new Date(t.updatedAt) >= last7DaysStart).length;
+  const contentCreatedLast7Days = allContents.filter(c => c.createdAt && new Date(c.createdAt) >= last7DaysStart).length;
+
+  const tasksCompletedPrev7Days = allTasks.filter(t => t.status === 'done' && t.updatedAt && new Date(t.updatedAt) >= prev7DaysStart && new Date(t.updatedAt) < last7DaysStart).length;
+  const contentCreatedPrev7Days = allContents.filter(c => c.createdAt && new Date(c.createdAt) >= prev7DaysStart && new Date(c.createdAt) < last7DaysStart).length;
+
+  const taskIncrease = tasksCompletedPrev7Days === 0 ? (tasksCompletedLast7Days > 0 ? 100 : 0) : Math.round(((tasksCompletedLast7Days - tasksCompletedPrev7Days) / tasksCompletedPrev7Days) * 100);
+  const contentIncrease = contentCreatedPrev7Days === 0 ? (contentCreatedLast7Days > 0 ? 100 : 0) : Math.round(((contentCreatedLast7Days - contentCreatedPrev7Days) / contentCreatedPrev7Days) * 100);
+
+  const taskTrendText = taskIncrease >= 0 ? `เพิ่มขึ้น ${taskIncrease}%` : `ลดลง ${Math.abs(taskIncrease)}%`;
+  const taskTrendColor = taskIncrease >= 0 ? '#10b981' : '#ef4444';
+
+  const contentTrendText = contentIncrease >= 0 ? `เพิ่มขึ้น ${contentIncrease}%` : `ลดลง ${Math.abs(contentIncrease)}%`;
+  const contentTrendColor = contentIncrease >= 0 ? '#3b82f6' : '#ef4444';
+
   // 3. Team Performance
   const teamPerformance = members
-    .filter(m => ['OIL', 'TEW', 'PLENG', 'NON'].includes(m.name))
+    .filter(m => ['TEW', 'PLENG', 'NON'].includes(m.name))
     .map(m => {
       const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
       const mCompleted = mItems.filter(t => t.status === 'done').length;
@@ -366,7 +398,7 @@ export default function DashboardPage() {
                 <span style={{ color: '#6366f1' }}>✨</span> สรุปภาพรวม
               </div>
               <p style={{ fontSize: '0.75rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
-                ทีมของคุณทำงานได้ดีขึ้น งานเสร็จแล้วเพิ่มขึ้น <strong style={{ color: '#10b981' }}>23%</strong> และคอนเทนต์ที่ผลิตเพิ่มขึ้น <strong style={{ color: '#3b82f6' }}>17%</strong> เมื่อเทียบกับ 7 วันที่ผ่านมา
+                สถิติ 7 วันล่าสุด: งานเสร็จแล้ว <strong style={{ color: taskTrendColor }}>{taskTrendText}</strong> และคอนเทนต์ที่ผลิต <strong style={{ color: contentTrendColor }}>{contentTrendText}</strong> เมื่อเทียบกับสัปดาห์ก่อนหน้า
               </p>
               <Link href="/kpis" style={{ marginTop: 'auto', backgroundColor: 'white', border: '1px solid #c7d2fe', color: '#6366f1', padding: '0.5rem', borderRadius: '24px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', textDecoration: 'none', textAlign: 'center' }}>
                 ดูรายงานเต็มรูปแบบ →
