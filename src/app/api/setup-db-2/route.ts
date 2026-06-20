@@ -5,8 +5,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const sql = `
-      DROP TABLE IF EXISTS "IdeaNote" CASCADE; DROP TABLE IF EXISTS "IdeaChecklist" CASCADE; DROP TABLE IF EXISTS "IdeaAttachment" CASCADE; DROP TABLE IF EXISTS "IdeaComment" CASCADE; CREATE TABLE IF NOT EXISTS "IdeaNote" (
+    try { await prisma.$executeRawUnsafe('ALTER TABLE "IdeaNote" ADD COLUMN "status" TEXT NOT NULL DEFAULT \'pending\';'); } catch(e){}
+    try { await prisma.$executeRawUnsafe('ALTER TABLE "IdeaNote" ADD COLUMN "priority" TEXT NOT NULL DEFAULT \'normal\';'); } catch(e){}
+    
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "IdeaNote" (
           "id" TEXT NOT NULL,
           "title" TEXT NOT NULL,
           "description" TEXT,
@@ -20,7 +23,9 @@ export async function GET() {
           "updatedAt" TIMESTAMP(3) NOT NULL,
           CONSTRAINT "IdeaNote_pkey" PRIMARY KEY ("id")
       );
-
+    `);
+    
+    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "IdeaChecklist" (
           "id" TEXT NOT NULL,
           "title" TEXT NOT NULL,
@@ -64,14 +69,7 @@ export async function GET() {
 
       ALTER TABLE "IdeaComment" DROP CONSTRAINT IF EXISTS "IdeaComment_ideaNoteId_fkey";
       ALTER TABLE "IdeaComment" ADD CONSTRAINT "IdeaComment_ideaNoteId_fkey" FOREIGN KEY ("ideaNoteId") REFERENCES "IdeaNote"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    `;
-
-    // Prisma $executeRawUnsafe doesn't support multiple statements in some contexts without wrapping or splitting.
-    // We will split by semicolon and execute one by one.
-    const statements = sql.split(';').filter(s => s.trim().length > 0);
-    for (const statement of statements) {
-      await prisma.$executeRawUnsafe(statement);
-    }
+    `);
 
     return NextResponse.json({ message: 'Database schema updated successfully.' });
   } catch (error) {
