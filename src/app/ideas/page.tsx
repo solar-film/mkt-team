@@ -15,6 +15,15 @@ export default function IdeasPage() {
   
   // UI State
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (id) setSelectedIdeaId(id);
+    }
+  }, []);
+
   const [filterStatus, setFilterStatus] = useState('ทั้งหมด');
   const [searchQuery, setSearchQuery] = useState('');
   

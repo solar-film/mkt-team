@@ -1070,6 +1070,11 @@ export default function TaskBoard() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
               <button className="btn btn-secondary" onClick={() => setViewItem(null)}>ปิด</button>
+              {viewItem.id.startsWith('idea_') && (
+                <button className="btn btn-primary" onClick={() => window.location.href = `/ideas?id=${viewItem.id.replace('idea_', '')}`}>
+                  <HiArrowRight /> ไปที่หน้าโน๊ตงาน
+                </button>
+              )}
               {!viewItem.id.startsWith('idea_') && (
                 <button className="btn btn-primary" onClick={() => { setViewItem(null); handleEditClick(viewItem); }}>
                   <HiOutlinePencilSquare /> แก้ไข
