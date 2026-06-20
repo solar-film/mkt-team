@@ -118,6 +118,10 @@ model IdeaNote {
   priority       String   @default("normal")
   deadline       DateTime?
   
+  category       String   @default("idea") // 'idea', 'task', 'content'
+  platform       String?  // for content
+  kpiId          String?  // to link to KPI
+
   checklists     IdeaChecklist[]
   attachments    IdeaAttachment[]
   comments       IdeaComment[]
