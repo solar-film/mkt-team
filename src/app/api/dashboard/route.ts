@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Map Ideas to Tasks/Contents
-    const finalTasks = [...tasks];
-    const finalContents = [...contents];
+    const finalTasks: any[] = [...tasks];
+    const finalContents: any[] = [...contents];
 
     ideas.forEach(idea => {
       const assignees = idea.memberId ? idea.memberId.split(',') : [];
@@ -76,54 +76,51 @@ export async function GET(request: NextRequest) {
       const mapIdeaStatus = (s: string) => {
         if (!s || s === 'รอดำเนินการ') return 'todo';
         if (s === 'เสร็จแล้ว') return 'done';
-        // 'กำลังดำเนินการ', 'รอตรวจ', etc.
         return 'in_progress';
       };
 
-      assignees.forEach(assigneeId => {
-        const mem = members.find(m => m.id === assigneeId);
-        if (!mem) return;
-        
-        const boardStatus = mapIdeaStatus(idea.status);
+      const boardStatus = mapIdeaStatus(idea.status);
+      const isMultiple = assignees.length > 1;
+      const mem = members.find(m => m.id === assignees[0]);
+      const memberObj = isMultiple ? null : (mem ? { id: mem.id, name: mem.name, avatar: mem.avatar } : null);
 
-        if (idea.category === 'task') {
-          finalTasks.push({
-            id: `idea_${idea.id}`,
-            title: `💡 ${idea.title}`,
-            description: idea.description,
-            status: boardStatus,
-            priority: idea.priority,
-            startDate: null,
-            deadline: idea.deadline,
-            company: idea.company || 'GFS',
-            link: null,
-            kpiId: idea.kpiId,
-            meetingId: null,
-            memberId: mem.id,
-            createdAt: idea.createdAt,
-            updatedAt: idea.updatedAt,
-            member: { id: mem.id, name: mem.name, avatar: mem.avatar }
-          });
-        } else if (idea.category === 'content') {
-          finalContents.push({
-            id: `idea_${idea.id}`,
-            title: `💡 ${idea.title}`,
-            description: idea.description,
-            type: 'Idea',
-            platform: idea.platform || 'General',
-            status: boardStatus,
-            publishDate: idea.deadline,
-            company: idea.company || 'GFS',
-            link: null,
-            kpiId: idea.kpiId,
-            meetingId: null,
-            memberId: mem.id,
-            createdAt: idea.createdAt,
-            updatedAt: idea.updatedAt,
-            member: { id: mem.id, name: mem.name, avatar: mem.avatar }
-          });
-        }
-      });
+      if (idea.category === 'task') {
+        finalTasks.push({
+          id: `idea_${idea.id}`,
+          title: `💡 ${idea.title}`,
+          description: idea.description,
+          status: boardStatus,
+          priority: idea.priority,
+          startDate: null,
+          deadline: idea.deadline,
+          company: idea.company || 'GFS',
+          link: null,
+          kpiId: idea.kpiId,
+          meetingId: null,
+          memberId: idea.memberId,
+          createdAt: idea.createdAt,
+          updatedAt: idea.updatedAt,
+          member: memberObj
+        });
+      } else if (idea.category === 'content') {
+        finalContents.push({
+          id: `idea_${idea.id}`,
+          title: `💡 ${idea.title}`,
+          description: idea.description,
+          type: 'Idea',
+          platform: idea.platform || 'General',
+          status: boardStatus,
+          publishDate: idea.deadline,
+          company: idea.company || 'GFS',
+          link: null,
+          kpiId: idea.kpiId,
+          meetingId: null,
+          memberId: idea.memberId,
+          createdAt: idea.createdAt,
+          updatedAt: idea.updatedAt,
+          member: memberObj
+        });
+      }
     });
 
     return NextResponse.json({

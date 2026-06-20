@@ -347,7 +347,9 @@ export default function TaskBoard() {
   };
 
   const filteredItems = items.filter(item => {
-    if (filterMemberId && item.memberId !== filterMemberId && item.memberId !== 'all') return false;
+    if (filterMemberId && item.memberId !== 'all') {
+      if (!item.memberId?.includes(filterMemberId)) return false;
+    }
     if (filterType !== 'all' && item.itemType !== filterType) return false;
     if (filterCompany !== 'all' && item.company !== filterCompany) return false;
     if (filterPlatform !== 'all' && item.platform !== filterPlatform) return false;
@@ -355,7 +357,7 @@ export default function TaskBoard() {
       const q = searchQuery.toLowerCase();
       const matchTitle = item.title?.toLowerCase().includes(q) || false;
       const matchDesc = item.description?.toLowerCase().includes(q) || false;
-      const memberName = members.find(m => m.id === item.memberId)?.name || '';
+      const memberName = item.memberId?.includes(',') ? 'หลายคน' : (members.find(m => m.id === item.memberId)?.name || '');
       const matchMember = memberName.toLowerCase().includes(q);
       if (!matchTitle && !matchDesc && !matchMember) return false;
     }
@@ -457,12 +459,12 @@ export default function TaskBoard() {
               
               <div className="task-meta">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {item.memberId === 'all' ? (
+                  {item.memberId === 'all' || item.memberId?.includes(',') ? (
                     <span style={{ fontSize: '1.1rem' }}>👥</span>
                   ) : item.member ? (
                     <MemberAvatar name={item.member.name} size="sm" />
                   ) : null}
-                  <span>{item.memberId === 'all' ? 'ทุกคน' : (item.member?.name || 'ไม่ระบุ')}</span>
+                  <span>{item.memberId === 'all' ? 'ทุกคน' : item.memberId?.includes(',') ? 'หลายคน' : (item.member?.name || 'ไม่ระบุ')}</span>
                 </div>
                 {item.itemType === 'task' && item.deadline && (
                   <span style={{ marginLeft: 'auto', color: new Date(item.deadline) < new Date() ? 'var(--color-danger)' : 'inherit' }}>
@@ -724,7 +726,7 @@ export default function TaskBoard() {
                         {item.deadline || item.publishDate ? formatDateTime(item.deadline || item.publishDate || '') : 'ไม่ระบุ'}
                       </div>
                       <div className="task-member">
-                        {item.memberId === 'all' ? <span style={{ fontSize: '1.1rem' }}>👥</span> : <MemberAvatar name={item.member?.name || 'ไม่ระบุ'} size="sm" />}
+                        {item.memberId === 'all' || item.memberId?.includes(',') ? <span style={{ fontSize: '1.1rem' }}>👥</span> : <MemberAvatar name={item.member?.name || 'ไม่ระบุ'} size="sm" />}
                       </div>
                     </div>
                     
