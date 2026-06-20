@@ -42,7 +42,8 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     deadline: idea.deadline ? new Date(idea.deadline).toISOString().split('T')[0] : '',
     category: idea.category || 'idea',
     platform: idea.platform || '',
-    kpiId: idea.kpiId || ''
+    kpiId: idea.kpiId || '',
+    notifyLine: false
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [kpis, setKpis] = useState<any[]>([]);
@@ -242,7 +243,16 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             </div>
           )}
           {isEditing && (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', fontSize: '0.85rem', color: '#475569', marginRight: '0.5rem', userSelect: 'none' }}>
+                <input 
+                  type="checkbox" 
+                  checked={editForm.notifyLine}
+                  onChange={e => setEditForm({...editForm, notifyLine: e.target.checked})}
+                  style={{ cursor: 'pointer', accentColor: '#4f46e5' }}
+                />
+                แจ้งเตือนไลน์
+              </label>
               <button onClick={() => setIsEditing(false)} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem' }}>ยกเลิก</button>
               <button onClick={handleSaveEdit} className="btn btn-primary" style={{ padding: '0.25rem 0.75rem' }}>บันทึก</button>
             </div>

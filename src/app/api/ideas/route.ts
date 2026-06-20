@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendLineNotify } from '@/lib/line-notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,19 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    if (body.notifyLine) {
+      let memberName = 'ทีมงาน'
+      if (idea.memberId) {
+        const member = await prisma.teamMember.findUnique({ where: { id: idea.memberId } })
+        if (member) memberName = member.name
+      }
+      
+      let pStr = 'ปกติ'
+      if (priority === 'high' || priority === 'ด่วน') pStr = 'ด่วน'
+      const message = `\n💡 โน๊ตงานใหม่: ${title}\nรายละเอียด: ${description || '-'}\nผู้รับผิดชอบ: ${memberName}\nความสำคัญ: ${pStr}`
+      await sendLineNotify(message)
+    }
+
     return NextResponse.json(idea)
   } catch (error) {
     console.error('API Error:', error)
@@ -89,6 +103,19 @@ export async function PUT(request: NextRequest) {
         kpiId: kpiId !== undefined ? (kpiId || null) : undefined
       }
     })
+
+    if (body.notifyLine) {
+      let memberName = 'ทีมงาน'
+      if (idea.memberId) {
+        const member = await prisma.teamMember.findUnique({ where: { id: idea.memberId } })
+        if (member) memberName = member.name
+      }
+      
+      let pStr = 'ปกติ'
+      if (priority === 'high' || priority === 'ด่วน') pStr = 'ด่วน'
+      const message = `\n💡 อัปเดตโน๊ตงาน: ${title}\nรายละเอียด: ${description || '-'}\nผู้รับผิดชอบ: ${memberName}\nความสำคัญ: ${pStr}`
+      await sendLineNotify(message)
+    }
 
     return NextResponse.json(idea)
   } catch (error) {

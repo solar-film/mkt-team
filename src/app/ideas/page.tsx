@@ -35,7 +35,8 @@ export default function IdeasPage() {
     link: '',
     company: '',
     priority: 'ปกติ',
-    memberId: ''
+    memberId: '',
+    notifyLine: true
   });
 
   const fetchData = async () => {
@@ -81,7 +82,7 @@ export default function IdeasPage() {
       body: JSON.stringify(payload)
     });
     setIsModalOpen(false);
-    setFormData({ title: '', description: '', link: '', company: '', priority: 'ปกติ', memberId: currentUserId || '' });
+    setFormData({ title: '', description: '', link: '', company: '', priority: 'ปกติ', memberId: currentUserId || '', notifyLine: true });
     fetchData();
   };
 
@@ -322,9 +323,23 @@ export default function IdeasPage() {
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">ยกเลิก</button>
-            <button type="submit" className="btn btn-primary">สร้างโน๊ต</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#475569', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.notifyLine}
+                onChange={e => setFormData({...formData, notifyLine: e.target.checked})}
+                style={{ width: '1rem', height: '1rem', cursor: 'pointer', accentColor: '#4f46e5' }}
+              />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#00B900"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 3.935 8.956 9.61 9.61 1.05.101 1.769.458 2.054 1.488.19.684.09 1.616-.062 2.387-.047.238-.344 1.589 1.408.847 1.752-.741 8.844-5.21 10.601-9.288.257-.594.389-1.157.389-1.744zm-14.733.916H7.135V8.049h2.132c.287 0 .521.234.521.521 0 .287-.234.521-.521.521H7.656v2.129h1.611c.287 0 .521.234.521.521 0 .287-.234.521-.521.521zm2.748 0h-1.043c-.287 0-.521-.234-.521-.521V8.57c0-.287.234-.521.521-.521h1.043c.287 0 .521.234.521.521v2.651c0 .287-.234.521-.521.521zm4.49 0h-1.043c-.287 0-.521-.234-.521-.521V8.57c0-.287.234-.521.521-.521h1.043c.287 0 .521.234.521.521v2.651c0 .287-.234.521-.521.521zm4.186 0H18.56c-.287 0-.521-.234-.521-.521V8.57c0-.287.234-.521.521-.521h2.132c.287 0 .521.234.521.521 0 .287-.234.521-.521.521h-1.611v2.129h1.611c.287 0 .521.234.521.521 0 .287-.234.521-.521.521z"/></svg>
+                แจ้งเตือนทางไลน์
+              </span>
+            </label>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">ยกเลิก</button>
+              <button type="submit" className="btn btn-primary">สร้างโน๊ต</button>
+            </div>
           </div>
         </form>
       </Modal>
