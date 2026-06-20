@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const sql = `
-      CREATE TABLE IF NOT EXISTS "IdeaNote" (
+      DROP TABLE IF EXISTS "IdeaNote" CASCADE; DROP TABLE IF EXISTS "IdeaChecklist" CASCADE; DROP TABLE IF EXISTS "IdeaAttachment" CASCADE; DROP TABLE IF EXISTS "IdeaComment" CASCADE; CREATE TABLE IF NOT EXISTS "IdeaNote" (
           "id" TEXT NOT NULL,
           "title" TEXT NOT NULL,
           "description" TEXT,
