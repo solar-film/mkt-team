@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendLineNotify } from '@/lib/lineNotify'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,26 +32,34 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { title, date, time, type, company } = body
-
-    if (!title || !date) {
-      return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
-    }
-
-    const newEvent = await prisma.event.create({
-      data: {
-        title,
-        date: new Date(date),
-        time: time || null,
-        type: type || 'event',
-        company: company || 'GFS'
+  export async function POST(request: NextRequest) {
+    try {
+      const body = await request.json()
+      const { title, date, time, type, company, notifyLine } = body
+  
+      if (!title || !date) {
+        return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
       }
-    })
-
-    return NextResponse.json({ success: true, event: newEvent })
+  
+      const newEvent = await prisma.event.create({
+        data: {
+          title,
+          date: new Date(date),
+          time: time || null,
+          type: type || 'event',
+          company: company || 'GFS'
+        }
+      })
+  
+      if (notifyLine) {
+        const dateObj = new Date(date)
+        const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('th-TH') : '-'
+        const timeStr = time ? `เวลา ${time} น.` : ''
+        const message = `\n📢 แจ้งเตือนกิจกรรมใหม่: ${title}\nวันที่: ${dateStr} ${timeStr}`
+        await sendLineNotify(message)
+      }
+  
+      return NextResponse.json({ success: true, event: newEvent })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add event' }, { status: 500 })

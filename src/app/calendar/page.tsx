@@ -120,7 +120,7 @@ export default function CalendarPage() {
           if (e.date) {
             unified.push({
               id: e.id, title: e.title, status: 'event', memberId: '',
-              date: e.date, type: 'event',
+              date: e.date.split('T')[0], type: 'event',
               fullItem: e
             });
           }
@@ -295,11 +295,12 @@ export default function CalendarPage() {
         await fetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body: JSON.stringify({ ...body, notifyLine })
         });
       }
       setIsModalOpen(false);
       setEventForm({ title: '', date: '', time: '', type: 'event' });
+      setNotifyLine(false);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -1069,6 +1070,13 @@ export default function CalendarPage() {
                 <input type="time" className="form-input" value={eventForm.time} onChange={e => setEventForm({...eventForm, time: e.target.value})} />
               </div>
             </div>
+            
+            {!isEditing && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <input type="checkbox" id="notifyLineCalEvent" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />
+                <label htmlFor="notifyLineCalEvent" style={{ cursor: 'pointer', fontSize: '0.9rem', color: '#15803d', fontWeight: 500 }}>🔔 แจ้งเตือนผ่าน LINE</label>
+              </div>
+            )}
             
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
               {isEditing && editingItemId ? (
