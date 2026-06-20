@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList, HiEllipsisVertical } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -541,17 +541,22 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
-  const displayEvents = [...events, ...meetings].filter(e => {
-    const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
-    targetDate.setHours(0,0,0,0);
-    const eventDate = new Date(e.date);
-    eventDate.setHours(0,0,0,0);
-    return eventDate.getTime() === targetDate.getTime();
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const displayEvents = useMemo(() => {
+    return [...events, ...meetings].filter(e => {
+      const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
+      if (isNaN(targetDate.getTime())) return false;
+      targetDate.setHours(0,0,0,0);
+      const eventDate = new Date(e.date);
+      if (isNaN(eventDate.getTime())) return false;
+      eventDate.setHours(0,0,0,0);
+      return eventDate.getTime() === targetDate.getTime();
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [events, meetings, filterExactDate]);
 
   // Call onEventsChange when displayEvents changes
   useEffect(() => {
     if (onEventsChange) {
+      if (filterExactDate && isNaN(new Date(filterExactDate).getTime())) return;
       onEventsChange(displayEvents.map(e => ({
         ...e,
         dateLabel: filterExactDate 
@@ -559,8 +564,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
           : `วันนี้${e.time ? ` ${e.time}` : ''}:`
       })));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(displayEvents), filterExactDate]);
+  }, [displayEvents, filterExactDate, onEventsChange]);
 
   return (
     <div style={{ padding: '0' }}>
