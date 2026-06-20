@@ -232,11 +232,19 @@ export default function IdeasPage() {
                 {idea.description || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่มีรายละเอียด</span>}
               </div>
 
-              {(idea.memberId || idea.company) && (
+              {idea.memberId && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                  {idea.memberId && (
+                  <span style={{ backgroundColor: 'rgba(100, 116, 139, 0.1)', color: '#475569', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                    เจ้าของไอเดีย: {getMemberName(idea.memberId)}
+                  </span>
+                </div>
+              )}
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
+                  {idea.recommendedFor && (
                     <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                      เจ้าของไอเดีย: {getMemberName(idea.memberId)}
+                      แนะนำสำหรับ: {idea.recommendedFor}
                     </span>
                   )}
                   {idea.company && (
@@ -245,14 +253,7 @@ export default function IdeasPage() {
                     </span>
                   )}
                 </div>
-              )}
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <MemberAvatar name={idea.recommendedFor || 'ไม่ระบุ'} size="sm" />
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>{idea.recommendedFor || 'ไม่ระบุ'}</span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', flexShrink: 0 }}>
                   {formatDate(idea.createdAt)}
                 </div>
               </div>
