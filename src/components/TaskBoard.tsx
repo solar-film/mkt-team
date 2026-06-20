@@ -438,7 +438,7 @@ export default function TaskBoard() {
               {item.id.startsWith('idea_') && (
                 <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b' }}>
                   <span style={{ fontSize: '1rem' }}>💡</span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     โน๊ตไอเดีย
                   </span>
                 </div>
@@ -707,7 +707,7 @@ export default function TaskBoard() {
                       {item.id.startsWith('idea_') && (
                         <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#f59e0b' }}>
                           <span style={{ fontSize: '0.9rem' }}>💡</span>
-                          <span style={{ fontWeight: 600 }}>โน๊ตไอเดีย</span>
+                          <span>โน๊ตไอเดีย</span>
                         </div>
                       )}
                     </div>
