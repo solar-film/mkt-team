@@ -73,16 +73,25 @@ export async function GET(request: NextRequest) {
       const assignees = idea.memberId ? idea.memberId.split(',') : [];
       if (assignees.length === 0) return; // Unassigned ideas don't show on board
       
+      const mapIdeaStatus = (s: string) => {
+        if (!s || s === 'รอดำเนินการ') return 'todo';
+        if (s === 'เสร็จแล้ว') return 'done';
+        // 'กำลังดำเนินการ', 'รอตรวจ', etc.
+        return 'in_progress';
+      };
+
       assignees.forEach(assigneeId => {
         const mem = members.find(m => m.id === assigneeId);
         if (!mem) return;
         
+        const boardStatus = mapIdeaStatus(idea.status);
+
         if (idea.category === 'task') {
           finalTasks.push({
             id: `idea_${idea.id}`,
             title: `💡 ${idea.title}`,
             description: idea.description,
-            status: idea.status,
+            status: boardStatus,
             priority: idea.priority,
             startDate: null,
             deadline: idea.deadline,
@@ -100,11 +109,11 @@ export async function GET(request: NextRequest) {
             id: `idea_${idea.id}`,
             title: `💡 ${idea.title}`,
             description: idea.description,
-            type: idea.platform || 'Content',
-            platform: idea.platform || 'Other',
-            company: idea.company || 'GFS',
-            status: idea.status,
+            type: 'Idea',
+            platform: idea.platform || 'General',
+            status: boardStatus,
             publishDate: idea.deadline,
+            company: idea.company || 'GFS',
             link: null,
             kpiId: idea.kpiId,
             meetingId: null,

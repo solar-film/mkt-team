@@ -174,7 +174,12 @@ export default function TaskBoard() {
       if (item.id.startsWith('idea_')) {
         endpoint = '/api/ideas';
         payloadId = item.id.replace('idea_', '');
-        body = { id: payloadId, title: item.title.replace('💡 ', ''), status: newStatus };
+        const ideaStatusMap: any = {
+          'todo': 'รอดำเนินการ',
+          'in_progress': 'กำลังดำเนินการ',
+          'done': 'เสร็จแล้ว'
+        };
+        body = { id: payloadId, title: item.title.replace('💡 ', ''), status: ideaStatusMap[newStatus] || newStatus };
       }
       
       await fetch(endpoint, {
