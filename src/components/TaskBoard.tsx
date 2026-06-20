@@ -65,6 +65,7 @@ export default function TaskBoard() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState(currentUserId || '');
   const [filterType, setFilterType] = useState('all');
@@ -108,6 +109,7 @@ export default function TaskBoard() {
       const membersData = data.members;
       const kpisData = data.kpis;
       const meetingsData = data.meetings;
+      const eventsData = data.events;
       
       const tasksArr = Array.isArray(tasksData) ? tasksData : [];
       const contentsArr = Array.isArray(contentsData) ? contentsData : [];
@@ -133,6 +135,7 @@ export default function TaskBoard() {
       setMembers(Array.isArray(membersData) ? membersData : []);
       setKpis(Array.isArray(kpisData) ? kpisData : []);
       setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
+      setEvents(Array.isArray(eventsData) ? eventsData : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -534,6 +537,14 @@ export default function TaskBoard() {
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
+  const displayEvents = [...events, ...meetings].filter(e => {
+    const targetDate = filterExactDate || new Date();
+    targetDate.setHours(0,0,0,0);
+    const eventDate = new Date(e.date);
+    eventDate.setHours(0,0,0,0);
+    return eventDate.getTime() === targetDate.getTime();
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
   return (
     <div style={{ padding: '0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -633,6 +644,18 @@ export default function TaskBoard() {
           </button>
         </div>
       </div>
+
+      {displayEvents.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1.5rem', animation: 'fadeIn 0.3s ease-out' }}>
+          {displayEvents.map(e => (
+            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#fff1f2', border: '2px solid #fda4af', padding: '0.5rem 1rem', borderRadius: '12px', fontSize: '0.9rem', color: '#be123c', boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.2), 0 2px 4px -1px rgba(225, 29, 72, 0.1)', whiteSpace: 'nowrap', fontWeight: 500 }}>
+              <span className="animate-custom-pulse" style={{ width: '8px', height: '8px', backgroundColor: '#e11d48', borderRadius: '50%', display: 'inline-block' }}></span>
+              <strong style={{ fontWeight: 800 }}>{filterExactDate ? `นัดหมายวันที่ ${format(filterExactDate, 'dd/MM/yyyy')}${e.time ? ` ${e.time}` : ''}:` : `วันนี้${e.time ? ` ${e.time}` : ''}:`}</strong>
+              <span>{e.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="desktop-only">
         <div className="kanban-board">
