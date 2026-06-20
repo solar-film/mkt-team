@@ -164,7 +164,7 @@ export default function DashboardPage() {
             style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', fontWeight: 600 }}
           >
             <option value="all">ดูผลรวมของทีม</option>
-            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map(m => (
+            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TEW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => (
               <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
             ))}
           </select>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {filteredMembers.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
+            {filteredMembers.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TEW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map((member, index) => {
               const memberKpis = member.kpis.filter(k => k.month === currentMonth && k.year === currentYear);
               const memberAvgKpi = memberKpis.length > 0 
                 ? memberKpis.reduce((sum, k) => {
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
+                {filteredMembers.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TEW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map((member, index) => {
                   const getStats = (company: string) => {
                     const cTasks = member.tasks.filter(t => t.company === company);
                     const cContents = member.contents.filter(c => c.company === company);

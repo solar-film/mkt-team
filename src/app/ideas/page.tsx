@@ -199,7 +199,17 @@ export default function IdeasPage() {
       {/* Main Content Area (2-column) */}
       <div style={{ display: 'flex', gap: '1.5rem', flex: 1, minHeight: 0 }}>
         {/* Left List */}
-        <div style={{ width: selectedIdeaId ? '35%' : '100%', overflowY: 'auto', paddingRight: '0.5rem', transition: 'width 0.3s ease' }}>
+        <div style={{ 
+          width: selectedIdeaId ? '35%' : '100%', 
+          overflowY: 'auto', 
+          paddingRight: '0.5rem', 
+          transition: 'width 0.3s ease',
+          display: selectedIdeaId ? 'flex' : 'grid',
+          flexDirection: selectedIdeaId ? 'column' : 'initial',
+          gridTemplateColumns: selectedIdeaId ? 'none' : 'repeat(auto-fill, minmax(320px, 1fr))',
+          gap: '1rem',
+          alignContent: 'start'
+        }}>
           {finalFilteredIdeas.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem 0' }}>ไม่พบโน๊ตงาน</div>
           ) : (
