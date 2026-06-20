@@ -42,7 +42,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   const currentUser = members.find(m => m.id === currentUserId);
   const selectedAssignees = idea.memberId ? idea.memberId.split(',') : [];
   const owner = members.find(m => m.id === selectedAssignees[0]);
-  const canEdit = currentUser?.role === 'Admin' || selectedAssignees.includes(currentUserId || '');
+  const canEdit = true; // Everyone has equal rights in Ideas
 
   const handleAddChecklist = async (e: React.FormEvent) => {
     e.preventDefault();
