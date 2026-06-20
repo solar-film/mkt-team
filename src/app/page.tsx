@@ -211,7 +211,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {members.filter(m => m.status !== 'inactive').map((member, index) => {
+            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
               const memberKpis = member.kpis.filter(k => k.month === currentMonth && k.year === currentYear);
               const memberAvgKpi = memberKpis.length > 0 
                 ? memberKpis.reduce((sum, k) => {
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {members.filter(m => m.status !== 'inactive').map((member, index) => {
+                {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').map((member, index) => {
                   const getStats = (company: string) => {
                     const cTasks = member.tasks.filter(t => t.company === company);
                     const cContents = member.contents.filter(c => c.company === company);
