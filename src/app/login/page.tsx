@@ -25,7 +25,17 @@ export default function LoginPage() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setMembers(data.filter(m => m.status !== 'inactive'));
+          const activeMembers = data.filter((m: Member) => m.status !== 'inactive');
+          const order = ['OIL', 'TEW', 'PLENG', 'NON'];
+          activeMembers.sort((a, b) => {
+            const indexA = order.findIndex(name => a.name.toUpperCase().includes(name));
+            const indexB = order.findIndex(name => b.name.toUpperCase().includes(name));
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.name.localeCompare(b.name);
+          });
+          setMembers(activeMembers);
         }
         setLoading(false);
       });
