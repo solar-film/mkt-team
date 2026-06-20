@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 import { Viewport } from 'next'
 
@@ -33,12 +34,14 @@ export default function RootLayout({
   return (
     <html lang="th">
       <body>
-        <div className="app-layout">
-          <Sidebar />
-          <main className="main-content">
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="app-layout">
+            <Sidebar />
+            <main className="main-content">
+              {children}
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

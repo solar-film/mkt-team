@@ -15,6 +15,11 @@ export async function GET(request: NextRequest) {
 
     const ideas = await prisma.ideaNote.findMany({
       where,
+      include: {
+        checklists: { orderBy: { createdAt: 'asc' } },
+        attachments: { orderBy: { createdAt: 'desc' } },
+        comments: { orderBy: { createdAt: 'asc' } }
+      },
       orderBy: {
         createdAt: 'desc'
       }
@@ -30,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, memberId, recommendedFor, company } = body
+    const { title, description, memberId, recommendedFor, company, status, priority, deadline } = body
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -42,7 +47,10 @@ export async function POST(request: NextRequest) {
         description,
         memberId: memberId || null,
         recommendedFor: recommendedFor || null,
-        company: company || null
+        company: company || null,
+        status: status || 'pending',
+        priority: priority || 'normal',
+        deadline: deadline ? new Date(deadline) : null
       }
     })
 
@@ -56,7 +64,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, description, memberId, recommendedFor, company } = body
+    const { id, title, description, memberId, recommendedFor, company, status, priority, deadline } = body
 
     if (!id || !title) {
       return NextResponse.json({ error: 'ID and title are required' }, { status: 400 })
@@ -69,7 +77,10 @@ export async function PUT(request: NextRequest) {
         description,
         memberId: memberId || null,
         recommendedFor: recommendedFor || null,
-        company: company || null
+        company: company || null,
+        status: status || undefined,
+        priority: priority || undefined,
+        deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined
       }
     })
 

@@ -9,6 +9,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { getCompanyColor, getMemberColor } from '@/lib/colors';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -59,12 +60,13 @@ const isKpiMatchPlatform = (kpiName: string, platform: string) => {
 };
 
 export default function TaskBoard() {
+  const { currentUserId } = useAuth();
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterMemberId, setFilterMemberId] = useState('');
+  const [filterMemberId, setFilterMemberId] = useState(currentUserId || '');
   const [filterType, setFilterType] = useState('all');
   const [filterCompany, setFilterCompany] = useState('all');
   const [filterPlatform, setFilterPlatform] = useState('all');
@@ -137,6 +139,12 @@ export default function TaskBoard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (currentUserId && !filterMemberId) {
+      setFilterMemberId(currentUserId);
+    }
+  }, [currentUserId]);
 
   useEffect(() => {
     fetchData();

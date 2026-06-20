@@ -14,7 +14,7 @@ model TeamMember {
   role      String
   company   String    @default("GFS")
   status    String    @default("active")
-  avatar    String?
+  avatar    String?   @db.Text
   tasks     Task[]
   kpis      KPI[]
   contents  Content[]
@@ -114,6 +114,51 @@ model IdeaNote {
   memberId       String?
   recommendedFor String?
   company        String?
+  status         String   @default("pending")
+  priority       String   @default("normal")
+  deadline       DateTime?
+  
+  checklists     IdeaChecklist[]
+  attachments    IdeaAttachment[]
+  comments       IdeaComment[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model IdeaChecklist {
+  id         String   @id @default(cuid())
+  title      String
+  isDone     Boolean  @default(false)
+  deadline   DateTime?
+  assigneeId String?
+  ideaNoteId String
+  ideaNote   IdeaNote @relation(fields: [ideaNoteId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ideaNoteId])
+}
+
+model IdeaAttachment {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  url        String   @db.Text // Can store Base64
+  ideaNoteId String
+  ideaNote   IdeaNote @relation(fields: [ideaNoteId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([ideaNoteId])
+}
+
+model IdeaComment {
+  id         String   @id @default(cuid())
+  text       String   @db.Text
+  memberId   String
+  ideaNoteId String
+  ideaNote   IdeaNote @relation(fields: [ideaNoteId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([ideaNoteId])
 }

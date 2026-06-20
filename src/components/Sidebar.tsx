@@ -70,6 +70,10 @@ export default function Sidebar() {
     return true;
   });
 
+  if (pathname === '/login') {
+    return null;
+  }
+
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-logo">

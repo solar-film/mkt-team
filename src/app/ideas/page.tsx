@@ -1,390 +1,277 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HiPlus, HiPencil, HiTrash, HiLightBulb, HiXMark, HiUser, HiBriefcase, HiSparkles, HiChatBubbleLeftEllipsis } from 'react-icons/hi2';
+import { useAuth } from '@/contexts/AuthContext';
+import { HiPlus, HiFunnel, HiMagnifyingGlass } from 'react-icons/hi2';
+import IdeaCard from '@/components/ideas/IdeaCard';
+import IdeaDetailPane from '@/components/ideas/IdeaDetailPane';
 import Modal from '@/components/Modal';
-import MemberAvatar from '@/components/MemberAvatar';
-
-interface IdeaNote {
-  id: string;
-  title: string;
-  description: string | null;
-  memberId: string | null;
-  recommendedFor: string | null;
-  company: string | null;
-  createdAt: string;
-}
-
-interface Member {
-  id: string;
-  name: string;
-  status: string;
-}
 
 export default function IdeasPage() {
-  const [ideas, setIdeas] = useState<IdeaNote[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const { currentUserId, isLoading: authLoading } = useAuth();
+  const [ideas, setIdeas] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Filter state
-  const [filterCompany, setFilterCompany] = useState('');
+  // UI State
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState('ทั้งหมด');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    memberId: '',
-    recommendedFor: '',
-    company: ''
+    company: '',
+    priority: 'ปกติ',
+    memberId: ''
   });
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const [ideasRes, membersRes] = await Promise.all([
         fetch('/api/ideas', { cache: 'no-store' }),
         fetch('/api/members', { cache: 'no-store' })
       ]);
       
-      if (ideasRes.ok) {
-        const ideasData = await ideasRes.json();
-        setIdeas(ideasData);
-      }
-      
-      if (membersRes.ok) {
-        const membersData = await membersRes.json();
-        setMembers(membersData);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      if (ideasRes.ok) setIdeas(await ideasRes.json());
+      if (membersRes.ok) setMembers(await membersRes.json());
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!authLoading) fetchData();
+  }, [authLoading]);
+
+  // Handle default form memberId
+  useEffect(() => {
+    if (currentUserId && !formData.memberId) {
+      setFormData(prev => ({ ...prev, memberId: currentUserId }));
+    }
+  }, [currentUserId, formData.memberId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch('/api/ideas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...formData })
+    });
+    setIsModalOpen(false);
+    setFormData({ title: '', description: '', company: '', priority: 'ปกติ', memberId: currentUserId || '' });
     fetchData();
-  }, []);
+  };
 
   const filteredIdeas = ideas.filter(idea => {
-    const matchCompany = filterCompany ? idea.company === filterCompany : true;
-    const searchLower = searchQuery.toLowerCase();
-    const matchSearch = searchQuery 
-      ? (idea.title.toLowerCase().includes(searchLower) || 
-         (idea.description && idea.description.toLowerCase().includes(searchLower)) ||
-         (idea.recommendedFor && idea.recommendedFor.toLowerCase().includes(searchLower)) ||
-         (idea.memberId && getMemberName(idea.memberId).toLowerCase().includes(searchLower)))
-      : true;
-    return matchCompany && matchSearch;
+    const matchesSearch = idea.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (idea.description && idea.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Check filterStatus ('ทั้งหมด', 'วันนี้', 'รอดำเนินการ', 'รอตรวจ', 'เสร็จแล้ว')
+    let matchesStatus = true;
+    if (filterStatus !== 'ทั้งหมด') {
+      if (filterStatus === 'วันนี้') {
+        const today = new Date().toDateString();
+        matchesStatus = new Date(idea.createdAt).toDateString() === today;
+      } else {
+        matchesStatus = idea.status === filterStatus;
+      }
+    }
+    
+    // Because this is for "each person sees their own tasks by default" but "can view others",
+    // wait! We didn't add a filter for "My Tasks" vs "All Tasks". The screenshot has a dropdown for "ผู้รับผิดชอบ" (Owner).
+    // The requirement says "เข้าหน้ามาเห็นแค่งานตัวเองเป็นค่าเริ่มต้น แต่เปิดดูคนอื่นได้"
+    // Let's add an explicit filter for this. We will use a local state that defaults to currentUserId.
+
+    return matchesSearch && matchesStatus;
   });
 
-  const openAddModal = () => {
-    setFormData({ title: '', description: '', memberId: '', recommendedFor: '', company: '' });
-    setIsEditing(false);
-    setEditingId('');
-    setIsModalOpen(true);
-  };
+  // Adding Owner filter to meet requirement
+  const [filterOwnerId, setFilterOwnerId] = useState<string>('my_tasks'); // Default
 
-  const openEditModal = (idea: IdeaNote) => {
-    let displayName = idea.memberId || '';
-    const m = members.find(member => member.id === idea.memberId);
-    if (m) displayName = m.name;
-
-    setFormData({
-      title: idea.title,
-      description: idea.description || '',
-      memberId: displayName,
-      recommendedFor: idea.recommendedFor || '',
-      company: idea.company || ''
-    });
-    setIsEditing(true);
-    setEditingId(idea.id);
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (isEditing) {
-        await fetch('/api/ideas', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingId, ...formData })
-        });
-      } else {
-        await fetch('/api/ideas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      }
-      setIsModalOpen(false);
-      fetchData();
-    } catch (error) {
-      console.error('Error saving idea:', error);
+  useEffect(() => {
+    if (currentUserId && filterOwnerId === 'my_tasks') {
+       // Wait, we need to initialize it to the user's ID
+       setFilterOwnerId(currentUserId);
     }
-  };
+  }, [currentUserId]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('ยืนยันการลบไอเดียนี้?')) return;
-    try {
-      await fetch(`/api/ideas?id=${id}`, { method: 'DELETE' });
-      fetchData();
-    } catch (error) {
-      console.error('Error deleting idea:', error);
-    }
-  };
+  const finalFilteredIdeas = filteredIdeas.filter(idea => {
+    if (filterOwnerId === 'all') return true;
+    return idea.memberId === filterOwnerId;
+  });
 
-  const formatDate = (dateString: string) => {
-    const d = new Date(dateString);
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-  };
+  const selectedIdea = ideas.find(i => i.id === selectedIdeaId);
 
-  const getMemberName = (id: string | null) => {
-    if (!id) return 'ไม่ระบุ';
-    const m = members.find(m => m.id === id);
-    return m ? m.name : id;
-  };
-
-  const colors = ['#fef3c7', '#dcfce7', '#dbeafe', '#f3e8ff', '#ffe4e6'];
-  const accentColors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+  if (loading || authLoading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   return (
-    <div>
-      <div className="page-header" style={{ marginBottom: '1rem' }}>
-        <div className="page-header-content">
-          <h1 style={{ margin: 0, fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <HiLightBulb style={{ color: '#f59e0b' }} /> โน๊ตไอเดียงาน
-          </h1>
-        </div>
-        <button className="btn btn-primary" onClick={openAddModal}>
-          <HiPlus /> เพิ่มไอเดีย
-        </button>
-      </div>
-
-      <div className="filter-bar" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label className="form-label" style={{ marginBottom: 0 }}>ดูไอเดียของบริษัท:</label>
-          <select 
-            className="form-select" 
-            style={{ width: '150px' }}
-            value={filterCompany}
-            onChange={(e) => setFilterCompany(e.target.value)}
-          >
-            <option value="">-- ทั้งหมด --</option>
-            <option value="GFS">GFS</option>
-            <option value="MHL">MHL</option>
-            <option value="CAR">CAR</option>
-          </select>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '200px' }}>
+    <div style={{ padding: '2rem', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+      {/* Top Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>โน๊ตงาน</h1>
+        <div style={{ position: 'relative', width: '300px' }}>
+          <HiMagnifyingGlass style={{ position: 'absolute', left: 12, top: 10, color: '#94a3b8' }} size={20} />
           <input 
             type="text" 
-            className="form-input" 
-            placeholder="ค้นหาไอเดีย..." 
+            placeholder="ค้นหาโน๊ต, โปรเจกต์, ผู้รับผิดชอบ..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%' }}
+            style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', outline: 'none' }}
           />
         </div>
       </div>
 
-      {loading ? (
-        <div className="loading-container"><div className="loading-spinner"></div></div>
-      ) : filteredIdeas.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--color-text-secondary)' }}>
-          <HiLightBulb style={{ fontSize: '4rem', color: '#cbd5e1', marginBottom: '1rem' }} />
-          <p style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>ยังไม่มีไอเดียถูกบันทึกไว้</p>
-          <p style={{ fontSize: '0.9rem' }}>คลิกปุ่ม &quot;เพิ่มไอเดีย&quot; ด้านบนเพื่อบันทึกไอเดียแรกของคุณ</p>
-        </div>
-      ) : (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-          gap: '1.5rem',
-          alignItems: 'start'
-        }}>
-          {filteredIdeas.map((idea) => (
-            <div 
-              key={idea.id} 
-              style={{ 
-                backgroundColor: '#ffffff', 
-                borderRadius: '16px', 
-                padding: '1.25rem',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                cursor: 'default',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                e.currentTarget.style.borderColor = '#cbd5e1';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = '#e2e8f0';
+      {/* Filter Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {['ทั้งหมด', 'วันนี้', 'รอดำเนินการ', 'รอตรวจ', 'เสร็จแล้ว'].map(status => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '24px',
+                border: filterStatus === status ? '1px solid #818cf8' : '1px solid #e2e8f0',
+                backgroundColor: filterStatus === status ? '#eef2ff' : 'white',
+                color: filterStatus === status ? '#4f46e5' : '#64748b',
+                fontWeight: filterStatus === status ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
               }}
             >
-              {/* Top Row: Badge & Date */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', backgroundColor: '#fef3c7', color: '#d97706', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 600 }}>
-                  <HiLightBulb size={12} /> ไอเดีย
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
-                  {formatDate(idea.createdAt)}
-                </div>
-              </div>
-
-              {/* Title */}
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.4 }}>
-                {idea.title}
-              </h3>
-
-              {/* Badges (Company) */}
-              {idea.company && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  <span style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 600 }}>
-                    {idea.company}
-                  </span>
-                </div>
-              )}
-
-              {/* Info Rows (Owner & Recommended) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-                {idea.memberId && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, width: '70px' }}>เจ้าของ:</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                       <MemberAvatar name={getMemberName(idea.memberId)} size="sm" />
-                       <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>{getMemberName(idea.memberId)}</span>
-                    </div>
-                  </div>
-                )}
-                {idea.recommendedFor && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, width: '70px' }}>แนะนำให้:</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                       <MemberAvatar name={idea.recommendedFor} size="sm" />
-                       <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>{idea.recommendedFor}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Description */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem', flexGrow: 1 }}>
-                 <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, fontStyle: 'italic' }}>/ รายละเอียด</span>
-                 <div style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                   {idea.description || <span style={{ color: '#94a3b8' }}>ไม่มีรายละเอียดเพิ่มเติม</span>}
-                 </div>
-              </div>
-
-              {/* Footer with Edit/Delete */}
-              <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #f1f5f9', marginTop: '1rem', gap: '1.25rem' }}>
-                <button onClick={() => openEditModal(idea)} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'} title="แก้ไข">
-                  <HiPencil size={16} /> <span style={{ marginTop: '0.1rem' }}>แก้ไข</span>
-                </button>
-                <button onClick={() => handleDelete(idea.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'} title="ลบ">
-                  <HiTrash size={16} /> <span style={{ marginTop: '0.1rem' }}>ลบ</span>
-                </button>
-              </div>
-            </div>
+              {status}
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'แก้ไขไอเดีย' : 'เพิ่มไอเดียใหม่'}>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">หัวข้อไอเดีย *</label>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <select
+            value={filterOwnerId}
+            onChange={(e) => setFilterOwnerId(e.target.value)}
+            style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none' }}
+          >
+            <option value="all">ดูงานของทุกคน</option>
+            {members.map(m => (
+              <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
+            ))}
+          </select>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}
+          >
+            <HiPlus size={18} /> เพิ่มโน๊ตใหม่
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area (2-column) */}
+      <div style={{ display: 'flex', gap: '1.5rem', flex: 1, minHeight: 0 }}>
+        {/* Left List */}
+        <div style={{ width: selectedIdeaId ? '35%' : '100%', overflowY: 'auto', paddingRight: '0.5rem', transition: 'width 0.3s ease' }}>
+          {finalFilteredIdeas.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem 0' }}>ไม่พบโน๊ตงาน</div>
+          ) : (
+            finalFilteredIdeas.map(idea => (
+              <IdeaCard 
+                key={idea.id} 
+                idea={idea} 
+                members={members} 
+                isSelected={selectedIdeaId === idea.id} 
+                onClick={() => setSelectedIdeaId(idea.id)} 
+              />
+            ))
+          )}
+        </div>
+
+        {/* Right Detail Pane */}
+        {selectedIdeaId && selectedIdea && (
+          <div style={{ width: '65%', animation: 'slideIn 0.3s ease' }}>
+            <IdeaDetailPane 
+              idea={selectedIdea} 
+              members={members} 
+              onClose={() => setSelectedIdeaId(null)} 
+              onUpdate={fetchData} 
+              currentUserId={currentUserId}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Create Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="สร้างโน๊ตไอเดียใหม่">
+        <form onSubmit={handleCreate}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>หัวข้อ <span style={{ color: 'red' }}>*</span></label>
             <input 
               type="text" 
-              className="form-input" 
-              required 
+              required
               value={formData.title} 
               onChange={e => setFormData({...formData, title: e.target.value})}
-              placeholder="เช่น ทำคลิปรีวิวสินค้าใหม่..."
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} 
             />
           </div>
           
-          <div className="form-group">
-            <label className="form-label">รายละเอียด / โน๊ตเพิ่มเติม</label>
-            <textarea 
-              className="form-textarea" 
-              rows={6}
-              value={formData.description} 
-              onChange={e => setFormData({...formData, description: e.target.value})}
-              placeholder="จดรายละเอียดไอเดีย แหล่งอ้างอิง หรือสิ่งที่ต้องทำ..."
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">เจ้าของไอเดีย (ตัวเลือก)</label>
-            <input 
-              type="text"
-              list="idea-members"
-              className="form-input" 
-              value={formData.memberId} 
-              onChange={e => setFormData({...formData, memberId: e.target.value})}
-              placeholder="-- ระบุชื่อ หรือเลือกจากรายชื่อ --"
-            />
-            <datalist id="idea-members">
-              {members.filter(m => m.status !== 'inactive').sort((a, b) => {
-                const order = ['แต้ว', 'เพลง', 'นน'];
-                const idxA = order.indexOf(a.name);
-                const idxB = order.indexOf(b.name);
-                if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name);
-                if (idxA === -1) return 1;
-                if (idxB === -1) return -1;
-                return idxA - idxB;
-              }).map(m => (
-                <option key={m.id} value={m.name} />
-              ))}
-            </datalist>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">แนะนำสำหรับ (ใครทำ)</label>
-              <input 
-                type="text"
-                list="idea-members"
-                className="form-input" 
-                value={formData.recommendedFor} 
-                onChange={e => setFormData({...formData, recommendedFor: e.target.value})}
-                placeholder="เช่น แต้ว, เพลง, นน..."
-              />
-            </div>
-            
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">บริษัท (ตัวเลือก)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>บริษัท</label>
               <select 
-                className="form-select" 
                 value={formData.company} 
                 onChange={e => setFormData({...formData, company: e.target.value})}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
               >
-                <option value="">-- ไม่ระบุ --</option>
+                <option value="">ไม่ระบุ</option>
                 <option value="GFS">GFS</option>
                 <option value="MHL">MHL</option>
                 <option value="CAR">CAR</option>
               </select>
             </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>ความสำคัญ</label>
+              <select 
+                value={formData.priority} 
+                onChange={e => setFormData({...formData, priority: e.target.value})}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              >
+                <option value="ปกติ">ปกติ</option>
+                <option value="ด่วน">ด่วน</option>
+                <option value="ด่วนมาก">ด่วนมาก</option>
+              </select>
+            </div>
           </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-            <button type="submit" className="btn btn-primary">{isEditing ? 'บันทึกการแก้ไข' : 'บันทึกไอเดีย'}</button>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>รายละเอียด</label>
+            <textarea 
+              rows={4}
+              value={formData.description} 
+              onChange={e => setFormData({...formData, description: e.target.value})}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }} 
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
+            <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">ยกเลิก</button>
+            <button type="submit" className="btn-primary">สร้างโน๊ต</button>
           </div>
         </form>
       </Modal>
+
+      <style dangerouslySetInnerHTML={{__html: \`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      \`}} />
     </div>
   );
 }
