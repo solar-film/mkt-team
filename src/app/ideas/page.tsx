@@ -335,7 +335,7 @@ export default function IdeasPage() {
                 <option value="">-- ไม่ระบุ --</option>
                 <option value="GFS">GFS</option>
                 <option value="MHL">MHL</option>
-                <option value="อื่นๆ">อื่นๆ</option>
+                <option value="CAR">CAR</option>
               </select>
             </div>
           </div>
