@@ -218,13 +218,9 @@ export default function IdeasPage() {
       </div>
 
       {/* Main Content Area (2-column) */}
-      <div style={{ display: 'flex', gap: '1.5rem', flex: 1, minHeight: 0 }}>
+      <div className="ideas-layout">
         {/* Left List */}
-        <div style={{ 
-          width: selectedIdeaId ? '35%' : '100%', 
-          overflowY: 'auto', 
-          paddingRight: '0.5rem', 
-          transition: 'width 0.3s ease',
+        <div className={`ideas-list ${selectedIdeaId ? 'hidden-on-mobile' : 'full-width'}`} style={{ 
           display: selectedIdeaId ? 'flex' : 'grid',
           flexDirection: selectedIdeaId ? 'column' : 'initial',
           gridTemplateColumns: selectedIdeaId ? 'none' : 'repeat(auto-fill, minmax(320px, 1fr))',
@@ -250,7 +246,7 @@ export default function IdeasPage() {
 
         {/* Right Detail Pane */}
         {selectedIdeaId && selectedIdea && (
-          <div style={{ width: '65%', animation: 'slideIn 0.3s ease' }}>
+          <div className="ideas-detail">
             <IdeaDetailPane 
               idea={selectedIdea} 
               members={members} 
