@@ -12,6 +12,7 @@ interface IdeaDetailPaneProps {
 
 export default function IdeaDetailPane({ idea, members, onClose, onUpdate, currentUserId }: IdeaDetailPaneProps) {
   const [newChecklist, setNewChecklist] = useState('');
+  const [newChecklistAssignee, setNewChecklistAssignee] = useState(currentUserId || '');
   const [newComment, setNewComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({
@@ -51,7 +52,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     await fetch(`/api/ideas/${idea.id}/checklists`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newChecklist, assigneeId: currentUserId })
+      body: JSON.stringify({ title: newChecklist, assigneeId: newChecklistAssignee || null })
     });
     setNewChecklist('');
     onUpdate();
@@ -404,6 +405,11 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                   <span style={{ textDecoration: item.isDone ? 'line-through' : 'none', color: item.isDone ? '#94a3b8' : '#334155', fontSize: '0.9rem' }}>
                     {item.title}
                   </span>
+                  {item.assigneeId && (
+                    <span style={{ fontSize: '0.7rem', padding: '2px 6px', backgroundColor: item.isDone ? '#f1f5f9' : '#e0e7ff', borderRadius: '12px', color: item.isDone ? '#94a3b8' : '#4f46e5', marginLeft: '0.5rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      @{members.find(m => m.id === item.assigneeId)?.name || 'Unknown'}
+                    </span>
+                  )}
                 </div>
                 {canEdit && (
                   <button onClick={() => handleDeleteChecklist(item.id)} style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer' }}>
@@ -423,6 +429,16 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                 placeholder="เพิ่มสิ่งที่ต้องทำ..." 
                 style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem' }}
               />
+              <select 
+                value={newChecklistAssignee}
+                onChange={e => setNewChecklistAssignee(e.target.value)}
+                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem', backgroundColor: 'white', maxWidth: '100px', color: '#475569' }}
+              >
+                <option value="">ไม่ระบุ</option>
+                {members.filter(m => m.id !== 'all').map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
               <button type="submit" style={{ backgroundColor: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: '#475569' }}>
                 <HiPlus size={20} />
               </button>
