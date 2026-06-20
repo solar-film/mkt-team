@@ -17,7 +17,8 @@ import {
   HiCalendarDays,
   HiLockClosed,
   HiLockOpen,
-  HiChartPie
+  HiChartPie,
+  HiLightBulb
 } from 'react-icons/hi2';
 
 const navLinks = [
@@ -26,6 +27,7 @@ const navLinks = [
   { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
   { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
+  { path: '/ideas', label: 'โน๊ตไอเดียงาน', icon: <HiLightBulb /> },
   { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
 ];

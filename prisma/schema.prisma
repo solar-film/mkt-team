@@ -106,3 +106,12 @@ model Meeting {
   @@index([date])
   @@index([company])
 }
+
+model IdeaNote {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  memberId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
