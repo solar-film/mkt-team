@@ -3,6 +3,9 @@ import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import { AuthProvider } from '@/contexts/AuthContext'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { Viewport } from 'next'
 
 export const viewport: Viewport = {
