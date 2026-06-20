@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HiPlus, HiPencil, HiTrash, HiLightBulb, HiXMark } from 'react-icons/hi2';
+import { HiPlus, HiPencil, HiTrash, HiLightBulb, HiXMark, HiUser, HiBriefcase, HiSparkles, HiChatBubbleLeftEllipsis } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import MemberAvatar from '@/components/MemberAvatar';
 
@@ -151,6 +151,7 @@ export default function IdeasPage() {
   };
 
   const colors = ['#fef3c7', '#dcfce7', '#dbeafe', '#f3e8ff', '#ffe4e6'];
+  const accentColors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
 
   return (
     <div>
@@ -212,67 +213,78 @@ export default function IdeasPage() {
             <div 
               key={idea.id} 
               style={{ 
-                backgroundColor: colors[index % colors.length], 
-                borderRadius: '12px', 
+                backgroundColor: '#ffffff', 
+                borderRadius: '16px', 
                 padding: '1.5rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
                 position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1rem',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                border: '1px solid rgba(0,0,0,0.05)'
+                gap: '1.25rem',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                border: '1px solid #f1f5f9',
+                borderTop: `4px solid ${accentColors[index % accentColors.length]}`
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+                e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)';
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.4 }}>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.4, display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <HiLightBulb style={{ color: accentColors[index % accentColors.length], flexShrink: 0, marginTop: '0.2rem', fontSize: '1.25rem' }} />
                   {idea.title}
                 </h3>
-                <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-                  <button onClick={() => openEditModal(idea)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', color: '#64748b' }} title="แก้ไข">
-                    <HiPencil size={18} />
+                <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, opacity: 0.7, transition: 'opacity 0.2s' }} 
+                     onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                     onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}>
+                  <button onClick={() => openEditModal(idea)} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '0.35rem', borderRadius: '8px', color: '#64748b', transition: 'all 0.2s' }} onMouseEnter={e => {e.currentTarget.style.background='#f1f5f9'; e.currentTarget.style.color='#3b82f6'}} onMouseLeave={e => {e.currentTarget.style.background='#f8fafc'; e.currentTarget.style.color='#64748b'}} title="แก้ไข">
+                    <HiPencil size={16} />
                   </button>
-                  <button onClick={() => handleDelete(idea.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', color: '#ef4444' }} title="ลบ">
-                    <HiTrash size={18} />
+                  <button onClick={() => handleDelete(idea.id)} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '0.35rem', borderRadius: '8px', color: '#64748b', transition: 'all 0.2s' }} onMouseEnter={e => {e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#ef4444'}} onMouseLeave={e => {e.currentTarget.style.background='#f8fafc'; e.currentTarget.style.borderColor='#e2e8f0'; e.currentTarget.style.color='#64748b'}} title="ลบ">
+                    <HiTrash size={16} />
                   </button>
                 </div>
               </div>
               
-              <div style={{ fontSize: '0.95rem', color: '#334155', whiteSpace: 'pre-wrap', flexGrow: 1, lineHeight: 1.6 }}>
-                {idea.description || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่มีรายละเอียด</span>}
+              <div style={{ fontSize: '0.95rem', color: '#475569', whiteSpace: 'pre-wrap', flexGrow: 1, lineHeight: 1.6, backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                {idea.description ? (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <HiChatBubbleLeftEllipsis style={{ color: '#94a3b8', flexShrink: 0, marginTop: '0.2rem' }} size={16} />
+                    <span>{idea.description}</span>
+                  </div>
+                ) : (
+                  <span style={{ color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><HiChatBubbleLeftEllipsis size={16} /> ไม่มีรายละเอียดเพิ่มเติม</span>
+                )}
               </div>
 
-              {idea.memberId && (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                  <span style={{ backgroundColor: 'rgba(100, 116, 139, 0.1)', color: '#475569', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                    เจ้าของไอเดีย: {getMemberName(idea.memberId)}
-                  </span>
-                </div>
-              )}
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {idea.recommendedFor && (
-                    <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                      แนะนำสำหรับ: {idea.recommendedFor}
-                    </span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: `linear-gradient(135deg, ${accentColors[index % accentColors.length]}15, ${accentColors[index % accentColors.length]}30)`, color: accentColors[index % accentColors.length], padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${accentColors[index % accentColors.length]}40` }}>
+                      <HiSparkles size={14} /> แนะนำให้ทำ: {idea.recommendedFor}
+                    </div>
                   )}
                   {idea.company && (
-                    <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                      บริษัท: {idea.company}
-                    </span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', backgroundColor: '#ffffff', color: '#334155', padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid #cbd5e1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                      <HiBriefcase size={14} color="#64748b" /> บริษัท: {idea.company}
+                    </div>
+                  )}
+                  {idea.memberId && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', backgroundColor: '#f1f5f9', color: '#475569', padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 500, border: '1px solid #e2e8f0' }}>
+                      <HiUser size={14} /> ไอเดียโดย: {getMemberName(idea.memberId)}
+                    </div>
                   )}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', flexShrink: 0 }}>
-                  {formatDate(idea.createdAt)}
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '1rem', borderTop: '1px dashed #e2e8f0' }}>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 500, letterSpacing: '0.5px' }}>
+                  บันทึกเมื่อ {formatDate(idea.createdAt)}
                 </div>
               </div>
             </div>
