@@ -542,7 +542,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   const displayEvents = [...events, ...meetings].filter(e => {
-    const targetDate = filterExactDate || new Date();
+    const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
     targetDate.setHours(0,0,0,0);
     const eventDate = new Date(e.date);
     eventDate.setHours(0,0,0,0);
