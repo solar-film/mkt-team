@@ -40,8 +40,9 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   }, []);
 
   const currentUser = members.find(m => m.id === currentUserId);
-  const owner = members.find(m => m.id === idea.memberId);
-  const canEdit = currentUser?.role === 'Admin' || currentUserId === idea.memberId;
+  const selectedAssignees = idea.memberId ? idea.memberId.split(',') : [];
+  const owner = members.find(m => m.id === selectedAssignees[0]);
+  const canEdit = currentUser?.role === 'Admin' || selectedAssignees.includes(currentUserId || '');
 
   const handleAddChecklist = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +151,6 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     });
   };
 
-  const selectedAssignees = idea.memberId ? idea.memberId.split(',') : [];
   const handleToggleAssignee = async (mId: string) => {
     let newAssignees;
     if (selectedAssignees.includes(mId)) {
