@@ -118,7 +118,7 @@ export default function IdeasPage() {
     const starredBy = idea.recommendedFor ? idea.recommendedFor.split(',') : [];
     let newStarredBy;
     if (starredBy.includes(currentUserId)) {
-      newStarredBy = starredBy.filter(id => id !== currentUserId);
+      newStarredBy = starredBy.filter((id: string) => id !== currentUserId);
     } else {
       newStarredBy = [...starredBy, currentUserId];
     }

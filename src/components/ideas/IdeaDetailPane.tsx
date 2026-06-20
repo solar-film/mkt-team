@@ -119,7 +119,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   const handleToggleAssignee = async (mId: string) => {
     let newAssignees;
     if (selectedAssignees.includes(mId)) {
-      newAssignees = selectedAssignees.filter(id => id !== mId);
+      newAssignees = selectedAssignees.filter((id: string) => id !== mId);
     } else {
       newAssignees = [...selectedAssignees, mId];
     }
@@ -227,7 +227,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {selectedAssignees.map(id => {
+                {selectedAssignees.map((id: string) => {
                    const m = members.find(x => x.id === id);
                    if (!m) return null;
                    return (
