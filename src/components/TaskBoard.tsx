@@ -338,12 +338,12 @@ export default function TaskBoard() {
     }
     if (filterExactDate) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
-      if (!dateStr) return false;
+      if (!dateStr) return item.status !== 'done';
       const d = new Date(dateStr);
       if (d.getDate() !== filterExactDate.getDate() || d.getMonth() !== filterExactDate.getMonth() || d.getFullYear() !== filterExactDate.getFullYear()) return false;
     } else if (filterMonthYear) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
-      if (!dateStr) return false;
+      if (!dateStr) return item.status !== 'done';
       const d = new Date(dateStr);
       if (d.getMonth() !== filterMonthYear.getMonth() || d.getFullYear() !== filterMonthYear.getFullYear()) return false;
     }

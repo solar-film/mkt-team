@@ -259,25 +259,6 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                 <option value="content">🎬 คอนเท้น</option>
               </select>
 
-              {editForm.category === 'content' && (
-                <>
-                  <select className="form-select" value={editForm.platform} onChange={e => setEditForm({...editForm, platform: e.target.value})} style={{ width: 'auto' }}>
-                    <option value="">ระบุแพลตฟอร์ม</option>
-                    <option value="Facebook">Facebook</option>
-                    <option value="TikTok">TikTok</option>
-                    <option value="YouTube">YouTube</option>
-                    <option value="IG">IG</option>
-                    <option value="Lemon8">Lemon8</option>
-                  </select>
-
-                  <select className="form-select" value={editForm.kpiId} onChange={e => setEditForm({...editForm, kpiId: e.target.value})} style={{ width: 'auto' }}>
-                    <option value="">ไม่เชื่อมโยง KPI</option>
-                    {kpis.map(kpi => (
-                      <option key={kpi.id} value={kpi.id}>{kpi.name} ({kpi.month}/{kpi.year})</option>
-                    ))}
-                  </select>
-                </>
-              )}
             </div>
           </div>
         ) : (
@@ -290,11 +271,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               <span style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>
                 {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}
               </span>
-              {idea.category === 'content' && idea.platform && (
-                <span style={{ backgroundColor: '#fce7f3', color: '#db2777', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>
-                  {idea.platform}
-                </span>
-              )}
+
             </div>
           </>
         )}
@@ -359,7 +336,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               <option value="รอดำเนินการ">รอดำเนินการ</option>
               <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
               <option value="รอตรวจ">รอตรวจ</option>
-              <option value="เสร็จแล้ว">เสร็จแล้ว</option>
+              {idea.category !== 'content' && <option value="เสร็จแล้ว">เสร็จแล้ว</option>}
             </select>
           </div>
 

@@ -42,11 +42,11 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
-      case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316' };
-      case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5' };
-      case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b' };
-      default: return { bg: '#f1f5f9', text: '#64748b' };
+      case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e', cardBg: '#f0fdf4' };
+      case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316', cardBg: '#fff7ed' };
+      case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5', cardBg: '#f5f7ff' };
+      case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b', cardBg: '#ffffff' };
+      default: return { bg: '#f1f5f9', text: '#64748b', cardBg: '#ffffff' };
     }
   };
 
@@ -58,7 +58,7 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
     <div 
       onClick={onClick}
       style={{
-        backgroundColor: 'white',
+        backgroundColor: sColor.cardBg,
         borderRadius: '12px',
         padding: '1.25rem',
         cursor: 'pointer',
