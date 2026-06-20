@@ -41,18 +41,26 @@ export default function TeamPage() {
 
   const fetchMembers = async () => {
     try {
-      const res = await fetch('/api/members?includeRelations=true', { cache: 'no-store' });
-      const data = await res.json();
-      setMembers(data);
-      if (currentUserId && Array.isArray(data)) {
-        const user = data.find((m: any) => m.id === currentUserId);
-        setIsAdmin(user?.role === 'Admin');
-      } else {
-        setIsAdmin(false);
+      setLoading(true);
+      const res = await fetch('/api/dashboard', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.members) {
+          const enrichedMembers = data.members.map((m: any) => ({
+            ...m,
+            tasks: data.tasks?.filter((t: any) => t.memberId === m.id || t.memberId?.includes(m.id)) || [],
+            contents: data.contents?.filter((c: any) => c.memberId === m.id || c.memberId?.includes(m.id)) || [],
+            kpis: data.kpis?.filter((k: any) => k.memberId === m.id) || []
+          }));
+          setMembers(enrichedMembers);
+          if (currentUserId) {
+            const user = enrichedMembers.find((m: any) => m.id === currentUserId);
+            if (user?.role === 'Admin') setIsAdmin(true);
+          }
+        }
       }
-    } catch (err) {
-      console.error(err);
-      setIsAdmin(false);
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
     } finally {
       setLoading(false);
     }

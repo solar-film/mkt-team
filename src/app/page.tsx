@@ -49,14 +49,20 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = () => {
-    fetch('/api/members?includeRelations=true', { cache: 'no-store' })
+    fetch('/api/dashboard', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data && data.error) {
           setError(data.details ? `[Error]: ${data.details}` : data.error);
           setMembers([]);
-        } else if (Array.isArray(data)) {
-          setMembers(data);
+        } else if (data && data.members) {
+          const enrichedMembers = data.members.map((m: any) => ({
+            ...m,
+            tasks: data.tasks?.filter((t: any) => t.memberId === m.id || t.memberId?.includes(m.id)) || [],
+            contents: data.contents?.filter((c: any) => c.memberId === m.id || c.memberId?.includes(m.id)) || [],
+            kpis: data.kpis?.filter((k: any) => k.memberId === m.id) || []
+          }));
+          setMembers(enrichedMembers);
         } else {
           setMembers([]);
         }

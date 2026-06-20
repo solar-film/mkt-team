@@ -70,11 +70,21 @@ export default function KPIsPage() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/members?includeRelations=true&t=' + Date.now());
-      const data = await res.json();
-      setMembers(data);
-    } catch (err) {
-      console.error(err);
+      const res = await fetch('/api/dashboard?t=' + Date.now());
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.members) {
+          const enrichedMembers = data.members.map((m: any) => ({
+            ...m,
+            tasks: data.tasks?.filter((t: any) => t.memberId === m.id || t.memberId?.includes(m.id)) || [],
+            contents: data.contents?.filter((c: any) => c.memberId === m.id || c.memberId?.includes(m.id)) || [],
+            kpis: data.kpis?.filter((k: any) => k.memberId === m.id) || []
+          }));
+          setMembers(enrichedMembers);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
     } finally {
       setLoading(false);
     }
