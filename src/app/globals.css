@@ -1015,6 +1015,30 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
+.app-page-container {
+  padding: 2rem;
+}
+
+.ideas-layout {
+  display: flex;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+.ideas-list {
+  width: 35%;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  transition: width 0.3s ease;
+}
+.ideas-list.full-width {
+  width: 100%;
+}
+.ideas-detail {
+  width: 65%;
+  animation: slideIn 0.3s ease;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .dashboard-grid { grid-template-columns: 1fr; }
@@ -1378,28 +1402,4 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   background-color: var(--color-surface) !important;
   border-top-left-radius: var(--radius-md);
   border-top-right-radius: var(--radius-md);
-}
-
-.app-page-container {
-  padding: 2rem;
-}
-
-.ideas-layout {
-  display: flex;
-  gap: 1.5rem;
-  flex: 1;
-  min-height: 0;
-}
-.ideas-list {
-  width: 35%;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  transition: width 0.3s ease;
-}
-.ideas-list.full-width {
-  width: 100%;
-}
-.ideas-detail {
-  width: 65%;
-  animation: slideIn 0.3s ease;
 }
