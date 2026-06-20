@@ -10,6 +10,8 @@ interface IdeaNote {
   title: string;
   description: string | null;
   memberId: string | null;
+  recommendedFor: string | null;
+  company: string | null;
   createdAt: string;
 }
 
@@ -34,7 +36,9 @@ export default function IdeasPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    memberId: ''
+    memberId: '',
+    recommendedFor: '',
+    company: ''
   });
 
   const fetchData = async () => {
@@ -66,7 +70,7 @@ export default function IdeasPage() {
   }, [filterMemberId]);
 
   const openAddModal = () => {
-    setFormData({ title: '', description: '', memberId: '' });
+    setFormData({ title: '', description: '', memberId: '', recommendedFor: '', company: '' });
     setIsEditing(false);
     setEditingId('');
     setIsModalOpen(true);
@@ -80,7 +84,9 @@ export default function IdeasPage() {
     setFormData({
       title: idea.title,
       description: idea.description || '',
-      memberId: displayName
+      memberId: displayName,
+      recommendedFor: idea.recommendedFor || '',
+      company: idea.company || ''
     });
     setIsEditing(true);
     setEditingId(idea.id);
@@ -225,6 +231,21 @@ export default function IdeasPage() {
               <div style={{ fontSize: '0.95rem', color: '#334155', whiteSpace: 'pre-wrap', flexGrow: 1, lineHeight: 1.6 }}>
                 {idea.description || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>ไม่มีรายละเอียด</span>}
               </div>
+
+              {(idea.recommendedFor || idea.company) && (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                  {idea.recommendedFor && (
+                    <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                      แนะนำสำหรับ: {idea.recommendedFor}
+                    </span>
+                  )}
+                  {idea.company && (
+                    <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                      บริษัท: {idea.company}
+                    </span>
+                  )}
+                </div>
+              )}
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -289,6 +310,34 @@ export default function IdeasPage() {
                 <option key={m.id} value={m.name} />
               ))}
             </datalist>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">แนะนำสำหรับ (ใครทำ)</label>
+              <input 
+                type="text"
+                list="idea-members"
+                className="form-input" 
+                value={formData.recommendedFor} 
+                onChange={e => setFormData({...formData, recommendedFor: e.target.value})}
+                placeholder="เช่น แต้ว, เพลง, นน..."
+              />
+            </div>
+            
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">บริษัท (ตัวเลือก)</label>
+              <select 
+                className="form-select" 
+                value={formData.company} 
+                onChange={e => setFormData({...formData, company: e.target.value})}
+              >
+                <option value="">-- ไม่ระบุ --</option>
+                <option value="GFS">GFS</option>
+                <option value="MHL">MHL</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>

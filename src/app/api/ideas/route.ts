@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, memberId } = body
+    const { title, description, memberId, recommendedFor, company } = body
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -40,7 +40,9 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        memberId: memberId || null
+        memberId: memberId || null,
+        recommendedFor: recommendedFor || null,
+        company: company || null
       }
     })
 
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, title, description, memberId } = body
+    const { id, title, description, memberId, recommendedFor, company } = body
 
     if (!id || !title) {
       return NextResponse.json({ error: 'ID and title are required' }, { status: 400 })
@@ -65,7 +67,9 @@ export async function PUT(request: NextRequest) {
       data: {
         title,
         description,
-        memberId: memberId || null
+        memberId: memberId || null,
+        recommendedFor: recommendedFor || null,
+        company: company || null
       }
     })
 
