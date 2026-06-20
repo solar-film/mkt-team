@@ -75,9 +75,9 @@ export async function PUT(request: NextRequest) {
       data: {
         title,
         description,
-        memberId: memberId || null,
-        recommendedFor: recommendedFor || null,
-        company: company || null,
+        memberId: memberId !== undefined ? (memberId || null) : undefined,
+        recommendedFor: recommendedFor !== undefined ? (recommendedFor || null) : undefined,
+        company: company !== undefined ? (company || null) : undefined,
         status: status || undefined,
         priority: priority || undefined,
         deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined
