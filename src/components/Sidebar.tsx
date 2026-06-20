@@ -23,10 +23,10 @@ import {
 
 const navLinks = [
   { path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
+  { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
   { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
-  { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
   { path: '/ideas', label: 'โน๊ตไอเดียงาน', icon: <HiLightBulb /> },
   { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
