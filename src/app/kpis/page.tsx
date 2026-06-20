@@ -119,18 +119,7 @@ export default function KPIsPage() {
 
   const filteredMembers = (filterMemberId 
     ? members.filter(m => m.id === filterMemberId) 
-    : members).filter(member => {
-      const monthKpis = member.kpis?.filter(k => k.month === filterMonth && k.year === filterYear) || [];
-      return monthKpis.length > 0;
-    }).sort((a, b) => {
-      const order = ['แต้ว', 'เพลง', 'นน'];
-      const idxA = order.indexOf(a.name);
-      const idxB = order.indexOf(b.name);
-      if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    : members).filter(member => member.kpis?.some(k => k.month === filterMonth && k.year === filterYear));
   if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
