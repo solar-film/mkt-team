@@ -158,9 +158,9 @@ export default function IdeasPage() {
   return (
     <div style={{ padding: '2rem', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>โน๊ตงาน</h1>
-        <div style={{ position: 'relative', width: '300px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: 0, minWidth: 'max-content' }}>โน๊ตงาน</h1>
+        <div style={{ position: 'relative', flex: 1, minWidth: '250px', maxWidth: '400px' }}>
           <HiMagnifyingGlass style={{ position: 'absolute', left: 12, top: 10, color: '#94a3b8' }} size={20} />
           <input 
             type="text" 
@@ -173,8 +173,8 @@ export default function IdeasPage() {
       </div>
 
       {/* Filter Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem', flex: 1, minWidth: '100%', WebkitOverflowScrolling: 'touch' }} className="hide-scrollbar">
           {['ทั้งหมด', 'วันนี้', 'รอดำเนินการ', 'รอตรวจ', 'เสร็จแล้ว'].map(status => (
             <button
               key={status}
@@ -187,7 +187,9 @@ export default function IdeasPage() {
                 color: filterStatus === status ? '#4f46e5' : '#64748b',
                 fontWeight: filterStatus === status ? 600 : 400,
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
               {status}
@@ -195,11 +197,11 @@ export default function IdeasPage() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
           <select
             value={filterOwnerId}
             onChange={(e) => setFilterOwnerId(e.target.value)}
-            style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none' }}
+            style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', flex: 1, minWidth: '150px' }}
           >
             <option value="all">ดูงานของทุกคน</option>
             {members.map(m => (
@@ -208,7 +210,7 @@ export default function IdeasPage() {
           </select>
           <button 
             onClick={() => setIsModalOpen(true)}
-            style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}
+            style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
           >
             <HiPlus size={18} /> เพิ่มโน๊ตใหม่
           </button>
@@ -350,10 +352,12 @@ export default function IdeasPage() {
           to { opacity: 1; transform: translateX(0); }
         }
         /* Custom scrollbar for better aesthetics */
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
     </div>
   );

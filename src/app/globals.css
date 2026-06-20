@@ -852,16 +852,24 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   
   .sidebar-nav { 
     flex-direction: row; 
-    padding: 0; 
-    justify-content: space-around; 
+    padding: 0 0.5rem; 
+    justify-content: flex-start; 
     width: 100%; 
     gap: 0; 
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .sidebar-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
   }
   .sidebar-link { 
     flex-direction: column; 
-    padding: 0.5rem 0.25rem; 
+    padding: 0.5rem; 
     border-radius: 8px; 
-    width: 100%; 
+    min-width: 64px;
     justify-content: center; 
     background: transparent !important;
   }

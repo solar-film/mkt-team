@@ -116,6 +116,15 @@ export default function Sidebar() {
             <span>{link.label}</span>
           </Link>
         ))}
+        {/* Mobile Logout Button */}
+        <button 
+          className="sidebar-link mobile-only" 
+          onClick={handleLogout}
+          style={{ border: 'none', cursor: 'pointer', color: '#ef4444' }}
+        >
+          <HiArrowRightOnRectangle />
+          <span>ออกจากระบบ</span>
+        </button>
       </nav>
 
       <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', position: 'relative' }}>

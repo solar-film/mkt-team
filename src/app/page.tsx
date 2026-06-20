@@ -475,7 +475,8 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '400px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                 <th style={{ textAlign: 'left', padding: '0.5rem 0', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>งาน</th>
@@ -503,7 +504,8 @@ export default function DashboardPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
           <Link href="/tasks" style={{ marginTop: 'auto', alignSelf: 'flex-start', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '1rem 0 0 0', textDecoration: 'none' }}>ดูทั้งหมด &gt;</Link>
         </div>
 
