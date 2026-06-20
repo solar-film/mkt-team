@@ -6,6 +6,21 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const sql = `
+      CREATE TABLE IF NOT EXISTS "IdeaNote" (
+          "id" TEXT NOT NULL,
+          "title" TEXT NOT NULL,
+          "description" TEXT,
+          "memberId" TEXT,
+          "recommendedFor" TEXT,
+          "company" TEXT,
+          "status" TEXT NOT NULL DEFAULT 'pending',
+          "priority" TEXT NOT NULL DEFAULT 'normal',
+          "deadline" TIMESTAMP(3),
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          CONSTRAINT "IdeaNote_pkey" PRIMARY KEY ("id")
+      );
+
       CREATE TABLE IF NOT EXISTS "IdeaChecklist" (
           "id" TEXT NOT NULL,
           "title" TEXT NOT NULL,
