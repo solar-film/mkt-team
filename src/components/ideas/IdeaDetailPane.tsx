@@ -340,7 +340,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               <option value="รอดำเนินการ">รอดำเนินการ</option>
               <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
               <option value="รอตรวจ">รอตรวจ</option>
-              {idea.category !== 'content' && <option value="เสร็จแล้ว">เสร็จแล้ว</option>}
+              {(idea.category !== 'content' || displayStatus === 'เสร็จแล้ว') && <option value="เสร็จแล้ว">เสร็จแล้ว</option>}
             </select>
           </div>
 
