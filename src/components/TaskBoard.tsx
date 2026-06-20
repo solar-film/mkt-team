@@ -1010,7 +1010,32 @@ export default function TaskBoard() {
             </div>
 
             <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', border: '1px solid #e2e8f0' }}>
-              {viewItem.description || viewItem.platform || 'ไม่มีรายละเอียดเพิ่มเติม'}
+              {(() => {
+                const descStr = viewItem.description || '';
+                let displayDesc = descStr;
+                let displayLink = '';
+                if (descStr.includes('\n\n🔗 ')) {
+                  const parts = descStr.split('\n\n🔗 ');
+                  displayDesc = parts[0];
+                  displayLink = parts[1];
+                } else if (descStr.startsWith('🔗 ')) {
+                  displayDesc = '';
+                  displayLink = descStr.replace('🔗 ', '');
+                }
+
+                if (displayLink) {
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {displayDesc && <div>{displayDesc}</div>}
+                      <a href={displayLink.startsWith('http') ? displayLink : `https://${displayLink}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, wordBreak: 'break-all' }}>
+                        🔗 {displayLink}
+                      </a>
+                    </div>
+                  );
+                }
+
+                return viewItem.description || viewItem.platform || 'ไม่มีรายละเอียดเพิ่มเติม';
+              })()}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
