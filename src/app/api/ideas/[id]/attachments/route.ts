@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     const ideaNoteId = params.id
     const body = await request.json()
     const { name, type, url } = body
@@ -29,8 +30,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     const { searchParams } = new URL(request.url)
     const attachmentId = searchParams.get('attachmentId')
 
