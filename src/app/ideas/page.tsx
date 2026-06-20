@@ -261,7 +261,7 @@ export default function IdeasPage() {
         </form>
       </Modal>
 
-      <style dangerouslySetInnerHTML={{__html: \`
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(20px); }
           to { opacity: 1; transform: translateX(0); }
@@ -271,7 +271,7 @@ export default function IdeasPage() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      \`}} />
+      `}} />
     </div>
   );
 }
