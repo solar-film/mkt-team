@@ -209,24 +209,25 @@ export default function IdeasPage() {
       {/* Create Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="สร้างโน๊ตไอเดียใหม่">
         <form onSubmit={handleCreate}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>หัวข้อ <span style={{ color: 'red' }}>*</span></label>
+          <div className="form-group">
+            <label className="form-label">หัวข้อ <span style={{ color: 'red' }}>*</span></label>
             <input 
               type="text" 
               required
+              className="form-input"
               value={formData.title} 
               onChange={e => setFormData({...formData, title: e.target.value})}
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} 
+              placeholder="เช่น เสนอไอเดียถ่ายงานบ้านลูกค้า"
             />
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>บริษัท</label>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">บริษัท</label>
               <select 
+                className="form-select"
                 value={formData.company} 
                 onChange={e => setFormData({...formData, company: e.target.value})}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
               >
                 <option value="">ไม่ระบุ</option>
                 <option value="GFS">GFS</option>
@@ -234,12 +235,12 @@ export default function IdeasPage() {
                 <option value="CAR">CAR</option>
               </select>
             </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>ความสำคัญ</label>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">ความสำคัญ</label>
               <select 
+                className="form-select"
                 value={formData.priority} 
                 onChange={e => setFormData({...formData, priority: e.target.value})}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
               >
                 <option value="ปกติ">ปกติ</option>
                 <option value="ด่วน">ด่วน</option>
@@ -248,19 +249,20 @@ export default function IdeasPage() {
             </div>
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#475569', fontSize: '0.9rem' }}>รายละเอียด</label>
+          <div className="form-group">
+            <label className="form-label">รายละเอียด</label>
             <textarea 
               rows={4}
+              className="form-textarea"
               value={formData.description} 
               onChange={e => setFormData({...formData, description: e.target.value})}
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }} 
+              placeholder="รายละเอียดเพิ่มเติมของไอเดีย..."
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">ยกเลิก</button>
-            <button type="submit" className="btn-primary">สร้างโน๊ต</button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+            <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">ยกเลิก</button>
+            <button type="submit" className="btn btn-primary">สร้างโน๊ต</button>
           </div>
         </form>
       </Modal>
