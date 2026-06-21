@@ -615,6 +615,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
   z-index: 1000;
   animation: fadeIn 0.2s ease-out;
 }
