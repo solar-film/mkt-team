@@ -116,7 +116,7 @@ export default function Sidebar() {
           <Link
             key={link.path}
             href={link.path}
-            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 4 ? 'desktop-only' : ''}`}
+            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 4 ? 'desktop-only-flex' : ''}`}
           >
             {link.icon}
             <span>{link.label}</span>
