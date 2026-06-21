@@ -116,14 +116,14 @@ export default function Sidebar() {
           <Link
             key={link.path}
             href={link.path}
-            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 4 ? 'desktop-only-flex' : ''}`}
+            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
           >
             {link.icon}
             <span>{link.label}</span>
           </Link>
         ))}
         {/* Mobile More Button */}
-        {visibleLinks.length > 4 && (
+        {visibleLinks.length > 6 && (
           <div className="mobile-only" style={{ position: 'relative' }}>
             <button 
               className={`sidebar-link ${showMobileMore ? 'active' : ''}`} 
@@ -155,7 +155,7 @@ export default function Sidebar() {
                   zIndex: 100,
                   border: '1px solid #e2e8f0'
                 }}>
-                  {visibleLinks.slice(4).map((link) => (
+                  {visibleLinks.slice(6).map((link) => (
                     <Link
                       key={link.path}
                       href={link.path}
