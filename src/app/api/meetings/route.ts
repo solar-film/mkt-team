@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
 
     const meetings = await prisma.meeting.findMany({
       where,
-      orderBy: {
-        date: 'asc'
-      }
+      orderBy: [
+        { date: 'desc' },
+        { time: 'desc' }
+      ]
     })
 
     // Fetch related tasks and contents
