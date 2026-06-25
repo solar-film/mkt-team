@@ -281,7 +281,6 @@ export default function ReportsPage() {
               const bTotal = b.tasksTotal + b.contentsTotal;
               return bTotal - aTotal;
             });
-            });
           
           const uniquePlatforms = Array.from(new Set(contents.map(i => i.platform).filter(Boolean)));
           const platformBreakdown = uniquePlatforms.map(p => {
