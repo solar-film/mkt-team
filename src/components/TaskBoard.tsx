@@ -543,17 +543,16 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const displayEvents = useMemo(() => {
     return [...events].filter(e => {
       const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
-      if (isNaN(targetDate.getTime())) return false;
-      targetDate.setHours(0,0,0,0);
-      
       const nextDay = new Date(targetDate);
       nextDay.setDate(targetDate.getDate() + 1);
       
       const eventDate = new Date(e.date);
-      if (isNaN(eventDate.getTime())) return false;
-      eventDate.setHours(0,0,0,0);
       
-      return eventDate.getTime() === targetDate.getTime() || eventDate.getTime() === nextDay.getTime();
+      const targetStr = format(targetDate, 'yyyy-MM-dd');
+      const nextStr = format(nextDay, 'yyyy-MM-dd');
+      const eventStr = format(eventDate, 'yyyy-MM-dd');
+      
+      return eventStr === targetStr || eventStr === nextStr;
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [events, filterExactDate]);
 
@@ -563,12 +562,13 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       if (filterExactDate && isNaN(new Date(filterExactDate).getTime())) return;
       
       const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
-      targetDate.setHours(0,0,0,0);
+      const targetStr = format(targetDate, 'yyyy-MM-dd');
       
       onEventsChange(displayEvents.map(e => {
         const eventDate = new Date(e.date);
-        eventDate.setHours(0,0,0,0);
-        const isTomorrow = eventDate.getTime() > targetDate.getTime();
+        const eventStr = format(eventDate, 'yyyy-MM-dd');
+        
+        const isTomorrow = eventStr !== targetStr;
         const prefix = isTomorrow ? 'พรุ่งนี้' : 'วันนี้';
         
         return {
