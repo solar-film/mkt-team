@@ -47,6 +47,9 @@ export default function KPIsPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   
+  const [kpiDict, setKpiDict] = useState<{id: string, name: string, description: string}[]>([]);
+  const [isDictModalOpen, setIsDictModalOpen] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '', description: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: ''
   });
@@ -74,8 +77,18 @@ export default function KPIsPage() {
     }
   };
 
+  const fetchDict = async () => {
+    try {
+      const res = await fetch('/api/kpi-dict?t=' + Date.now());
+      if (res.ok) setKpiDict(await res.json());
+    } catch (error) {
+      console.error('Failed to fetch KPI dictionary:', error);
+    }
+  };
+
   useEffect(() => {
     fetchMembers();
+    fetchDict();
   }, []);
 
   const handleAdminToggle = () => {
@@ -99,12 +112,8 @@ export default function KPIsPage() {
   };
 
   const handleEdit = (kpi: KPI, memberId: string) => {
-    const [realName, ...descParts] = kpi.name.split('||');
-    const desc = descParts.join('||');
-    
     setFormData({
-      name: realName,
-      description: desc || kpi.description || '',
+      name: kpi.name,
       target: kpi.target.toString(),
       current: kpi.current.toString(),
       unit: kpi.unit,
@@ -130,19 +139,13 @@ export default function KPIsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const finalName = formData.description ? `${formData.name}||${formData.description}` : formData.name;
-      
       const body = {
         ...formData,
-        name: finalName,
         target: parseFloat(formData.target),
         current: parseFloat(formData.current),
         month: parseInt(formData.month, 10),
         year: parseInt(formData.year, 10)
       };
-      
-      // Remove description from body to avoid API errors since we packed it into name
-      delete (body as any).description;
       
       if (isEditing && editId) {
         await fetch('/api/kpis', {
@@ -354,16 +357,9 @@ export default function KPIsPage() {
                     return (
                       <div key={kpi.id} className="kpi-item">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <div className="kpi-meta" style={{ marginBottom: 0, width: '100%', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                              <span style={{ fontWeight: 500 }}>{kpi.name.split('||')[0]}</span>
-                              <span>{displayCurrent} / {kpi.target} {kpi.unit}</span>
-                            </div>
-                            {(kpi.name.includes('||') ? kpi.name.split('||').slice(1).join('||') : kpi.description) && (
-                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                {kpi.name.includes('||') ? kpi.name.split('||').slice(1).join('||') : kpi.description}
-                              </span>
-                            )}
+                          <div className="kpi-meta" style={{ marginBottom: 0, width: '100%' }}>
+                            <span style={{ fontWeight: 500 }}>{kpi.name}</span>
+                            <span>{displayCurrent} / {kpi.target} {kpi.unit}</span>
                           </div>
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, marginLeft: '1rem' }}>
@@ -394,7 +390,72 @@ export default function KPIsPage() {
         </div>
       )}
 
+      {/* KPI Explanation Card */}
+      <div className="card" style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            💡 ความหมายของหัวข้อ KPI
+          </h3>
+          {isAdminMode && (
+            <button 
+              onClick={() => setIsDictModalOpen(true)}
+              style={{ backgroundColor: 'white', color: '#4f46e5', border: '1px solid #e2e8f0', padding: '0.4rem 0.75rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 500 }}
+            >
+              <HiPencilSquare size={16} /> แก้ไขคำอธิบาย
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+          {kpiDict.map(item => (
+            <div key={item.id} style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>{item.name}</div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'pre-wrap' }}>{item.description}</div>
+            </div>
+          ))}
+          {kpiDict.length === 0 && (
+            <div style={{ color: '#94a3b8', fontSize: '0.9rem', gridColumn: '1 / -1', textAlign: 'center' }}>ยังไม่มีคำอธิบาย</div>
+          )}
+        </div>
+      </div>
 
+      {/* Dictionary Edit Modal */}
+      <Modal isOpen={isDictModalOpen} onClose={() => { setIsDictModalOpen(false); fetchDict(); }} title="แก้ไขคำอธิบายหัวข้อ KPI">
+        <form onSubmit={handleSaveDict}>
+          <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1rem' }}>
+            {kpiDict.map((item, index) => (
+              <div key={item.id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '1rem', position: 'relative' }}>
+                <button type="button" onClick={() => setKpiDict(kpiDict.filter((_, i) => i !== index))} style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                  <HiOutlineTrash size={18} />
+                </button>
+                <div className="form-group">
+                  <label className="form-label">ชื่อหัวข้อ</label>
+                  <input type="text" className="form-input" required value={item.name} onChange={e => {
+                    const newDict = [...kpiDict];
+                    newDict[index].name = e.target.value;
+                    setKpiDict(newDict);
+                  }} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">คำอธิบาย</label>
+                  <textarea className="form-input" rows={2} required value={item.description} onChange={e => {
+                    const newDict = [...kpiDict];
+                    newDict[index].description = e.target.value;
+                    setKpiDict(newDict);
+                  }}></textarea>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={addDictItem} style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f1f5f9', border: '1px dashed #cbd5e1', borderRadius: '8px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <HiPlus size={18} /> เพิ่มหัวข้อใหม่
+          </button>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => { setIsDictModalOpen(false); fetchDict(); }}>ยกเลิก</button>
+            <button type="submit" className="btn btn-primary">บันทึก</button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Add/Edit KPI Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
@@ -402,10 +463,6 @@ export default function KPIsPage() {
           <div className="form-group">
             <label className="form-label">ชื่อ KPI *</label>
             <input type="text" className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="เช่น ยอดผู้ติดตาม, บทความที่เขียน" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">คำอธิบายเป้าหมาย</label>
-            <textarea className="form-input" rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="อธิบายเพิ่มเติมเกี่ยวกับ KPI นี้ (ถ้ามี)"></textarea>
           </div>
           <div className="form-group">
             <label className="form-label">พนักงาน *</label>
