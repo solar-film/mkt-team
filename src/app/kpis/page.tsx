@@ -425,12 +425,24 @@ export default function KPIsPage() {
           )}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-          {kpiDict.map(item => (
-            <div key={item.id} style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>{item.name}</div>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'pre-wrap' }}>{item.description}</div>
-            </div>
-          ))}
+          {kpiDict.map(item => {
+            const isImportant = item.name.startsWith('*');
+            return (
+              <div key={item.id} style={{ 
+                padding: '1rem', 
+                backgroundColor: isImportant ? '#fffbeb' : 'white', 
+                borderRadius: '8px',
+                border: isImportant ? '1px solid #fde68a' : '1px solid #e2e8f0',
+                boxShadow: isImportant ? '0 2px 4px rgba(245, 158, 11, 0.1)' : '0 1px 2px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ fontWeight: 600, fontSize: '0.85rem', color: isImportant ? '#b45309' : '#334155', marginBottom: '0.5rem' }}>
+                  {isImportant && <span style={{ marginRight: '4px' }}>⭐️</span>}
+                  {item.name.replace(/^\*/, '')}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: isImportant ? '#78350f' : '#64748b', lineHeight: 1.6 }}>{item.description}</div>
+              </div>
+            );
+          })}
           {kpiDict.length === 0 && (
             <div style={{ color: '#94a3b8', fontSize: '0.9rem', gridColumn: '1 / -1', textAlign: 'center' }}>ยังไม่มีคำอธิบาย</div>
           )}
