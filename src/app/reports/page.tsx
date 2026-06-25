@@ -47,6 +47,7 @@ export default function ReportsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
+  const [showBrandStats, setShowBrandStats] = useState(true);
   
   const currentDate = new Date();
   const [dateFilterType, setDateFilterType] = useState('month'); // 'month' or 'day' or 'all'
@@ -261,12 +262,25 @@ export default function ReportsPage() {
           
           const uniqueMembers = Array.from(new Set(items.map(i => i.memberName)));
           
+          const memberBreakdown = uniqueMembers.map(m => {
+            const mTasks = tasks.filter(t => t.memberName === m);
+            const mContents = contents.filter(c => c.memberName === m);
+            return {
+              name: m,
+              tasksTotal: mTasks.length,
+              tasksDone: mTasks.filter(t => t.status === 'done' || t.status === 'เสร็จแล้ว').length,
+              contentsTotal: mContents.length,
+              contentsDone: mContents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length
+            };
+          }).filter(m => m.tasksTotal > 0 || m.contentsTotal > 0);
+          
           return {
             tasksTotal: tasks.length,
             tasksDone: tasks.filter(t => t.status === 'done' || t.status === 'เสร็จแล้ว').length,
             contentsTotal: contents.length,
             contentsDone: contents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length,
-            members: uniqueMembers
+            members: uniqueMembers,
+            memberBreakdown
           };
         };
 
@@ -275,39 +289,64 @@ export default function ReportsPage() {
         const carStats = getBrandStats('CAR');
 
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            {[
-              { name: 'GFS', stats: gfsStats, color: '#0ea5e9', bg: '#f0f9ff' },
-              { name: 'MHL', stats: mhlStats, color: '#f59e0b', bg: '#fffbeb' },
-              { name: 'CAR', stats: carStats, color: '#8b5cf6', bg: '#f5f3ff' }
-            ].map(brand => (
-              <div key={brand.name} style={{ backgroundColor: brand.bg, borderRadius: '12px', padding: '1rem', border: `1px solid ${brand.color}30` }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: brand.color, margin: '0 0 0.75rem 0' }}>{brand.name}</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.03)' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>งานทั่วไป (เสร็จ/ทั้งหมด)</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155' }}>
-                      <span style={{ color: '#10b981' }}>{brand.stats.tasksDone}</span> <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>/ {brand.stats.tasksTotal}</span>
+          <div style={{ marginBottom: '1.5rem', backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showBrandStats ? '1rem' : '0' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>ภาพรวมแต่ละแบรนด์</h2>
+              <button 
+                onClick={() => setShowBrandStats(!showBrandStats)}
+                style={{ fontSize: '0.8rem', color: '#3b82f6', background: '#eff6ff', padding: '0.3rem 0.75rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+              >
+                {showBrandStats ? 'ซ่อน' : 'แสดง'}
+              </button>
+            </div>
+            
+            {showBrandStats && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                {[
+                  { name: 'GFS', stats: gfsStats, color: '#0ea5e9', bg: '#f0f9ff' },
+                  { name: 'MHL', stats: mhlStats, color: '#f59e0b', bg: '#fffbeb' },
+                  { name: 'CAR', stats: carStats, color: '#8b5cf6', bg: '#f5f3ff' }
+                ].map(brand => (
+                  <div key={brand.name} style={{ backgroundColor: brand.bg, borderRadius: '12px', padding: '1rem', border: `1px solid ${brand.color}30` }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: brand.color, margin: '0 0 0.75rem 0' }}>{brand.name}</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>งานทั่วไป (เสร็จ/รวม)</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155' }}>
+                          <span style={{ color: '#10b981' }}>{brand.stats.tasksDone}</span> <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>/ {brand.stats.tasksTotal}</span>
+                        </div>
+                      </div>
+                      <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>คอนเทนต์ (เสร็จ/รวม)</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155' }}>
+                          <span style={{ color: '#10b981' }}>{brand.stats.contentsDone}</span> <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>/ {brand.stats.contentsTotal}</span>
+                        </div>
+                      </div>
                     </div>
+                    {brand.stats.memberBreakdown.length > 0 && (
+                      <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: `1px dashed ${brand.color}40` }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><HiUser size={14} /> ผลงานรายบุคคล:</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          {brand.stats.memberBreakdown.map(m => (
+                            <div key={m.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', backgroundColor: 'rgba(255,255,255,0.7)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                              <span style={{ fontWeight: 700, color: brand.color }}>{m.name}</span>
+                              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                {m.tasksTotal > 0 && (
+                                  <span style={{ color: '#64748b' }}>งาน: <span style={{ color: '#10b981', fontWeight: 700 }}>{m.tasksDone}</span>/{m.tasksTotal}</span>
+                                )}
+                                {m.contentsTotal > 0 && (
+                                  <span style={{ color: '#64748b' }}>คอนเทนต์: <span style={{ color: '#10b981', fontWeight: 700 }}>{m.contentsDone}</span>/{m.contentsTotal}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.03)' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>คอนเทนต์ (เสร็จ/ทั้งหมด)</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155' }}>
-                      <span style={{ color: '#10b981' }}>{brand.stats.contentsDone}</span> <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>/ {brand.stats.contentsTotal}</span>
-                    </div>
-                  </div>
-                </div>
-                {brand.stats.members.length > 0 && (
-                  <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-                    <HiUser size={14} /> 
-                    <span>ผู้รับผิดชอบ:</span>
-                    {brand.stats.members.map(m => (
-                      <span key={m} style={{ backgroundColor: 'white', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.05)', fontWeight: 600, color: brand.color }}>{m}</span>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
           </div>
         );
       })()}
