@@ -253,6 +253,53 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {(() => {
+        const getBrandStats = (brand: string) => {
+          const items = filteredItems.filter(item => item.company === brand);
+          const tasks = items.filter(item => item.itemType === 'task');
+          const contents = items.filter(item => item.itemType === 'content');
+          
+          return {
+            tasksTotal: tasks.length,
+            tasksDone: tasks.filter(t => t.status === 'done' || t.status === 'เสร็จแล้ว').length,
+            contentsTotal: contents.length,
+            contentsDone: contents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length
+          };
+        };
+
+        const gfsStats = getBrandStats('GFS');
+        const mhlStats = getBrandStats('MHL');
+        const carStats = getBrandStats('CAR');
+
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            {[
+              { name: 'GFS', stats: gfsStats, color: '#0ea5e9', bg: '#f0f9ff' },
+              { name: 'MHL', stats: mhlStats, color: '#f59e0b', bg: '#fffbeb' },
+              { name: 'CAR', stats: carStats, color: '#8b5cf6', bg: '#f5f3ff' }
+            ].map(brand => (
+              <div key={brand.name} style={{ backgroundColor: brand.bg, borderRadius: '12px', padding: '1rem', border: `1px solid ${brand.color}30` }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: brand.color, margin: '0 0 0.75rem 0' }}>{brand.name}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>งานทั่วไป (เสร็จ/ทั้งหมด)</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155' }}>
+                      <span style={{ color: '#10b981' }}>{brand.stats.tasksDone}</span> <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>/ {brand.stats.tasksTotal}</span>
+                    </div>
+                  </div>
+                  <div style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.25rem' }}>คอนเทนต์ (เสร็จ/ทั้งหมด)</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155' }}>
+                      <span style={{ color: '#10b981' }}>{brand.stats.contentsDone}</span> <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>/ {brand.stats.contentsTotal}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>ผลลัพธ์การค้นหา</h2>
