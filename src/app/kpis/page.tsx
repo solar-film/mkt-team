@@ -86,6 +86,25 @@ export default function KPIsPage() {
     }
   };
 
+  const addDictItem = () => {
+    setKpiDict([...kpiDict, { id: Date.now().toString(), name: '', description: '' }]);
+  };
+
+  const handleSaveDict = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await fetch('/api/kpi-dict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(kpiDict)
+      });
+      setIsDictModalOpen(false);
+      fetchDict();
+    } catch (error) {
+      console.error('Failed to save dictionary:', error);
+    }
+  };
+
   useEffect(() => {
     fetchMembers();
     fetchDict();
