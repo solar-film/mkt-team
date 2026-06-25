@@ -281,14 +281,26 @@ export default function ReportsPage() {
               const bTotal = b.tasksTotal + b.contentsTotal;
               return bTotal - aTotal;
             });
+            });
           
+          const uniquePlatforms = Array.from(new Set(contents.map(i => i.platform).filter(Boolean)));
+          const platformBreakdown = uniquePlatforms.map(p => {
+            const pContents = contents.filter(c => c.platform === p);
+            return {
+              name: p,
+              total: pContents.length,
+              done: pContents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length
+            };
+          }).filter(p => p.total > 0).sort((a, b) => (b.done - a.done) || (b.total - a.total));
+
           return {
             tasksTotal: tasks.length,
             tasksDone: tasks.filter(t => t.status === 'done' || t.status === 'เสร็จแล้ว').length,
             contentsTotal: contents.length,
             contentsDone: contents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length,
             members: uniqueMembers,
-            memberBreakdown
+            memberBreakdown,
+            platformBreakdown
           };
         };
 
@@ -331,6 +343,19 @@ export default function ReportsPage() {
                         </div>
                       </div>
                     </div>
+                    {brand.stats.platformBreakdown.length > 0 && (
+                      <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: `1px dashed ${brand.color}40` }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><HiTag size={14} /> รายแพลตฟอร์ม:</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.4rem' }}>
+                          {brand.stats.platformBreakdown.map(p => (
+                            <div key={p.name} style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'rgba(255,255,255,0.7)', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.15rem' }}>{p.name}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}><span style={{ color: '#10b981', fontWeight: 700 }}>{p.done}</span>/{p.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {brand.stats.memberBreakdown.length > 0 && (
                       <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: `1px dashed ${brand.color}40` }}>
                         <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><HiUser size={14} /> ผลงานรายบุคคล:</div>
