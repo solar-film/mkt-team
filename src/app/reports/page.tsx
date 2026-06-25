@@ -259,11 +259,14 @@ export default function ReportsPage() {
           const tasks = items.filter(item => item.itemType === 'task');
           const contents = items.filter(item => item.itemType === 'content');
           
+          const uniqueMembers = Array.from(new Set(items.map(i => i.memberName)));
+          
           return {
             tasksTotal: tasks.length,
             tasksDone: tasks.filter(t => t.status === 'done' || t.status === 'เสร็จแล้ว').length,
             contentsTotal: contents.length,
-            contentsDone: contents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length
+            contentsDone: contents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length,
+            members: uniqueMembers
           };
         };
 
@@ -294,6 +297,15 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 </div>
+                {brand.stats.members.length > 0 && (
+                  <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    <HiUser size={14} /> 
+                    <span>ผู้รับผิดชอบ:</span>
+                    {brand.stats.members.map(m => (
+                      <span key={m} style={{ backgroundColor: 'white', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.05)', fontWeight: 600, color: brand.color }}>{m}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
