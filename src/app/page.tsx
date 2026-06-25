@@ -298,7 +298,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Row: 4 Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
+      <div className="dashboard-stats-grid">
         
         {/* Card 1: Pending Tasks */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

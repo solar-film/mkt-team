@@ -1211,3 +1211,6 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   border-top-left-radius: var(--radius-md);
   border-top-right-radius: var(--radius-md);
 }
+
+.dashboard-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+@media (max-width: 768px) { .dashboard-stats-grid { grid-template-columns: repeat(2, 1fr); } }
