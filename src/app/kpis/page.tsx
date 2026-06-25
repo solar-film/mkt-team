@@ -377,6 +377,31 @@ export default function KPIsPage() {
         </div>
       )}
 
+      {/* KPI Explanation Card */}
+      <div className="card" style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          💡 ความหมายของหัวข้อ KPI
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>ยอดผู้ติดตาม (Followers)</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>เป้าหมายการเพิ่มจำนวนผู้ติดตามใหม่ในช่องทางโซเชียลมีเดียต่างๆ เช่น Facebook, TikTok</div>
+          </div>
+          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>บทความที่เขียน (Articles)</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>จำนวนคอนเทนต์บทความหรือบล็อกที่เขียนและเผยแพร่สำเร็จในแต่ละเดือน</div>
+          </div>
+          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>คลิปวิดีโอ (Videos)</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>จำนวนคลิปวิดีโอสั้นหรือยาวที่ผลิตและเผยแพร่สำเร็จ (รวมการตัดต่อและถ่ายทำ)</div>
+          </div>
+          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>งานออกแบบ (Design)</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>จำนวนชิ้นงานกราฟิก ภาพประกอบ หรือสื่อสิ่งพิมพ์ที่ออกแบบเสร็จสมบูรณ์</div>
+          </div>
+        </div>
+      </div>
+
       {/* Add/Edit KPI Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
         <form onSubmit={handleSubmit}>
