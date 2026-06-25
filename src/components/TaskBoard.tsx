@@ -545,10 +545,15 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
       if (isNaN(targetDate.getTime())) return false;
       targetDate.setHours(0,0,0,0);
+      
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(targetDate.getDate() + 1);
+      
       const eventDate = new Date(e.date);
       if (isNaN(eventDate.getTime())) return false;
       eventDate.setHours(0,0,0,0);
-      return eventDate.getTime() === targetDate.getTime();
+      
+      return eventDate.getTime() === targetDate.getTime() || eventDate.getTime() === nextDay.getTime();
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [events, filterExactDate]);
 
@@ -556,10 +561,21 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   useEffect(() => {
     if (onEventsChange) {
       if (filterExactDate && isNaN(new Date(filterExactDate).getTime())) return;
-      onEventsChange(displayEvents.map(e => ({
-        ...e,
-        dateLabel: `วันนี้${e.time ? ` ${e.time} น.` : ''} :`
-      })));
+      
+      const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
+      targetDate.setHours(0,0,0,0);
+      
+      onEventsChange(displayEvents.map(e => {
+        const eventDate = new Date(e.date);
+        eventDate.setHours(0,0,0,0);
+        const isTomorrow = eventDate.getTime() > targetDate.getTime();
+        const prefix = isTomorrow ? 'พรุ่งนี้' : 'วันนี้';
+        
+        return {
+          ...e,
+          dateLabel: `${prefix}${e.time ? ` ${e.time} น.` : ''} :`
+        };
+      }));
     }
   }, [displayEvents, filterExactDate, onEventsChange]);
 
