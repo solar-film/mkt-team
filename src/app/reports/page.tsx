@@ -272,7 +272,15 @@ export default function ReportsPage() {
               contentsTotal: mContents.length,
               contentsDone: mContents.filter(c => c.status === 'published' || c.status === 'done' || c.status === 'เสร็จแล้ว').length
             };
-          }).filter(m => m.tasksTotal > 0 || m.contentsTotal > 0);
+          }).filter(m => m.tasksTotal > 0 || m.contentsTotal > 0)
+            .sort((a, b) => {
+              const aDone = a.tasksDone + a.contentsDone;
+              const bDone = b.tasksDone + b.contentsDone;
+              if (bDone !== aDone) return bDone - aDone;
+              const aTotal = a.tasksTotal + a.contentsTotal;
+              const bTotal = b.tasksTotal + b.contentsTotal;
+              return bTotal - aTotal;
+            });
           
           return {
             tasksTotal: tasks.length,
