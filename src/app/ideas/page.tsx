@@ -87,6 +87,8 @@ export default function IdeasPage() {
   };
 
   const filteredIdeas = ideas.filter(idea => {
+    if (idea.title === '__SYSTEM_KPI_DICTIONARY__') return false;
+
     const matchesSearch = idea.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (idea.description && idea.description.toLowerCase().includes(searchQuery.toLowerCase()));
     
@@ -163,7 +165,7 @@ export default function IdeasPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: '1rem' }}>
         <div style={{ flex: '1 1 auto', minWidth: '280px' }}>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0' }}>โน๊ตไอเดียงาน</h1>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, lineHeight: '1.5', maxWidth: '600px' }}>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
             โน้ตไอเดียงาน คือ การจดบันทึกความคิดหรือไอเดียใหม่ ๆ ที่แวบเข้ามาในหัวแบบเร็ว ๆ เพื่อไม่ให้ลืม เพื่อนำไปพัฒนาต่อหรือแบ่งงานกันทำ
           </p>
         </div>
