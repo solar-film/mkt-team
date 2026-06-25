@@ -48,6 +48,7 @@ model Task {
 model KPI {
   id          String     @id @default(cuid())
   name        String
+  description String?    @db.Text
   target      Float
   current     Float      @default(0)
   unit        String

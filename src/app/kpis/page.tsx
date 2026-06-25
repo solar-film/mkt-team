@@ -7,7 +7,7 @@ import MemberAvatar from '@/components/MemberAvatar';
 import ProgressBar from '@/components/ProgressBar';
 
 interface KPI {
-  id: string; name: string; target: number; current: number;
+  id: string; name: string; description?: string | null; target: number; current: number;
   unit: string; month: number; year: number; memberId: string;
 }
 
@@ -48,7 +48,7 @@ export default function KPIsPage() {
   const [passwordError, setPasswordError] = useState('');
   
   const [formData, setFormData] = useState({
-    name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: ''
+    name: '', description: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: ''
   });
 
   const fetchMembers = async () => {
@@ -101,6 +101,7 @@ export default function KPIsPage() {
   const handleEdit = (kpi: KPI, memberId: string) => {
     setFormData({
       name: kpi.name,
+      description: kpi.description || '',
       target: kpi.target.toString(),
       current: kpi.current.toString(),
       unit: kpi.unit,
@@ -151,7 +152,7 @@ export default function KPIsPage() {
       setIsModalOpen(false);
       setIsEditing(false);
       setEditId(null);
-      setFormData({ name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
+      setFormData({ name: '', description: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
       fetchMembers();
     } catch (err) {
       console.error(err);
@@ -344,9 +345,14 @@ export default function KPIsPage() {
                     return (
                       <div key={kpi.id} className="kpi-item">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <div className="kpi-meta" style={{ marginBottom: 0, width: '100%' }}>
-                            <span style={{ fontWeight: 500 }}>{kpi.name}</span>
-                            <span>{displayCurrent} / {kpi.target} {kpi.unit}</span>
+                          <div className="kpi-meta" style={{ marginBottom: 0, width: '100%', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                              <span style={{ fontWeight: 500 }}>{kpi.name}</span>
+                              <span>{displayCurrent} / {kpi.target} {kpi.unit}</span>
+                            </div>
+                            {kpi.description && (
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{kpi.description}</span>
+                            )}
                           </div>
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, marginLeft: '1rem' }}>
@@ -377,30 +383,7 @@ export default function KPIsPage() {
         </div>
       )}
 
-      {/* KPI Explanation Card */}
-      <div className="card" style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          💡 ความหมายของหัวข้อ KPI
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>ยอดผู้ติดตาม (Followers)</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>เป้าหมายการเพิ่มจำนวนผู้ติดตามใหม่ในช่องทางโซเชียลมีเดียต่างๆ เช่น Facebook, TikTok</div>
-          </div>
-          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>บทความที่เขียน (Articles)</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>จำนวนคอนเทนต์บทความหรือบล็อกที่เขียนและเผยแพร่สำเร็จในแต่ละเดือน</div>
-          </div>
-          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>คลิปวิดีโอ (Videos)</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>จำนวนคลิปวิดีโอสั้นหรือยาวที่ผลิตและเผยแพร่สำเร็จ (รวมการตัดต่อและถ่ายทำ)</div>
-          </div>
-          <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '0.25rem' }}>งานออกแบบ (Design)</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>จำนวนชิ้นงานกราฟิก ภาพประกอบ หรือสื่อสิ่งพิมพ์ที่ออกแบบเสร็จสมบูรณ์</div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Add/Edit KPI Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
@@ -408,6 +391,10 @@ export default function KPIsPage() {
           <div className="form-group">
             <label className="form-label">ชื่อ KPI *</label>
             <input type="text" className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="เช่น ยอดผู้ติดตาม, บทความที่เขียน" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">คำอธิบายเป้าหมาย</label>
+            <textarea className="form-input" rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="อธิบายเพิ่มเติมเกี่ยวกับ KPI นี้ (ถ้ามี)"></textarea>
           </div>
           <div className="form-group">
             <label className="form-label">พนักงาน *</label>
