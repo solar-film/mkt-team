@@ -45,7 +45,7 @@ export default function ReportsPage() {
 
   const [memberFilter, setMemberFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [platformFilter, setPlatformFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   
   const currentDate = new Date();
@@ -115,10 +115,13 @@ export default function ReportsPage() {
     // 2. Type Filter
     if (typeFilter !== 'all' && item.itemType !== typeFilter) return false;
     
-    // 3. Platform Filter (only applicable to content)
-    if (platformFilter !== 'all') {
-      if (item.itemType === 'task') return false;
-      if (item.platform !== platformFilter) return false;
+    // 3. Status Filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'done') {
+        if (item.status !== 'done' && item.status !== 'published' && item.status !== 'เสร็จแล้ว') return false;
+      } else {
+        if (item.status !== statusFilter) return false;
+      }
     }
     
     // Company Filter
@@ -184,7 +187,7 @@ export default function ReportsPage() {
 
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontSize: '0.75rem' }}><HiTag /> ประเภท</label>
-            <select className="form-input" value={typeFilter} onChange={e => { setTypeFilter(e.target.value); if(e.target.value === 'task') setPlatformFilter('all'); }} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+            <select className="form-input" value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
               <option value="all">ทั้งหมด</option>
               <option value="task">งานทั่วไป</option>
               <option value="content">คอนเทนต์</option>
@@ -192,15 +195,12 @@ export default function ReportsPage() {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" style={{ fontSize: '0.75rem' }}>แพลตฟอร์ม</label>
-            <select className="form-input" value={platformFilter} onChange={e => setPlatformFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }} disabled={typeFilter === 'task'}>
-              <option value="all">ทุกแพลตฟอร์ม</option>
-              <option value="Facebook">Facebook</option>
-              <option value="Instagram">Instagram</option>
-              <option value="TikTok">TikTok</option>
-              <option value="YouTube">YouTube</option>
-              <option value="LINE OA">LINE OA</option>
-              <option value="Website">Website</option>
+            <label className="form-label" style={{ fontSize: '0.75rem' }}>สถานะ</label>
+            <select className="form-input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem' }}>
+              <option value="all">ทุกสถานะ</option>
+              <option value="todo">รอดำเนินการ</option>
+              <option value="in_progress">กำลังทำ</option>
+              <option value="done">เสร็จแล้ว</option>
             </select>
           </div>
 
