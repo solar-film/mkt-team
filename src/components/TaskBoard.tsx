@@ -542,8 +542,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
   const displayEvents = useMemo(() => {
     return [...events].filter(e => {
-      // Always use real current date for the event notification banner
-      const targetDate = new Date();
+      const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
       const nextDay = new Date(targetDate);
       nextDay.setDate(targetDate.getDate() + 1);
       
@@ -555,13 +554,14 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       
       return eventStr === targetStr || eventStr === nextStr;
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [events]);
+  }, [events, filterExactDate]);
 
   // Call onEventsChange when displayEvents changes
   useEffect(() => {
     if (onEventsChange) {
-      // Always use real current date for the event notification banner
-      const targetDate = new Date();
+      if (filterExactDate && isNaN(new Date(filterExactDate).getTime())) return;
+      
+      const targetDate = filterExactDate ? new Date(filterExactDate) : new Date();
       const targetStr = format(targetDate, 'yyyy-MM-dd');
       
       onEventsChange(displayEvents.map(e => {
@@ -577,7 +577,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
         };
       }));
     }
-  }, [displayEvents, onEventsChange]);
+  }, [displayEvents, filterExactDate, onEventsChange]);
 
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
