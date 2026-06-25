@@ -99,9 +99,12 @@ export default function KPIsPage() {
   };
 
   const handleEdit = (kpi: KPI, memberId: string) => {
+    const [realName, ...descParts] = kpi.name.split('||');
+    const desc = descParts.join('||');
+    
     setFormData({
-      name: kpi.name,
-      description: kpi.description || '',
+      name: realName,
+      description: desc || kpi.description || '',
       target: kpi.target.toString(),
       current: kpi.current.toString(),
       unit: kpi.unit,
@@ -127,13 +130,19 @@ export default function KPIsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const finalName = formData.description ? `${formData.name}||${formData.description}` : formData.name;
+      
       const body = {
         ...formData,
+        name: finalName,
         target: parseFloat(formData.target),
         current: parseFloat(formData.current),
         month: parseInt(formData.month, 10),
         year: parseInt(formData.year, 10)
       };
+      
+      // Remove description from body to avoid API errors since we packed it into name
+      delete (body as any).description;
       
       if (isEditing && editId) {
         await fetch('/api/kpis', {
@@ -347,11 +356,13 @@ export default function KPIsPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                           <div className="kpi-meta" style={{ marginBottom: 0, width: '100%', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                              <span style={{ fontWeight: 500 }}>{kpi.name}</span>
+                              <span style={{ fontWeight: 500 }}>{kpi.name.split('||')[0]}</span>
                               <span>{displayCurrent} / {kpi.target} {kpi.unit}</span>
                             </div>
-                            {kpi.description && (
-                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{kpi.description}</span>
+                            {(kpi.name.includes('||') ? kpi.name.split('||').slice(1).join('||') : kpi.description) && (
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                {kpi.name.includes('||') ? kpi.name.split('||').slice(1).join('||') : kpi.description}
+                              </span>
                             )}
                           </div>
                           {isAdminMode && (

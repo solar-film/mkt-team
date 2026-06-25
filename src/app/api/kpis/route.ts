@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, target, unit, month, year, memberId, company, description } = body
+    const { name, target, unit, month, year, memberId, company } = body
 
     if (!name || !memberId) {
       return NextResponse.json({ error: 'Name and memberId are required' }, { status: 400 })
@@ -48,12 +48,11 @@ export async function POST(request: NextRequest) {
         name,
         target: parseFloat(target) || 0,
         current: 0,
-        unit: unit || '',
+        unit: unit || 'งาน',
         month: parseInt(month) || new Date().getMonth() + 1,
         year: parseInt(year) || new Date().getFullYear(),
         company: company || 'GFS',
-        memberId,
-        description
+        memberId
       },
       include: {
         member: { select: { id: true, name: true, avatar: true } }
@@ -70,7 +69,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, name, target, current, unit, month, year, memberId, company, description } = body
+    const { id, name, target, current, unit, month, year, memberId, company } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
@@ -84,8 +83,7 @@ export async function PUT(request: NextRequest) {
         month: month !== undefined ? parseInt(month) : undefined,
         year: year !== undefined ? parseInt(year) : undefined,
         company: company !== undefined ? company : undefined,
-        memberId: memberId !== undefined ? memberId : undefined,
-        description: description !== undefined ? description : undefined
+        memberId: memberId !== undefined ? memberId : undefined
       },
       include: {
         member: { select: { id: true, name: true, avatar: true } }

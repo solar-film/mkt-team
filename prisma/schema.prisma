@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model TeamMember {
@@ -48,7 +47,6 @@ model Task {
 model KPI {
   id          String     @id @default(cuid())
   name        String
-  description String?    @db.Text
   target      Float
   current     Float      @default(0)
   unit        String
