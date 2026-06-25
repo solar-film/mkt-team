@@ -28,15 +28,12 @@ export default function KPIsPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check admin status
+    // Check global admin status for general display purposes if needed
     const adminStatus = localStorage.getItem('isAdmin') === 'true';
     setIsAdmin(adminStatus);
     
-    if (adminStatus) {
-      fetchMembers();
-    } else {
-      setLoading(false);
-    }
+    // Always fetch members for everyone so they can see KPIs
+    fetchMembers();
   }, []);
   
   // Modal states
@@ -162,7 +159,6 @@ export default function KPIsPage() {
     ? members.filter(m => m.id === filterMemberId) 
     : members).filter(member => member.kpis?.some(k => k.month === filterMonth && k.year === filterYear));
   
-  if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   const thaiMonths = [
@@ -176,8 +172,7 @@ export default function KPIsPage() {
         <div className="page-header-content">
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>เป้าหมาย KPI</h1>
         </div>
-        {isAdmin && (
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button 
             className={`btn ${isAdminMode ? 'btn-secondary' : 'btn-outline'}`} 
             onClick={handleAdminToggle}
@@ -196,7 +191,6 @@ export default function KPIsPage() {
             </button>
           )}
         </div>
-        )}
       </div>
 
       <div className="filter-bar" style={{ padding: '1rem', marginBottom: '1rem' }}>
