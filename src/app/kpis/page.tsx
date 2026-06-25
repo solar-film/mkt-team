@@ -43,6 +43,9 @@ export default function KPIsPage() {
   
   // Admin state
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   
   const [formData, setFormData] = useState({
     name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: ''
@@ -79,12 +82,19 @@ export default function KPIsPage() {
     if (isAdminMode) {
       setIsAdminMode(false);
     } else {
-      const pwd = prompt('กรุณาใส่รหัสผ่าน (Password):');
-      if (pwd === '3107') {
-        setIsAdminMode(true);
-      } else if (pwd !== null) {
-        alert('รหัสผ่านไม่ถูกต้อง');
-      }
+      setIsPasswordModalOpen(true);
+    }
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === '3107') {
+      setIsAdminMode(true);
+      setIsPasswordModalOpen(false);
+      setPasswordInput('');
+      setPasswordError('');
+    } else {
+      setPasswordError('รหัสผ่านไม่ถูกต้อง');
     }
   };
 
@@ -412,6 +422,28 @@ export default function KPIsPage() {
         </form>
       </Modal>
 
+
+      {/* Password Modal */}
+      <Modal isOpen={isPasswordModalOpen} onClose={() => { setIsPasswordModalOpen(false); setPasswordInput(''); setPasswordError(''); }} title="กรุณาใส่รหัสผ่าน (Password)">
+        <form onSubmit={handlePasswordSubmit}>
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+            <input 
+              type="password" 
+              className="form-input" 
+              autoFocus
+              value={passwordInput} 
+              onChange={e => { setPasswordInput(e.target.value); setPasswordError(''); }} 
+              placeholder="รหัสผ่านสำหรับผู้ดูแลระบบ" 
+              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
+            />
+            {passwordError && <div style={{ color: 'var(--color-danger)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{passwordError}</div>}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => { setIsPasswordModalOpen(false); setPasswordInput(''); setPasswordError(''); }}>ยกเลิก</button>
+            <button type="submit" className="btn btn-primary">ตกลง</button>
+          </div>
+        </form>
+      </Modal>
 
     </div>
   );
