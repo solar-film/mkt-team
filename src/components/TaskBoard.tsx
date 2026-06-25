@@ -678,6 +678,12 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
           <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
             <HiPlus /> เพิ่มรายการใหม่
           </button>
+          {events.length > 0 && (
+            <span style={{ fontSize: '10px', color: 'transparent', userSelect: 'none' }}>
+              DB:{events.find(e => e.title?.includes('OIL'))?.date?.substring(0, 10)} | 
+              T:{format(filterExactDate ? new Date(filterExactDate) : new Date(), 'yyyy-MM-dd')}
+            </span>
+          )}
         </div>
       </div>
 
