@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiPlus, HiPencilSquare, HiLockClosed } from 'react-icons/hi2';
+import { HiPlus, HiPencilSquare, HiOutlineTrash } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import MemberAvatar from '@/components/MemberAvatar';
 import ProgressBar from '@/components/ProgressBar';
@@ -41,31 +41,15 @@ export default function KPIsPage() {
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  
+  // Admin state
+  const [isAdminMode, setIsAdminMode] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: ''
   });
-
-  const openAddModal = () => {
-    setEditingId(null);
-    setFormData({ name: '', target: '', current: '0', unit: '', month: filterMonth.toString(), year: filterYear.toString(), memberId: '' });
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (kpi: KPI) => {
-    setEditingId(kpi.id);
-    setFormData({
-      name: kpi.name,
-      target: kpi.target.toString(),
-      current: kpi.current.toString(),
-      unit: kpi.unit,
-      month: kpi.month.toString(),
-      year: kpi.year.toString(),
-      memberId: kpi.memberId
-    });
-    setIsModalOpen(true);
-  };
 
   const fetchMembers = async () => {
     try {
@@ -94,31 +78,78 @@ export default function KPIsPage() {
     fetchMembers();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdminToggle = () => {
+    if (isAdminMode) {
+      setIsAdminMode(false);
+    } else {
+      const pwd = prompt('กรุณาใส่รหัสผ่าน (Password):');
+      if (pwd === '3107') {
+        setIsAdminMode(true);
+      } else if (pwd !== null) {
+        alert('รหัสผ่านไม่ถูกต้อง');
+      }
+    }
+  };
+
+  const handleEdit = (kpi: KPI, memberId: string) => {
+    setFormData({
+      name: kpi.name,
+      target: kpi.target.toString(),
+      current: kpi.current.toString(),
+      unit: kpi.unit,
+      month: kpi.month.toString(),
+      year: kpi.year.toString(),
+      memberId: memberId
+    });
+    setEditId(kpi.id);
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (kpiId: string) => {
+    if (!confirm('คุณต้องการลบเป้าหมาย KPI นี้ใช่หรือไม่?')) return;
     try {
-      const body = {
-        id: editingId,
-        ...formData,
-        target: parseFloat(formData.target),
-        current: parseFloat(formData.current),
-        month: parseInt(formData.month, 10),
-        year: parseInt(formData.year, 10)
-      };
-      await fetch('/api/kpis', {
-        method: editingId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      setIsModalOpen(false);
-      setFormData({ name: '', target: '', current: '0', unit: '', month: filterMonth.toString(), year: filterYear.toString(), memberId: '' });
+      await fetch(`/api/kpis?id=${kpiId}`, { method: 'DELETE' });
       fetchMembers();
     } catch (err) {
       console.error(err);
     }
   };
 
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const body = {
+        ...formData,
+        target: parseFloat(formData.target),
+        current: parseFloat(formData.current),
+        month: parseInt(formData.month, 10),
+        year: parseInt(formData.year, 10)
+      };
+      
+      if (isEditing && editId) {
+        await fetch('/api/kpis', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editId, ...body })
+        });
+      } else {
+        await fetch('/api/kpis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+      
+      setIsModalOpen(false);
+      setIsEditing(false);
+      setEditId(null);
+      setFormData({ name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
+      fetchMembers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const getProgressColor = (percent: number) => {
     if (percent >= 100) return 'success';
@@ -130,8 +161,8 @@ export default function KPIsPage() {
   const filteredMembers = (filterMemberId 
     ? members.filter(m => m.id === filterMemberId) 
     : members).filter(member => member.kpis?.some(k => k.month === filterMonth && k.year === filterYear));
+  
   if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
-
   if (loading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   const thaiMonths = [
@@ -146,9 +177,25 @@ export default function KPIsPage() {
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>เป้าหมาย KPI</h1>
         </div>
         {isAdmin && (
-          <button className="btn btn-primary" onClick={openAddModal}>
-            <HiPlus /> ตั้งเป้าหมาย
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            className={`btn ${isAdminMode ? 'btn-secondary' : 'btn-outline'}`} 
+            onClick={handleAdminToggle}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: isAdminMode ? '#e2e8f0' : 'transparent', border: '1px solid #e2e8f0' }}
+          >
+            {isAdminMode ? 'ปิดโหมด Admin' : 'โหมด Admin'}
           </button>
+          {isAdminMode && (
+            <button className="btn btn-primary" onClick={() => {
+              setIsEditing(false);
+              setEditId(null);
+              setFormData({ name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
+              setIsModalOpen(true);
+            }}>
+              <HiPlus /> ตั้งเป้าหมาย
+            </button>
+          )}
+        </div>
         )}
       </div>
 
@@ -283,42 +330,32 @@ export default function KPIsPage() {
                     )}
                     {monthKpis.length > 0 ? (
                       monthKpis.map(kpi => {
-                        const target = Number(kpi.target) || 1;
-                        
-                        // Auto-calculate from system tasks/contents
                         const linkedTasksDone = member.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
                         const linkedContentsDone = member.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
                         const autoCurrent = linkedTasksDone + linkedContentsDone;
-                        
-                        // Use whichever is higher: manually entered value or automatically counted value
                         const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
-                        
                         const percent = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / kpi.target) * 100, 100);
                         const color = getProgressColor(percent);
                     
                     return (
                       <div key={kpi.id} className="kpi-item">
-                        <div className="kpi-meta">
-                          <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            {kpi.name}
-                            {isAdmin && (
-                              <button onClick={() => openEditModal(kpi)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                                <HiPencilSquare size={14} />
-                              </button>
-                            )}
-                          </span>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            {autoCurrent > 0 && autoCurrent > Number(kpi.current) ? (
-                              <span style={{ fontSize: '0.75rem', color: '#10b981', marginRight: '0.25rem' }}>(นับออโต้)</span>
-                            ) : null}
-                            {displayCurrent} / {kpi.target} {kpi.unit}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <div style={{ flex: 1 }}>
-                            <ProgressBar value={percent} color={color} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                          <div className="kpi-meta" style={{ marginBottom: 0, width: '100%' }}>
+                            <span style={{ fontWeight: 500 }}>{kpi.name}</span>
+                            <span>{displayCurrent} / {kpi.target} {kpi.unit}</span>
                           </div>
+                          {isAdminMode && (
+                            <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, marginLeft: '1rem' }}>
+                              <button onClick={() => handleEdit(kpi, member.id)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.2rem' }}>
+                                <HiPencilSquare size={16} />
+                              </button>
+                              <button onClick={() => handleDelete(kpi.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem' }}>
+                                <HiOutlineTrash size={16} />
+                              </button>
+                            </div>
+                          )}
                         </div>
+                        <ProgressBar value={percent} color={color} />
                       </div>
                     );
                   })
@@ -337,7 +374,7 @@ export default function KPIsPage() {
       )}
 
       {/* Add/Edit KPI Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "แก้ไขเป้าหมาย KPI" : "ตั้งเป้าหมาย KPI"}>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">ชื่อ KPI *</label>
