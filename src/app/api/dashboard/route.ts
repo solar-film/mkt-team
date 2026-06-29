@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const ideaWhere: any = { category: { in: ['task', 'content'] } };
+    const ideaWhere: any = {};
     if (memberId && memberId !== 'all') {
       ideaWhere.memberId = { contains: memberId };
     }
@@ -74,8 +74,8 @@ export async function GET(request: NextRequest) {
       if (assignees.length === 0) return; // Unassigned ideas don't show on board
       
       const mapIdeaStatus = (s: string) => {
-        if (!s || s === 'รอดำเนินการ') return 'todo';
-        if (s === 'เสร็จแล้ว') return 'done';
+        if (!s || s === 'รอดำเนินการ' || s === 'pending') return 'todo';
+        if (s === 'เสร็จแล้ว' || s === 'done' || s === 'approved') return 'done';
         return 'in_progress';
       };
 
@@ -84,15 +84,15 @@ export async function GET(request: NextRequest) {
       const mem = members.find(m => m.id === assignees[0]);
       const memberObj = isMultiple ? null : (mem ? { id: mem.id, name: mem.name } : null);
 
-      if (idea.category === 'task') {
-        finalTasks.push({
+      if (idea.category === 'content') {
+        finalContents.push({
           id: `idea_${idea.id}`,
           title: `💡 ${idea.title}`,
           description: idea.description,
+          type: 'Idea',
+          platform: idea.platform || 'General',
           status: boardStatus,
-          priority: idea.priority,
-          startDate: null,
-          deadline: idea.deadline,
+          publishDate: idea.deadline,
           company: idea.company || 'GFS',
           link: null,
           kpiId: idea.kpiId,
@@ -102,15 +102,16 @@ export async function GET(request: NextRequest) {
           updatedAt: idea.updatedAt,
           member: memberObj
         });
-      } else if (idea.category === 'content') {
-        finalContents.push({
+      } else {
+        // category 'task' or 'idea' goes to finalTasks
+        finalTasks.push({
           id: `idea_${idea.id}`,
           title: `💡 ${idea.title}`,
           description: idea.description,
-          type: 'Idea',
-          platform: idea.platform || 'General',
           status: boardStatus,
-          publishDate: idea.deadline,
+          priority: idea.priority,
+          startDate: null,
+          deadline: idea.deadline,
           company: idea.company || 'GFS',
           link: null,
           kpiId: idea.kpiId,
