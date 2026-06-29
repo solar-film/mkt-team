@@ -133,6 +133,7 @@ export default function KPIsPage() {
   const handleEdit = (kpi: KPI, memberId: string) => {
     setFormData({
       name: kpi.name,
+      description: "",
       target: kpi.target.toString(),
       current: kpi.current.toString(),
       unit: kpi.unit,
@@ -226,7 +227,7 @@ export default function KPIsPage() {
             <button className="btn btn-primary" onClick={() => {
               setIsEditing(false);
               setEditId(null);
-              setFormData({ name: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
+              setFormData({ name: '', description: '', target: '', current: '0', unit: '', month: (currentDate.getMonth() + 1).toString(), year: currentDate.getFullYear().toString(), memberId: '' });
               setIsModalOpen(true);
             }}>
               <HiPlus /> ตั้งเป้าหมาย
