@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { HiPlus, HiBriefcase, HiCheckCircle, HiDocumentText, HiOutlineTrash, HiPencilSquare, HiLockClosed } from 'react-icons/hi2';
+import { HiPlus, HiBriefcase, HiCheckCircle, HiDocumentText, HiOutlineTrash, HiPencilSquare, HiLockClosed, HiCog } from 'react-icons/hi2';
+import Link from 'next/link';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -151,7 +152,12 @@ export default function TeamPage() {
     <div>
       <div className="page-header">
         <div className="page-header-content">
-          <h1>ทีมงาน</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ทีมงาน
+            <Link href="/admin" style={{ color: 'var(--color-text-secondary)', display: 'inline-flex', opacity: 0.5, transition: 'opacity 0.2s' }} title="Admin Panel">
+              <HiCog size={24} />
+            </Link>
+          </h1>
           <p>สมาชิกในทีมการตลาดและคอนเท้น</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
