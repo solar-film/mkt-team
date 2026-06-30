@@ -79,10 +79,10 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
     
-    // Auto-refresh data every 2 minutes (120,000 ms)
+    // Auto-refresh data every 5 minutes (300,000 ms) to save Vercel bandwidth
     const interval = setInterval(() => {
       fetchData();
-    }, 120000);
+    }, 300000);
     
     return () => clearInterval(interval);
   }, []);
