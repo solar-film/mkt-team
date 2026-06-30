@@ -5,15 +5,27 @@ const DICT_TITLE = '__SYSTEM_KPI_DICTIONARY__'
 
 export async function GET() {
   try {
+    const fs = require('fs')
+    const path = require('path')
+    const dictPath = path.join(process.cwd(), 'new_dict.json')
+    
+    // Check if new_dict.json exists, and if so, use it to override the database
+    if (fs.existsSync(dictPath)) {
+      const newDictString = fs.readFileSync(dictPath, 'utf8')
+      const dictionary = JSON.parse(newDictString)
+      return NextResponse.json(dictionary)
+    }
+
+    // Fallback if file doesn't exist for some reason
     const note = await prisma.ideaNote.findFirst({
       where: { title: DICT_TITLE }
     })
     
     const dictionary = note?.description ? JSON.parse(note.description) : [
-      { id: '1', name: 'ยอดผู้ติดตาม (Followers)', description: 'เป้าหมายการเพิ่มจำนวนผู้ติดตามใหม่ในช่องทางโซเชียลมีเดียต่างๆ เช่น Facebook, TikTok' },
-      { id: '2', name: 'บทความที่เขียน (Articles)', description: 'จำนวนคอนเทนต์บทความหรือบล็อกที่เขียนและเผยแพร่สำเร็จในแต่ละเดือน' },
-      { id: '3', name: 'คลิปวิดีโอ (Videos)', description: 'จำนวนคลิปวิดีโอสั้นหรือยาวที่ผลิตและเผยแพร่สำเร็จ (รวมการตัดต่อและถ่ายทำ)' },
-      { id: '4', name: 'งานออกแบบ (Design)', description: 'จำนวนชิ้นงานกราฟิก ภาพประกอบ หรือสื่อสิ่งพิมพ์ที่ออกแบบเสร็จสมบูรณ์' }
+      { id: '1', name: 'ผู้ติดตาม (Followers)', description: 'เพิ่มผู้ติดตามในช่องทางต่างๆ เพื่อสร้างฐานคนดูที่มั่นคง (เน้นที่ Facebook, TikTok' },
+      { id: '2', name: 'บทความ (Articles)', description: 'ทำคอนเทนต์ให้ความรู้เรื่องฟิล์มกรองแสง เพื่อสร้างความน่าเชื่อถือในตัวแบรนด์' },
+      { id: '3', name: 'คลิปวิดีโอ (Videos)', description: 'ทำคลิปวิดีโอสั้นหรือยาว เพื่อสร้างการรับรู้แบรนด์ (ไม่เน้นยอดขายโดยตรง)' },
+      { id: '4', name: 'งานออกแบบ (Design)', description: 'ทำชิ้นงานกราฟิก ภาพประกอบ ปกคลิป หรือแบนเนอร์ เพื่อสนับสนุนงานสื่อต่างๆ' }
     ];
     
     return NextResponse.json(dictionary)
