@@ -369,14 +369,18 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       const matchMember = memberName.toLowerCase().includes(q);
       if (!matchTitle && !matchDesc && !matchMember) return false;
     }
+    if (item.status === 'todo' || item.status === 'in_progress') {
+      return true;
+    }
+
     if (filterExactDate) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
-      if (!dateStr) return item.status !== 'done';
+      if (!dateStr) return false;
       const d = new Date(dateStr);
       if (d.getDate() !== filterExactDate.getDate() || d.getMonth() !== filterExactDate.getMonth() || d.getFullYear() !== filterExactDate.getFullYear()) return false;
     } else if (filterMonthYear) {
       const dateStr = item.deadline || item.publishDate || item.startDate;
-      if (!dateStr) return item.status !== 'done';
+      if (!dateStr) return false;
       const d = new Date(dateStr);
       if (d.getMonth() !== filterMonthYear.getMonth() || d.getFullYear() !== filterMonthYear.getFullYear()) return false;
     }
