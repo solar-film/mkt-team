@@ -356,15 +356,37 @@ export default function IdeasPage() {
       {/* Mobile FAB */}
       {currentUserId !== 'GUEST' && (
         <button 
-          className="mobile-fab"
           onClick={() => setIsModalOpen(true)}
           aria-label="เพิ่มโน๊ตใหม่"
+          className="mobile-only-fab"
+          style={{
+            position: 'fixed',
+            bottom: '90px',
+            right: '20px',
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            backgroundColor: '#4f46e5',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.4)',
+            zIndex: 9999,
+            border: 'none',
+            cursor: 'pointer'
+          }}
         >
           <HiPlus size={28} />
         </button>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
+        @media (min-width: 769px) {
+          .mobile-only-fab {
+            display: none !important;
+          }
+        }
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(20px); }
           to { opacity: 1; transform: translateX(0); }
