@@ -353,6 +353,17 @@ export default function IdeasPage() {
         </form>
       </Modal>
 
+      {/* Mobile FAB */}
+      {currentUserId !== 'GUEST' && (
+        <button 
+          className="mobile-fab"
+          onClick={() => setIsModalOpen(true)}
+          aria-label="เพิ่มโน๊ตใหม่"
+        >
+          <HiPlus size={28} />
+        </button>
+      )}
+
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(20px); }
