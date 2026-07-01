@@ -1219,7 +1219,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .mobile-fab {
   display: none;
   position: fixed;
-  bottom: 80px; /* Above mobile bottom nav */
+  bottom: 90px; /* Adjusted to be higher above mobile bottom nav */
   right: 20px;
   width: 56px;
   height: 56px;
@@ -1229,7 +1229,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  z-index: 90;
+  z-index: 999;
   border: none;
   cursor: pointer;
   transition: transform 0.2s, background-color 0.2s;
@@ -1242,7 +1242,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 
 @media (max-width: 768px) {
   .mobile-fab {
-    display: flex;
+    display: flex !important;
   }
 }
 
