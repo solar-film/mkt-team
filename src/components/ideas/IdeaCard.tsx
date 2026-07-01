@@ -1,5 +1,5 @@
 import React from 'react';
-import { HiStar, HiChatBubbleLeftEllipsis, HiCalendar } from 'react-icons/hi2';
+import { HiStar, HiCheckCircle, HiChatBubbleLeftEllipsis, HiCalendar } from 'react-icons/hi2';
 
 interface Member {
   id: string;
@@ -90,9 +90,9 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
         <div 
           onClick={(e) => { e.stopPropagation(); onToggleStar?.(idea.id); }}
           style={{ cursor: onToggleStar ? 'pointer' : 'default' }}
-          title={isStarred ? "เลิกติดดาว" : "ติดดาว"}
+          title={isStarred ? "ยกเลิกสถานะเสร็จสิ้น" : "ทำเครื่องหมายว่าเสร็จแล้ว"}
         >
-          <HiStar color={isStarred ? '#f59e0b' : '#cbd5e1'} size={20} />
+          <HiCheckCircle color={isStarred ? '#22c55e' : '#cbd5e1'} size={24} />
         </div>
       </div>
 
