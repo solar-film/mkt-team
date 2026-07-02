@@ -113,36 +113,81 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#f8fafc',
-      padding: '2rem'
-    }}>
-      <div style={{
-        maxWidth: '600px',
-        width: '100%',
-        backgroundColor: 'white',
-        borderRadius: '24px',
-        padding: '3rem',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        textAlign: 'center'
-      }}>
+    <div className="login-container">
+      <style dangerouslySetInnerHTML={{__html: `
+        .login-container {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: #f8fafc;
+          padding: 2rem;
+        }
+        .login-box {
+          max-width: 600px;
+          width: 100%;
+          background-color: white;
+          border-radius: 24px;
+          padding: 3rem;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          text-align: center;
+        }
+        .login-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 1.5rem;
+          justify-items: center;
+        }
+        .profile-avatar {
+          width: 90px;
+          height: 90px;
+          border-radius: 50%;
+          background-color: #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          position: relative;
+          border: 3px solid white;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 480px) {
+          .login-container {
+            padding: 1rem;
+          }
+          .login-box {
+            padding: 2rem 1rem;
+          }
+          .login-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+          }
+          .profile-avatar {
+            width: 75px;
+            height: 75px;
+          }
+          .profile-card {
+            padding: 0.5rem;
+            gap: 0.5rem;
+          }
+          .profile-card h3 {
+            font-size: 0.9rem !important;
+          }
+          .profile-card p {
+            font-size: 0.75rem !important;
+          }
+        }
+      `}} />
+      
+      <div className="login-box">
         <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>ยินดีต้อนรับสู่ระบบ</h1>
         <p style={{ color: '#64748b', marginBottom: '2.5rem' }}>กรุณาเลือกโปรไฟล์ของคุณเพื่อเข้าใช้งาน</p>
 
         {loading ? (
           <div className="loading-container"><div className="loading-spinner"></div></div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-            gap: '1.5rem',
-            justifyItems: 'center'
-          }}>
+          <div className="login-grid">
             {members.map(member => (
               <div
                 key={member.id}
@@ -160,19 +205,7 @@ export default function LoginPage() {
                 className="profile-card"
                 onClick={() => login(member.id)}
               >
-                <div style={{
-                  width: '90px',
-                  height: '90px',
-                  borderRadius: '50%',
-                  backgroundColor: '#f1f5f9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  border: '3px solid white',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-                }}>
+                <div className="profile-avatar">
                   {member.avatar ? (
                     <img src={member.avatar} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
