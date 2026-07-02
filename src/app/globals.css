@@ -1110,11 +1110,13 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .desktop-only { display: none !important; }
 .desktop-only-flex { display: none !important; }
 .mobile-only { display: block !important; }
+.mobile-only-fab { display: flex !important; }
 
 @media (min-width: 768px) {
   .desktop-only { display: block !important; }
   .desktop-only-flex { display: flex !important; }
   .mobile-only { display: none !important; }
+  .mobile-only-fab { display: none !important; }
 }
 .react-datepicker-wrapper { width: 100%; }
 
