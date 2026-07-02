@@ -217,14 +217,12 @@ export default function IdeasPage() {
               <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
             ))}
           </select>
-          {currentUserId !== 'GUEST' && (
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
-            >
-              <HiPlus size={18} /> เพิ่มโน๊ตใหม่
-            </button>
-          )}
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
+          >
+            <HiPlus size={18} /> เพิ่มโน๊ตใหม่
+          </button>
         </div>
       </div>
 
@@ -354,32 +352,30 @@ export default function IdeasPage() {
       </Modal>
 
       {/* Mobile FAB */}
-      {currentUserId !== 'GUEST' && (
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          aria-label="เพิ่มโน๊ตใหม่"
-          className="mobile-only-fab"
-          style={{
-            position: 'fixed',
-            bottom: '90px',
-            right: '20px',
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
-            backgroundColor: '#4f46e5',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.4)',
-            zIndex: 9999,
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          <HiPlus size={28} />
-        </button>
-      )}
+      <button 
+        onClick={() => setIsModalOpen(true)}
+        aria-label="เพิ่มโน๊ตใหม่"
+        className="mobile-only-fab"
+        style={{
+          position: 'fixed',
+          bottom: '90px',
+          right: '20px',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          backgroundColor: '#4f46e5',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.4)',
+          zIndex: 9999,
+          border: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        <HiPlus size={28} />
+      </button>
 
       <style dangerouslySetInnerHTML={{__html: `
         @media (min-width: 769px) {
