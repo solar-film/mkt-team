@@ -42,6 +42,7 @@ const navLinks = [
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
   { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
+  { path: 'https://solar-film.github.io/feedback/admin/', label: 'Feedback', icon: <HiMegaphone /> },
 ];
 
 export default function Sidebar() {
@@ -117,6 +118,7 @@ export default function Sidebar() {
             key={link.path}
             href={link.path}
             className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
+            {...(link.path.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
           >
             {link.icon}
             <span>{link.label}</span>
@@ -160,6 +162,7 @@ export default function Sidebar() {
                       key={link.path}
                       href={link.path}
                       onClick={() => setShowMobileMore(false)}
+                      {...(link.path.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.75rem',
                         padding: '0.75rem 1rem', borderRadius: '10px',

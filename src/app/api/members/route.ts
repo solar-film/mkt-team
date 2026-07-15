@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const order = ['OIL', 'TEW', 'PLENG', 'NON']
+    const order = ['OIL', 'TAW', 'PLENG', 'NON']
     members.sort((a, b) => {
       const indexA = order.findIndex(name => a.name.toUpperCase().includes(name));
       const indexB = order.findIndex(name => b.name.toUpperCase().includes(name));

@@ -26,7 +26,7 @@ export default function LoginPage() {
       .then(data => {
         if (Array.isArray(data)) {
           const activeMembers = data.filter((m: Member) => m.status !== 'inactive');
-          const order = ['OIL', 'TEW', 'PLENG', 'NON'];
+          const order = ['OIL', 'TAW', 'PLENG', 'NON'];
           activeMembers.sort((a, b) => {
             const indexA = order.findIndex(name => a.name.toUpperCase().includes(name));
             const indexB = order.findIndex(name => b.name.toUpperCase().includes(name));

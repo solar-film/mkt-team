@@ -209,7 +209,7 @@ export default function DashboardPage() {
 
   // 3. Team Performance
   const teamPerformance = members
-    .filter(m => ['TEW', 'PLENG', 'NON'].includes(m.name))
+    .filter(m => ['TAW', 'PLENG', 'NON'].includes(m.name))
     .map(m => {
       const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
       const mCompleted = mItems.filter(t => t.status === 'done').length;
@@ -290,7 +290,7 @@ export default function DashboardPage() {
             style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', fontWeight: 600 }}
           >
             <option value="all">ดูผลรวมของทีม</option>
-            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TEW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => (
+            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TAW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => (
               <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
             ))}
           </select>
