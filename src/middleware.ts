@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
   }
 
   // ดึงค่าประเทศจาก Header ที่ Vercel ส่งมาให้
-  const country = request.geo?.country || request.headers.get('x-vercel-ip-country');
+  const country = (request as any).geo?.country || request.headers.get('x-vercel-ip-country');
 
   // ถ้ามีค่าประเทศ (ไม่ได้รันแบบ Local) และไม่ใช่ประเทศไทย (TH) ให้บล็อกทันที
   if (country && country !== 'TH') {
