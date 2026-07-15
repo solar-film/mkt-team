@@ -113,17 +113,25 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {visibleLinks.map((link, index) => (
-          <Link
-            key={link.path}
-            href={link.path}
-            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
-            {...(link.path.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-          >
-            {link.icon}
-            <span>{link.label}</span>
-          </Link>
-        ))}
+        {visibleLinks.map((link, index) => {
+          const isExternal = link.path.startsWith('http');
+          const className = `sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`;
+          
+          if (isExternal) {
+            return (
+              <a key={link.path} href={link.path} className={className} target="_blank" rel="noopener noreferrer">
+                {link.icon}
+                <span>{link.label}</span>
+              </a>
+            );
+          }
+          return (
+            <Link key={link.path} href={link.path} className={className}>
+              {link.icon}
+              <span>{link.label}</span>
+            </Link>
+          );
+        })}
         {/* Mobile More Button */}
         {visibleLinks.length > 6 && (
           <div className="mobile-only" style={{ position: 'relative' }}>
@@ -157,25 +165,32 @@ export default function Sidebar() {
                   zIndex: 100,
                   border: '1px solid #e2e8f0'
                 }}>
-                  {visibleLinks.slice(6).map((link) => (
-                    <Link
-                      key={link.path}
-                      href={link.path}
-                      onClick={() => setShowMobileMore(false)}
-                      {...(link.path.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        padding: '0.75rem 1rem', borderRadius: '10px',
-                        textDecoration: 'none', color: pathname === link.path ? '#4f46e5' : '#475569',
-                        backgroundColor: pathname === link.path ? '#eef2ff' : 'transparent',
-                        fontWeight: pathname === link.path ? 600 : 500,
-                        fontSize: '0.95rem'
-                      }}
-                    >
-                      {link.icon}
-                      {link.label}
-                    </Link>
-                  ))}
+                  {visibleLinks.slice(6).map((link) => {
+                    const isExternal = link.path.startsWith('http');
+                    const linkStyle = {
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.75rem 1rem', borderRadius: '10px',
+                      textDecoration: 'none', color: pathname === link.path ? '#4f46e5' : '#475569',
+                      backgroundColor: pathname === link.path ? '#eef2ff' : 'transparent',
+                      fontWeight: pathname === link.path ? 600 : 500,
+                      fontSize: '0.95rem'
+                    };
+                    
+                    if (isExternal) {
+                      return (
+                        <a key={link.path} href={link.path} onClick={() => setShowMobileMore(false)} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                          {link.icon}
+                          {link.label}
+                        </a>
+                      );
+                    }
+                    return (
+                      <Link key={link.path} href={link.path} onClick={() => setShowMobileMore(false)} style={linkStyle}>
+                        {link.icon}
+                        {link.label}
+                      </Link>
+                    );
+                  })}
                   <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '0.25rem 0' }} />
                   <button 
                     onClick={() => { setShowMobileMore(false); handleLogout(); }}
