@@ -79,10 +79,10 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
     
-    // Auto-refresh data every 5 minutes (300,000 ms) to save Vercel bandwidth
+    // Auto-refresh data every 2 minutes (120,000 ms)
     const interval = setInterval(() => {
       fetchData();
-    }, 300000);
+    }, 120000);
     
     return () => clearInterval(interval);
   }, []);
@@ -209,7 +209,7 @@ export default function DashboardPage() {
 
   // 3. Team Performance
   const teamPerformance = members
-    .filter(m => ['TAW', 'PLENG', 'NON'].includes(m.name))
+    .filter(m => ['TEW', 'PLENG', 'NON'].includes(m.name))
     .map(m => {
       const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
       const mCompleted = mItems.filter(t => t.status === 'done').length;
@@ -290,7 +290,7 @@ export default function DashboardPage() {
             style={{ padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', fontWeight: 600 }}
           >
             <option value="all">ดูผลรวมของทีม</option>
-            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TAW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => (
+            {members.filter(m => m.status !== 'inactive' && m.role !== 'Admin').sort((a, b) => { const order = ['OIL', 'TEW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => (
               <option key={m.id} value={m.id}>{m.name} {m.id === currentUserId ? '(ฉัน)' : ''}</option>
             ))}
           </select>
@@ -298,7 +298,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Row: 4 Cards */}
-      <div className="dashboard-stats-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
         
         {/* Card 1: Pending Tasks */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
