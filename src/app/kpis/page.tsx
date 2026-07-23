@@ -342,9 +342,7 @@ export default function KPIsPage() {
                 const car = getStats('CAR');
                 const hasStats = gfs.t > 0 || gfs.c > 0 || mhl.t > 0 || mhl.c > 0 || car.t > 0 || car.c > 0;
 
-                const monthKpis = member.kpis.filter(k => k.month === filterMonth && k.year === filterYear).sort((a, b) => {
-                  if (a.name === 'งานทั่วไป') return -1;
-                  if (b.name === 'งานทั่วไป') return 1;
+                const monthKpis = member.kpis.filter(k => k.month === filterMonth && k.year === filterYear && k.name !== 'งานทั่วไป').sort((a, b) => {
                   return a.name.localeCompare(b.name);
                 });
                 return (

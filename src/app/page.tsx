@@ -126,7 +126,7 @@ export default function DashboardPage() {
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
 
-  const currentMonthKpis = filteredMembers.flatMap(m => m.kpis).filter(k => k.month === currentMonth && k.year === currentYear);
+  const currentMonthKpis = filteredMembers.flatMap(m => m.kpis).filter(k => k.month === currentMonth && k.year === currentYear && k.name !== 'งานทั่วไป');
   const avgKPI = currentMonthKpis.length > 0 
     ? currentMonthKpis.reduce((sum, kpi) => {
         const target = Number(kpi.target) || 1;
@@ -215,7 +215,7 @@ export default function DashboardPage() {
       const mCompleted = mItems.filter(t => t.status === 'done').length;
       const mTotal = mItems.length;
       
-      const mKpis = m.kpis.filter(k => k.month === currentMonth && k.year === currentYear);
+      const mKpis = m.kpis.filter(k => k.month === currentMonth && k.year === currentYear && k.name !== 'งานทั่วไป');
       let kpiPercent = 0;
       if (mKpis.length > 0) {
         const totalPercent = mKpis.reduce((sum, kpi) => {
