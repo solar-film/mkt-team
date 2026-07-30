@@ -24,7 +24,7 @@ export default function IdeasPage() {
     }
   }, []);
 
-  const [filterStatus, setFilterStatus] = useState('ทั้งหมด');
+  const [filterStatus, setFilterStatus] = useState('ยังไม่เสร็จ');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modal state
@@ -92,20 +92,25 @@ export default function IdeasPage() {
     const matchesSearch = idea.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (idea.description && idea.description.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // Check filterStatus ('ทั้งหมด', 'วันนี้', 'รอดำเนินการ', 'รอตรวจ', 'เสร็จแล้ว')
+    // Check filterStatus ('ทั้งหมด', 'รอดำเนินการ', 'กำลังดำเนินการ', 'เสร็จสิ้น')
     let matchesStatus = true;
-    if (filterStatus !== 'ทั้งหมด') {
-      if (filterStatus === 'วันนี้') {
-        const today = new Date().toDateString();
-        matchesStatus = new Date(idea.createdAt).toDateString() === today;
-      } else {
-        matchesStatus = idea.status === filterStatus;
-      }
+    
+    // Normalize status for filtering
+    const s = idea.status || '';
+    let displayStatus = s;
+    if (!s || s === 'pending' || s === 'todo') displayStatus = 'รอดำเนินการ';
+    else if (s === 'in_progress') displayStatus = 'กำลังดำเนินการ';
+    else if (s === 'review') displayStatus = 'รอตรวจ';
+    else if (s === 'done' || s === 'completed' || s === 'เสร็จแล้ว' || s === 'เสร็จสิ้น') displayStatus = 'เสร็จสิ้น';
+
+    if (filterStatus === 'ทั้งหมด') {
+      matchesStatus = true;
+    } else if (filterStatus === 'ยังไม่เสร็จ') {
+      matchesStatus = displayStatus !== 'เสร็จสิ้น';
+    } else {
+      matchesStatus = displayStatus === filterStatus;
     }
     
-    // Because this is for "each person sees their own tasks by default" but "can view others",
-    // wait! We didn't add a filter for "My Tasks" vs "All Tasks". The screenshot has a dropdown for "ผู้รับผิดชอบ" (Owner).
-    // The requirement says "เข้าหน้ามาเห็นแค่งานตัวเองเป็นค่าเริ่มต้น แต่เปิดดูคนอื่นได้"
     return matchesSearch && matchesStatus;
   });
 
@@ -184,7 +189,7 @@ export default function IdeasPage() {
       {/* Filter Bar */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem', flex: 1, minWidth: '100%', WebkitOverflowScrolling: 'touch' }} className="hide-scrollbar">
-          {['ทั้งหมด', 'วันนี้', 'รอดำเนินการ', 'รอตรวจ', 'เสร็จแล้ว'].map(status => (
+          {['ยังไม่เสร็จ', 'รอดำเนินการ', 'กำลังดำเนินการ', 'เสร็จสิ้น', 'ทั้งหมด'].map(status => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}

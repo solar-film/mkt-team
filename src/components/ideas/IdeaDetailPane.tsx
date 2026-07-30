@@ -258,13 +258,14 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     if (s === 'pending' || s === 'todo') return 'รอดำเนินการ';
     if (s === 'in_progress') return 'กำลังดำเนินการ';
     if (s === 'review') return 'รอตรวจ';
-    if (s === 'done' || s === 'completed') return 'เสร็จแล้ว';
+    if (s === 'done' || s === 'completed') return 'เสร็จสิ้น';
+    if (s === 'เสร็จแล้ว') return 'เสร็จสิ้น';
     return s;
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e' };
+      case 'เสร็จสิ้น': return { bg: '#dcfce7', text: '#22c55e' };
       case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316' };
       case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5' };
       case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b' };
@@ -420,11 +421,11 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
               <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
               <option value="รอตรวจ">รอตรวจ</option>
               <option 
-                value="เสร็จแล้ว" 
+                value="เสร็จสิ้น" 
                 disabled={(isEditing ? editForm.category : idea.category) === 'content'}
-                hidden={(isEditing ? editForm.category : idea.category) === 'content' && displayStatus !== 'เสร็จแล้ว'}
+                hidden={(isEditing ? editForm.category : idea.category) === 'content' && displayStatus !== 'เสร็จสิ้น'}
               >
-                เสร็จแล้ว
+                เสร็จสิ้น
               </option>
             </select>
           </div>

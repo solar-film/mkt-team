@@ -36,13 +36,13 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
     if (s === 'pending' || s === 'todo') return 'รอดำเนินการ';
     if (s === 'in_progress') return 'กำลังดำเนินการ';
     if (s === 'review') return 'รอตรวจ';
-    if (s === 'done' || s === 'completed') return 'เสร็จแล้ว';
+    if (s === 'done' || s === 'completed') return 'เสร็จสิ้น';
     return s;
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'เสร็จแล้ว': return { bg: '#dcfce7', text: '#22c55e', cardBg: '#f0fdf4' };
+      case 'เสร็จสิ้น': return { bg: '#dcfce7', text: '#22c55e', cardBg: '#f0fdf4' };
       case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316', cardBg: '#fff7ed' };
       case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5', cardBg: '#f5f7ff' };
       case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b', cardBg: '#ffffff' };
