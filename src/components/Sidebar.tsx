@@ -40,10 +40,10 @@ const navLinks = [
   { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
-  { path: 'https://solar-film.github.io/BB/', label: 'BB Meeting Weekly', icon: <HiDocumentText /> },
   { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
   { path: 'https://solar-film.github.io/feedback/admin/', label: 'Feedback', icon: <HiMegaphone /> },
+  { path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiDocumentText /> },
 ];
 
 export default function Sidebar() {
