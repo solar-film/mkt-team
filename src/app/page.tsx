@@ -209,7 +209,7 @@ export default function DashboardPage() {
 
   // 3. Team Performance
   const teamPerformance = members
-    .filter(m => ['TEW', 'PLENG', 'NON'].includes(m.name))
+    .filter(m => m.name.toLowerCase() !== 'oil')
     .map(m => {
       const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
       const mCompleted = mItems.filter(t => t.status === 'done').length;

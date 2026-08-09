@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { getCompanyColor, getMemberColor } from '@/lib/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchDashboardCached } from '@/lib/fetchDashboard';
+import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -846,20 +847,28 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">ผู้รับผิดชอบ *</label>
-                <select className="form-select" required value={taskForm.memberId} onChange={e => setTaskForm({...taskForm, memberId: e.target.value, kpiId: ''})}>
-                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                  <option value="all">👥 ทุกคน</option>
-                  {members.filter(m => m.status !== 'inactive').sort((a, b) => { const order = ['OIL', 'TAW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกผู้รับผิดชอบ"
+                  value={taskForm.memberId}
+                  onChange={(val) => setTaskForm({...taskForm, memberId: val, kpiId: ''})}
+                  options={[
+                    { value: 'all', label: '👥 ทุกคน' },
+                    ...members.filter(m => m.status !== 'inactive').sort((a, b) => { const order = ['OIL', 'TAW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => ({ value: m.id, label: m.name }))
+                  ]}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
-                <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
-                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
-                  <option value="GFS">GFS</option>
-                  <option value="MHL">MHL</option>
-                  <option value="CAR">CAR</option>
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกบริษัท/แบรนด์"
+                  value={taskForm.company}
+                  onChange={(val) => setTaskForm({...taskForm, company: val})}
+                  options={[
+                    { value: 'GFS', label: 'GFS' },
+                    { value: 'MHL', label: 'MHL' },
+                    { value: 'CAR', label: 'CAR' }
+                  ]}
+                />
               </div>
             </div>
 
@@ -949,19 +958,27 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">ผู้รับผิดชอบ *</label>
-                <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
-                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                  {members.filter(m => m.status !== 'inactive').sort((a, b) => { const order = ['OIL', 'TAW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกผู้รับผิดชอบ"
+                  value={contentForm.memberId}
+                  onChange={(val) => setContentForm({...contentForm, memberId: val, kpiId: ''})}
+                  options={[
+                    ...members.filter(m => m.status !== 'inactive').sort((a, b) => { const order = ['OIL', 'TAW', 'PLENG', 'NON']; const idxA = order.indexOf(a.name); const idxB = order.indexOf(b.name); if (idxA === -1 && idxB === -1) return a.name.localeCompare(b.name); if (idxA === -1) return 1; if (idxB === -1) return -1; return idxA - idxB; }).map(m => ({ value: m.id, label: m.name }))
+                  ]}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
-                <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
-                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
-                  <option value="GFS">GFS</option>
-                  <option value="MHL">MHL</option>
-                  <option value="CAR">CAR</option>
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกบริษัท/แบรนด์"
+                  value={contentForm.company}
+                  onChange={(val) => setContentForm({...contentForm, company: val})}
+                  options={[
+                    { value: 'GFS', label: 'GFS' },
+                    { value: 'MHL', label: 'MHL' },
+                    { value: 'CAR', label: 'CAR' }
+                  ]}
+                />
               </div>
             </div>
             <div className="form-group" style={{ marginTop: '1rem' }}>
@@ -983,12 +1000,12 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             </div>
             {contentForm.memberId ? (
               contentForm.publishDate ? (
-                kpis.filter(k => k.memberId === contentForm.memberId && k.month === new Date(contentForm.publishDate).getMonth() + 1 && k.year === new Date(contentForm.publishDate).getFullYear() && k.name !== 'งานทั่วไป' && isKpiMatchPlatform(k.name, contentForm.platform)).length > 0 ? (
+                kpis.filter(k => contentForm.memberId.includes(k.memberId) && k.month === new Date(contentForm.publishDate).getMonth() + 1 && k.year === new Date(contentForm.publishDate).getFullYear() && k.name !== 'งานทั่วไป' && isKpiMatchPlatform(k.name, contentForm.platform)).length > 0 ? (
                   <div className="form-group" style={{ backgroundColor: 'var(--color-surface-hover)', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
                     <label className="form-label" style={{ color: 'var(--color-primary)' }}>ผูกกับเป้าหมาย KPI (บังคับ) *</label>
                     <select className="form-select" required value={contentForm.kpiId} onChange={e => setContentForm({...contentForm, kpiId: e.target.value})}>
                       <option value="">-- ไม่เชื่อมโยง --</option>
-                      {kpis.filter(k => k.memberId === contentForm.memberId && k.month === new Date(contentForm.publishDate).getMonth() + 1 && k.year === new Date(contentForm.publishDate).getFullYear() && k.name !== 'งานทั่วไป' && isKpiMatchPlatform(k.name, contentForm.platform)).sort((a, b) => a.name.length - b.name.length).map(k => (
+                      {kpis.filter(k => contentForm.memberId.includes(k.memberId) && k.month === new Date(contentForm.publishDate).getMonth() + 1 && k.year === new Date(contentForm.publishDate).getFullYear() && k.name !== 'งานทั่วไป' && isKpiMatchPlatform(k.name, contentForm.platform)).sort((a, b) => a.name.length - b.name.length).map(k => (
                         <option key={k.id} value={k.id}>{k.name}</option>
                       ))}
                     </select>

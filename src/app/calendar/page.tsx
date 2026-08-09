@@ -9,6 +9,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { getCompanyColor } from '@/lib/colors';
+import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -882,19 +883,28 @@ export default function CalendarPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">ผู้รับผิดชอบ *</label>
-                <select className="form-select" required value={taskForm.memberId} onChange={e => setTaskForm({...taskForm, memberId: e.target.value, kpiId: ''})}>
-                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                  {membersList.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกผู้รับผิดชอบ"
+                  value={taskForm.memberId}
+                  onChange={(val) => setTaskForm({...taskForm, memberId: val, kpiId: ''})}
+                  options={[
+                    { value: 'all', label: '👥 ทุกคน' },
+                    ...membersList.filter(m => m.status !== 'inactive').map(m => ({ value: m.id, label: m.name }))
+                  ]}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
-                <select className="form-select" required value={taskForm.company} onChange={e => setTaskForm({...taskForm, company: e.target.value})}>
-                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
-                  <option value="GFS">GFS</option>
-                  <option value="MHL">MHL</option>
-                  <option value="CAR">CAR</option>
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกบริษัท/แบรนด์"
+                  value={taskForm.company}
+                  onChange={(val) => setTaskForm({...taskForm, company: val})}
+                  options={[
+                    { value: 'GFS', label: 'GFS' },
+                    { value: 'MHL', label: 'MHL' },
+                    { value: 'CAR', label: 'CAR' }
+                  ]}
+                />
               </div>
             </div>
 
@@ -983,19 +993,27 @@ export default function CalendarPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">ผู้รับผิดชอบ *</label>
-                <select className="form-select" required value={contentForm.memberId} onChange={e => setContentForm({...contentForm, memberId: e.target.value, kpiId: ''})}>
-                  <option value="">-- เลือกผู้รับผิดชอบ --</option>
-                  {membersList.filter(m => m.status !== 'inactive').map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกผู้รับผิดชอบ"
+                  value={contentForm.memberId}
+                  onChange={(val) => setContentForm({...contentForm, memberId: val, kpiId: ''})}
+                  options={[
+                    ...membersList.filter(m => m.status !== 'inactive').map(m => ({ value: m.id, label: m.name }))
+                  ]}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">บริษัท/แบรนด์ *</label>
-                <select className="form-select" required value={contentForm.company} onChange={e => setContentForm({...contentForm, company: e.target.value})}>
-                  <option value="">-- เลือกบริษัท/แบรนด์ --</option>
-                  <option value="GFS">GFS</option>
-                  <option value="MHL">MHL</option>
-                  <option value="CAR">CAR</option>
-                </select>
+                <MultiSelectDropdown
+                  placeholder="เลือกบริษัท/แบรนด์"
+                  value={contentForm.company}
+                  onChange={(val) => setContentForm({...contentForm, company: val})}
+                  options={[
+                    { value: 'GFS', label: 'GFS' },
+                    { value: 'MHL', label: 'MHL' },
+                    { value: 'CAR', label: 'CAR' }
+                  ]}
+                />
               </div>
             </div>
 
