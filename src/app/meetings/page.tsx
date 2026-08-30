@@ -142,7 +142,26 @@ export default function MeetingsPage() {
       const membersData = await membersRes.json();
       
       if (Array.isArray(meetingsData)) {
-        setMeetings(meetingsData);
+        // Build a member ID -> name lookup map
+        const memberMap = new Map<string, string>();
+        if (Array.isArray(membersData)) {
+          membersData.forEach((m: any) => {
+            memberMap.set(m.id, m.name);
+          });
+        }
+
+        // Resolve attendee IDs to names
+        const meetingsWithNames = meetingsData.map((m: any) => {
+          const attendeeIds = m.attendees ? m.attendees.split(',').filter(Boolean) : [];
+          const attendeeNames = attendeeIds.map((id: string) => {
+            const trimmedId = id.trim();
+            // If this ID maps to a member, use their name; otherwise keep as-is (external attendee)
+            return memberMap.get(trimmedId) || trimmedId;
+          });
+          return { ...m, attendeeNames };
+        });
+
+        setMeetings(meetingsWithNames);
         const newItems: Record<string, MeetingLinkedItem[]> = {};
         meetingsData.forEach((m: any) => {
           const tasks = (m.tasks || []).map((t: any) => ({ ...t, itemCategory: 'task' }));
@@ -487,17 +506,17 @@ export default function MeetingsPage() {
                           <HiClock style={{ fontSize: '0.8rem' }} /> {formatTime(meeting.time)}
                         </span>
                       )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-                      {/* Attendee names */}
+                      {/* Attendee names - displayed after time */}
                       {meeting.attendeeNames && meeting.attendeeNames.length > 0 && (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                          <span style={{ fontWeight: 500, marginRight: '0.3rem' }}>ผู้เข้าร่วม:</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                          <HiUserGroup style={{ fontSize: '0.85rem' }} />
                           {meeting.attendeeNames.join(', ')}
-                        </div>
+                        </span>
                       )}
-                      {/* Items progress */}
-                      {totalCount > 0 && (
+                    </div>
+                    {/* Items progress */}
+                    {totalCount > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
                         <span style={{
                           fontSize: '0.75rem',
                           color: doneCount === totalCount ? '#10b981' : '#f59e0b',
@@ -512,8 +531,8 @@ export default function MeetingsPage() {
                           {doneCount === totalCount ? <HiCheckCircle /> : <HiClock />}
                           {doneCount}/{totalCount} รายการ
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
