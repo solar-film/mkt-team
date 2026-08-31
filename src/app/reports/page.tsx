@@ -269,7 +269,7 @@ export default function ReportsPage() {
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>วันที่</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ประเภท</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>หัวข้อ</th>
-                <th style={{ padding: '0.75rem', color: '#64748b', textAlign: 'center' }}>ลิงก์</th>
+                <th style={{ padding: '0.75rem', color: '#64748b' }}>ลิงก์</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ผู้รับผิดชอบ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>แพลตฟอร์ม/ความสำคัญ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>สถานะ</th>
@@ -288,10 +288,10 @@ export default function ReportsPage() {
                   <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
                   </td>
-                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                  <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.link && (
-                      <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.35rem', backgroundColor: '#eff6ff', borderRadius: '6px' }} title="เปิดลิงก์">
-                        <HiArrowTopRightOnSquare size={16} />
+                      <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }} title={item.link}>
+                        {item.link}
                       </a>
                     )}
                   </td>
