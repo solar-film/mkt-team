@@ -307,11 +307,13 @@ export default function ReportsPage() {
                   <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
                   </td>
-                  <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '0.75rem', wordBreak: 'break-all' }}>
                     {item.link && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {getPlatformOrPriorityIcon(item.itemType, item.platform, item.priority)}
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.link}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <div style={{ marginTop: '0.15rem', flexShrink: 0 }}>
+                          {getPlatformOrPriorityIcon(item.itemType, item.platform, item.priority)}
+                        </div>
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }} title={item.link}>
                           {item.link}
                         </a>
                       </div>
