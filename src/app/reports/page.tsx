@@ -286,25 +286,25 @@ export default function ReportsPage() {
           <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left' }}>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>วันที่</th>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>ประเภท</th>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>หัวข้อ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '110px' }}>วันที่</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '90px' }}>ประเภท</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '180px' }}>หัวข้อ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ลิงก์</th>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>ผู้รับผิดชอบ</th>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>สถานะ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '120px' }}>ผู้รับผิดชอบ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '100px' }}>สถานะ</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length > 0 ? filteredItems.map((item, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '0.75rem' }}>{item.date ? formatDateTime(item.date) : '-'}</td>
-                  <td style={{ padding: '0.75rem' }}>
+                  <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>{item.date ? formatDateTime(item.date) : '-'}</td>
+                  <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: item.itemType === 'task' ? '#f59e0b' : '#3b82f6' }}>
                       {item.itemType === 'task' ? <HiClipboardDocumentList /> : <HiDocumentText />} 
                       {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                     </span>
                   </td>
-                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
                   </td>
                   <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -317,7 +317,7 @@ export default function ReportsPage() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '0.75rem' }}>{item.memberName}</td>
+                  <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.memberName}</td>
                   <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
                 </tr>
               )) : (
