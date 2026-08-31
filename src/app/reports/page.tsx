@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare } from 'react-icons/hi2';
+import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare, HiFire, HiMinus, HiArrowDown } from 'react-icons/hi2';
+import { FaFacebook, FaInstagram, FaYoutube, FaTiktok, FaMapMarkerAlt, FaLink } from 'react-icons/fa';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
@@ -37,6 +38,25 @@ const formatDateTime = (dateStr: string) => {
   const minutes = d.getMinutes().toString().padStart(2, '0');
   if (hours === '00' && minutes === '00') return datePart;
   return `${datePart} ${hours}:${minutes}`;
+}
+
+const getPlatformOrPriorityIcon = (itemType: string, platform?: string, priority?: string) => {
+  if (itemType === 'content' && platform) {
+    const p = platform.toLowerCase();
+    if (p.includes('facebook')) return <FaFacebook color="#1877F2" title={platform} />;
+    if (p.includes('instagram')) return <FaInstagram color="#E4405F" title={platform} />;
+    if (p.includes('youtube')) return <FaYoutube color="#FF0000" title={platform} />;
+    if (p.includes('tiktok')) return <FaTiktok color="#000000" title={platform} />;
+    if (p.includes('google map')) return <FaMapMarkerAlt color="#EA4335" title={platform} />;
+    return <FaLink color="#64748b" title={platform} />;
+  } else if (itemType === 'task' && priority) {
+    const p = priority.toLowerCase();
+    if (p === 'high' || p === 'ด่วน') return <HiFire color="#ef4444" title={`Priority: ${priority}`} />;
+    if (p === 'medium' || p === 'ปานกลาง') return <HiMinus color="#f59e0b" title={`Priority: ${priority}`} />;
+    if (p === 'low' || p === 'ต่ำ') return <HiArrowDown color="#3b82f6" title={`Priority: ${priority}`} />;
+    return <HiMinus color="#64748b" title={`Priority: ${priority}`} />;
+  }
+  return null;
 }
 
 export default function ReportsPage() {
@@ -271,7 +291,6 @@ export default function ReportsPage() {
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>หัวข้อ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ลิงก์</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ผู้รับผิดชอบ</th>
-                <th style={{ padding: '0.75rem', color: '#64748b' }}>แพลตฟอร์ม/ความสำคัญ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>สถานะ</th>
               </tr>
             </thead>
@@ -290,13 +309,15 @@ export default function ReportsPage() {
                   </td>
                   <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.link && (
-                      <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }} title={item.link}>
-                        {item.link}
-                      </a>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {getPlatformOrPriorityIcon(item.itemType, item.platform, item.priority)}
+                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.link}>
+                          {item.link}
+                        </a>
+                      </div>
                     )}
                   </td>
                   <td style={{ padding: '0.75rem' }}>{item.memberName}</td>
-                  <td style={{ padding: '0.75rem' }}>{item.itemType === 'content' ? item.platform : item.priority}</td>
                   <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
                 </tr>
               )) : (
@@ -320,9 +341,12 @@ export default function ReportsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}</h4>
                       {item.link && (
-                        <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', padding: '0.35rem', backgroundColor: '#eff6ff', borderRadius: '6px' }} title="เปิดลิงก์">
-                          <HiArrowTopRightOnSquare size={14} />
-                        </a>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          {getPlatformOrPriorityIcon(item.itemType, item.platform, item.priority)}
+                          <a href={item.link.startsWith('http') ? item.link : `https://${item.link}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', padding: '0.35rem', backgroundColor: '#eff6ff', borderRadius: '6px' }} title="เปิดลิงก์">
+                            <HiArrowTopRightOnSquare size={14} />
+                          </a>
+                        </div>
                       )}
                     </div>
                     <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.memberName}</span>
@@ -331,7 +355,6 @@ export default function ReportsPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.75rem' }}>
                 <span style={{ color: '#64748b' }}>{item.date ? formatDateTime(item.date) : '-'}</span>
-                <span style={{ color: '#64748b' }}>{item.itemType === 'content' ? item.platform : item.priority}</span>
                 {getStatusBadge(item.status)}
               </div>
             </div>
