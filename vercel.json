@@ -5,5 +5,5 @@
       "schedule": "0 1 * * *"
     }
   ],
-  "regions": ["syd1"]
+  "regions": ["sin1"]
 }
