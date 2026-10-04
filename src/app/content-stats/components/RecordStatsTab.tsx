@@ -161,11 +161,11 @@ export default function RecordStatsTab() {
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>วันที่โพสต์</th>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '45%' }}>คอนเทนต์</th>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>ผู้รับผิดชอบ</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Views</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Reach</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Engagement</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Link Clicks</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '80px' }}>บันทึก</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Views</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Reach</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '180px', fontSize: '0.85rem' }}>Engagement</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Link Clicks</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px' }}>บันทึก</th>
               </tr>
             </thead>
             <tbody>
@@ -209,6 +209,18 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
     saves: initialMetric.saves || '',
     linkClicks: initialMetric.linkClicks || ''
   });
+  useEffect(() => {
+    setMetrics({
+      views: initialMetric.views || '',
+      reach: initialMetric.reach || '',
+      likes: initialMetric.likes || '',
+      comments: initialMetric.comments || '',
+      shares: initialMetric.shares || '',
+      saves: initialMetric.saves || '',
+      linkClicks: initialMetric.linkClicks || ''
+    });
+  }, [initialMetric, snapshot]);
+
 
   const handleChange = (field: string, value: string) => {
     setMetrics(prev => ({ ...prev, [field]: value }));
