@@ -7,6 +7,7 @@ import { getCompanyColor } from '@/lib/colors';
 export default function SummaryTab() {
   const [summaryData, setSummaryData] = useState<any[]>([]);
   const [topContents, setTopContents] = useState<any[]>([]);
+  const [channelSummary, setChannelSummary] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [monthFilter, setMonthFilter] = useState((new Date().getMonth() + 1).toString());
@@ -19,8 +20,7 @@ export default function SummaryTab() {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      // In a real app, this would be a specific summary API.
-      // We will fetch contents and aggregate on the client for now.
+      // 1. Fetch content metrics
       const res = await fetch(`/api/content-metrics?month=${monthFilter}&year=${yearFilter}`);
       const data = await res.json();
       
@@ -65,6 +65,30 @@ export default function SummaryTab() {
         
         setTopContents(sortedContents);
       }
+
+      // 3. Fetch channel metrics for overview summary
+      const [chRes, cmRes] = await Promise.all([
+        fetch('/api/channels'),
+        fetch(`/api/channel-metrics?month=${monthFilter}&year=${yearFilter}`)
+      ]);
+      const chData = await chRes.json();
+      const cmData = await cmRes.json();
+
+      if (chData.channels) {
+        const combined = chData.channels.map((ch: any) => {
+          const m = cmData.metrics?.find((mx: any) => mx.channelId === ch.id) || {};
+          return {
+            ...ch,
+            followers: m.followers || 0,
+            reach: m.reach || 0,
+            messages: m.messages || 0,
+            adSpend: m.adSpend || 0
+          };
+        });
+        // Sort by followers descending
+        setChannelSummary(combined.sort((a, b) => b.followers - a.followers));
+      }
+
     } catch (error) {
       console.error(error);
     }
@@ -168,6 +192,41 @@ export default function SummaryTab() {
                   {topContents.length === 0 && (
                     <tr>
                       <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <HiChartBar color="#10b981" /> สรุปภาพรวมเพจ
+            </h4>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>ชื่อเพจ / ช่อง</th>
+                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>แพลตฟอร์ม</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>ผู้ติดตามสะสม</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Reach รวม</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>จำนวนแชท/Inbox</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {channelSummary.map(ch => (
+                    <tr key={ch.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ fontWeight: 600, textAlign: 'left', padding: '0.75rem' }}>{ch.name}</td>
+                      <td style={{ textAlign: 'center', padding: '0.75rem', color: '#64748b' }}>{ch.platform}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 500 }}>{ch.followers.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{ch.reach.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{ch.messages.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                  {channelSummary.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลช่อง กรุณาตั้งค่าช่องในแท็บ "ภาพรวมเพจ"</td>
                     </tr>
                   )}
                 </tbody>
