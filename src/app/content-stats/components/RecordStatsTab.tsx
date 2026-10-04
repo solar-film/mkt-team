@@ -157,14 +157,14 @@ export default function RecordStatsTab() {
           <table className="data-table" style={{ width: '100%', minWidth: '1000px' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem' }}>วันที่โพสต์</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem' }}>คอนเทนต์</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem' }}>ผู้รับผิดชอบ</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>Views</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>Reach</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>Engagement</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>Link Clicks</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>บันทึก</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>วันที่โพสต์</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '30%' }}>คอนเทนต์</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>ผู้รับผิดชอบ</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Views</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Reach</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Engagement</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Link Clicks</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '80px' }}>บันทึก</th>
               </tr>
             </thead>
             <tbody>
