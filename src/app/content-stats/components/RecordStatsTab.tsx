@@ -155,11 +155,11 @@ export default function RecordStatsTab() {
         <div className="loading-spinner" style={{ margin: '2rem auto' }}></div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table className="data-table" style={{ width: '100%', minWidth: '1000px' }}>
+          <table className="data-table" style={{ width: '100%', minWidth: '1000px', tableLayout: 'fixed' }}>
             <thead>
               <tr>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px', whiteSpace: 'nowrap' }}>วันที่โพสต์</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '45%' }}>คอนเทนต์</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '400px' }}>คอนเทนต์</th>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px', whiteSpace: 'nowrap' }}>ผู้รับผิดชอบ</th>
                 <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Views</th>
                 <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Reach</th>
