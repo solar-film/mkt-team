@@ -8,6 +8,7 @@ export default function SummaryTab() {
   const [summaryData, setSummaryData] = useState<any[]>([]);
   const [topContents, setTopContents] = useState<any[]>([]);
   const [channelSummary, setChannelSummary] = useState<any[]>([]);
+  const [totals, setTotals] = useState({ contents: 0, views: 0, reach: 0, engagement: 0 });
   const [loading, setLoading] = useState(true);
 
   const [monthFilter, setMonthFilter] = useState((new Date().getMonth() + 1).toString());
@@ -54,6 +55,14 @@ export default function SummaryTab() {
           avgViews: s.count > 0 ? Math.round(s.views / s.count) : 0,
           avgReach: s.count > 0 ? Math.round(s.reach / s.count) : 0
         }));
+        let tContents = 0, tViews = 0, tReach = 0, tEng = 0;
+        summaryArr.forEach(s => {
+          tContents += s.count;
+          tViews += s.views;
+          tReach += s.reach;
+          tEng += s.engagement;
+        });
+        setTotals({ contents: tContents, views: tViews, reach: tReach, engagement: tEng });
         setSummaryData(summaryArr.sort((a, b) => b.views - a.views));
 
         // 2. Top 10 Contents
@@ -116,13 +125,35 @@ export default function SummaryTab() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
-          <div>
-            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <HiChartBar /> สรุปผลงานรายบุคคล
-            </h4>
-            <div style={{ overflowX: 'auto' }}>
+                    {/* Overview Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>คอนเทนต์ที่สร้าง (ชิ้น)</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#0f172a' }}>{totals.contents.toLocaleString()}</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>ยอดวิวรวม (Views)</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#3b82f6' }}>{totals.views.toLocaleString()}</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>การเข้าถึงรวม (Reach)</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#10b981' }}>{totals.reach.toLocaleString()}</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>Engagement รวม</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#f59e0b' }}>{totals.engagement.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <HiChartBar color="#6366f1" /> สรุปผลงานรายบุคคล
+              </h4>
+            </div>
+            <div style={{ overflowX: 'auto', padding: '0 1.25rem 1.25rem' }}>
               <table className="data-table" style={{ width: '100%' }}>
-                <thead>
+                <thead style={{ backgroundColor: "#f8fafc" }}>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0.75rem' }}>พนักงาน</th>
                     <th style={{ textAlign: 'center', padding: '0.75rem' }}>จำนวนชิ้นงาน</th>
@@ -153,13 +184,15 @@ export default function SummaryTab() {
             </div>
           </div>
 
-          <div>
-            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <HiStar color="#f59e0b" /> 10 อันดับคอนเทนต์ยอดวิวสูงสุด
-            </h4>
-            <div style={{ overflowX: 'auto' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <HiStar color="#f59e0b" /> 10 อันดับคอนเทนต์ยอดวิวสูงสุด
+              </h4>
+            </div>
+            <div style={{ overflowX: 'auto', padding: '0 1.25rem 1.25rem' }}>
               <table className="data-table" style={{ width: '100%' }}>
-                <thead>
+                <thead style={{ backgroundColor: "#f8fafc" }}>
                   <tr>
                     <th style={{ textAlign: 'center', padding: '0.75rem', width: '60px' }}>อันดับ</th>
                     <th style={{ textAlign: 'left', padding: '0.75rem', width: '45%' }}>คอนเทนต์</th>
@@ -199,13 +232,15 @@ export default function SummaryTab() {
             </div>
           </div>
 
-          <div>
-            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <HiChartBar color="#10b981" /> สรุปภาพรวมเพจ
-            </h4>
-            <div style={{ overflowX: 'auto' }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <HiChartBar color="#10b981" /> สรุปภาพรวมเพจ
+              </h4>
+            </div>
+            <div style={{ overflowX: 'auto', padding: '0 1.25rem 1.25rem' }}>
               <table className="data-table" style={{ width: '100%' }}>
-                <thead>
+                <thead style={{ backgroundColor: "#f8fafc" }}>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0.75rem' }}>ชื่อเพจ / ช่อง</th>
                     <th style={{ textAlign: 'center', padding: '0.75rem' }}>แพลตฟอร์ม</th>
