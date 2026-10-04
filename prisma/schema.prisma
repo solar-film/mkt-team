@@ -14,10 +14,12 @@ model TeamMember {
   role      String
   company   String    @default("GFS")
   status    String    @default("active")
-  avatar    String?   @db.Text
+  avatar    String? 
   tasks     Task[]
   kpis      KPI[]
   contents  Content[]
+  metrics   ContentMetric[]
+  channelMetrics ChannelMetric[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -74,8 +76,37 @@ model Content {
   meetingId   String?
   memberId    String
   member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  platformPostId String?
+  permalink      String?
+  metrics        ContentMetric[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model ContentMetric {
+  id            String   @id @default(cuid())
+  contentId     String
+  content       Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  snapshot      String
+  recordedAt    DateTime @default(now())
+  views         Int?
+  reach         Int?
+  likes         Int?
+  comments      Int?
+  shares        Int?
+  saves         Int?
+  follows       Int?
+  linkClicks    Int?
+  profileVisits Int?
+  messages      Int?
+  avgWatchSec   Float?
+  adSpend       Float    @default(0)
+  source        String   @default("manual")
+  recordedById  String?
+  recordedBy    TeamMember? @relation(fields: [recordedById], references: [id])
+  note          String?
+  
+  @@unique([contentId, snapshot])
 }
 
 model Event {
@@ -97,8 +128,8 @@ model Meeting {
   company     String   @default("GFS")
   status      String   @default("upcoming")
   attendees   String?
-  agenda      String?  @db.Text
-  notes       String?  @db.Text
+  agenda      String?
+  notes       String?
   createdBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -110,7 +141,7 @@ model Meeting {
 model IdeaNote {
   id             String   @id @default(cuid())
   title          String
-  description    String?  @db.Text
+  description    String?
   memberId       String?
   recommendedFor String?
   company        String?
@@ -148,7 +179,7 @@ model IdeaAttachment {
   id         String   @id @default(cuid())
   name       String
   type       String
-  url        String   @db.Text // Can store Base64
+  url        String // Can store Base64
   ideaNoteId String
   ideaNote   IdeaNote @relation(fields: [ideaNoteId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
@@ -158,11 +189,36 @@ model IdeaAttachment {
 
 model IdeaComment {
   id         String   @id @default(cuid())
-  text       String   @db.Text
+  text       String
   memberId   String
   ideaNoteId String
   ideaNote   IdeaNote @relation(fields: [ideaNoteId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
 
   @@index([ideaNoteId])
+}
+
+model Channel {
+  id        String          @id @default(cuid())
+  name      String
+  platform  String
+  createdAt DateTime        @default(now())
+  metrics   ChannelMetric[]
+}
+
+model ChannelMetric {
+  id           String      @id @default(cuid())
+  channelId    String
+  channel      Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  month        Int
+  year         Int
+  followers    Int?
+  reach        Int?
+  messages     Int?
+  adSpend      Float?
+  recordedById String?
+  recordedBy   TeamMember? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedDate DateTime?
+  
+  @@unique([channelId, month, year])
 }
