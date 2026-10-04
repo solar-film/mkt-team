@@ -215,14 +215,14 @@ export default function PageOverviewTab() {
           <table className="data-table" style={{ width: '100%', minWidth: '1000px' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem' }}>แพลตฟอร์ม</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem' }}>ชื่อเพจ / ช่อง</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>ผู้ติดตามสะสม</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>Reach รวม</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>จำนวนแชท/Inbox</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>ผู้ดูแล</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>วันที่เก็บข้อมูล</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>จัดการ</th>
+                <th style={{ textAlign: 'left', padding: '0.5rem 0.5rem' }}>แพลตฟอร์ม</th>
+                <th style={{ textAlign: 'left', padding: '0.5rem 0.5rem' }}>ชื่อเพจ / ช่อง</th>
+                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>ผู้ติดตามสะสม</th>
+                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>Reach รวม</th>
+                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>จำนวนแชท/Inbox</th>
+                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>ผู้ดูแล</th>
+                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>วันที่เก็บข้อมูล</th>
+                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -234,18 +234,18 @@ export default function PageOverviewTab() {
 
                 return (
                   <tr key={ch.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '0.75rem 0.5rem', color: '#64748b', fontSize: '0.85rem' }}>{ch.platform}</td>
-                    <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{ch.name}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <td style={{ padding: '0.25rem 0.5rem', color: '#64748b', fontSize: '0.85rem' }}>{ch.platform}</td>
+                    <td style={{ padding: '0.25rem 0.5rem', fontWeight: 600 }}>{ch.name}</td>
+                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <input type="number" className="form-input" style={{ width: '80px', margin: '0 auto', textAlign: 'center', padding: '0.2rem' }} value={data.followers ?? ''} onChange={e => handleChange(ch.id, 'followers', e.target.value)} placeholder="0" />
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <input type="number" className="form-input" style={{ width: '80px', margin: '0 auto', textAlign: 'center', padding: '0.2rem' }} value={data.reach ?? ''} onChange={e => handleChange(ch.id, 'reach', e.target.value)} placeholder="0" />
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <input type="number" className="form-input" style={{ width: '80px', margin: '0 auto', textAlign: 'center', padding: '0.2rem' }} value={data.messages ?? ''} onChange={e => handleChange(ch.id, 'messages', e.target.value)} placeholder="0" />
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <select 
                         className="form-input" 
                         style={{ width: '120px', padding: '0.2rem', fontSize: '0.8rem', margin: '0 auto' }} 
@@ -258,7 +258,7 @@ export default function PageOverviewTab() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <input 
                         type="date" 
                         className="form-input" 
@@ -267,7 +267,7 @@ export default function PageOverviewTab() {
                         onChange={e => handleChange(ch.id, 'recordedDate', e.target.value)} 
                       />
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <button className="btn btn-primary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleSave(ch.id)}>บันทึก</button>
                     </td>
                   </tr>
