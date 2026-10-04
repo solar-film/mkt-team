@@ -219,7 +219,7 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
       saves: initialMetric.saves || '',
       linkClicks: initialMetric.linkClicks || ''
     });
-  }, [initialMetric, snapshot]);
+  }, [snapshot, initialMetric?.id]);
 
 
   const handleChange = (field: string, value: string) => {
