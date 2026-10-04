@@ -158,14 +158,14 @@ export default function RecordStatsTab() {
           <table className="data-table" style={{ width: '100%', minWidth: '1000px' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>วันที่โพสต์</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px', whiteSpace: 'nowrap' }}>วันที่โพสต์</th>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '45%' }}>คอนเทนต์</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>ผู้รับผิดชอบ</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Views</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Reach</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '180px', fontSize: '0.85rem' }}>Engagement</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem' }}>Link Clicks</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px' }}>บันทึก</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px', whiteSpace: 'nowrap' }}>ผู้รับผิดชอบ</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Views</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Reach</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '180px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Engagement</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Link Clicks</th>
+                <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '90px', whiteSpace: 'nowrap' }}>บันทึก</th>
               </tr>
             </thead>
             <tbody>
@@ -282,11 +282,15 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
         </div>
       </td>
       <td style={{ padding: '0.5rem', verticalAlign: 'middle', fontSize: '0.85rem' }}>{content.member?.name}</td>
-      <td style={{ padding: '0.5rem', verticalAlign: 'middle', textAlign: 'center' }}>
-        <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', margin: '0 auto', textAlign: 'center' }} value={metrics.views} onChange={e => handleChange('views', e.target.value)} />
+      <td style={{ padding: '0.5rem', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', textAlign: 'center' }} value={metrics.views} onChange={e => handleChange('views', e.target.value)} />
+        </div>
       </td>
-      <td style={{ padding: '0.5rem', verticalAlign: 'middle', textAlign: 'center' }}>
-        <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', margin: '0 auto', textAlign: 'center' }} value={metrics.reach} onChange={e => handleChange('reach', e.target.value)} />
+      <td style={{ padding: '0.5rem', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', textAlign: 'center' }} value={metrics.reach} onChange={e => handleChange('reach', e.target.value)} />
+        </div>
       </td>
       <td style={{ padding: '0.5rem', verticalAlign: 'middle', textAlign: 'center' }}>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
@@ -304,13 +308,17 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
           </div>
         </div>
       </td>
-      <td style={{ padding: '0.5rem', verticalAlign: 'middle', textAlign: 'center' }}>
-        <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', margin: '0 auto', textAlign: 'center' }} value={metrics.linkClicks} onChange={e => handleChange('linkClicks', e.target.value)} />
+      <td style={{ padding: '0.5rem', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', textAlign: 'center' }} value={metrics.linkClicks} onChange={e => handleChange('linkClicks', e.target.value)} />
+        </div>
       </td>
-      <td style={{ padding: '0.5rem', verticalAlign: 'middle', textAlign: 'center' }}>
-        <button className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', whiteSpace: 'nowrap', margin: '0 auto' }} onClick={handleSave} disabled={saving}>
+      <td style={{ padding: '0.5rem', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', whiteSpace: 'nowrap', margin: '0 auto' }} onClick={handleSave} disabled={saving}>
           {saving ? 'กำลังบันทึก...' : 'บันทึก'}
-        </button>
+          </button>
+        </div>
       </td>
     </tr>
   );
