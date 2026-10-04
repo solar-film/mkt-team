@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -68,14 +69,14 @@ export default function RecordStatsTab() {
       });
       if (res.ok) {
         // Refresh or just indicate success
-        alert('บันทึกสำเร็จ');
+        toast.success('บันทึกสำเร็จ');
         fetchContents();
       } else {
-        alert('เกิดข้อผิดพลาดในการบันทึก');
+        toast.error('เกิดข้อผิดพลาดในการบันทึก');
       }
     } catch (error) {
       console.error(error);
-      alert('เกิดข้อผิดพลาด');
+      toast.error('เกิดข้อผิดพลาด');
     }
     setSavingId(null);
   };

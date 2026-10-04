@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -227,7 +228,7 @@ export default function MeetingsPage() {
     }).catch(err => {
       console.error('Failed to copy text: ', err);
       // Fallback to alert only on error
-      alert('เกิดข้อผิดพลาดในการคัดลอก กรุณาลองใหม่อีกครั้ง');
+      toast.error('เกิดข้อผิดพลาดในการคัดลอก กรุณาลองใหม่อีกครั้ง');
     });
   };
 

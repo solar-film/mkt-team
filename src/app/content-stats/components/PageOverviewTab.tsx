@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -121,7 +122,7 @@ export default function PageOverviewTab() {
         })
       });
       if (res.ok) {
-        alert('บันทึกสำเร็จ');
+        toast.success('บันทึกสำเร็จ');
         // Update local state so it shows the new values without reloading
         setMetrics(prev => ({
           ...prev,
@@ -134,7 +135,7 @@ export default function PageOverviewTab() {
       }
     } catch (e) {
       console.error(e);
-      alert('เกิดข้อผิดพลาด');
+      toast.error('เกิดข้อผิดพลาด');
     }
   };
 

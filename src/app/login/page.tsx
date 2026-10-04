@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -96,11 +97,11 @@ export default function LoginPage() {
         setMembers(members.map(m => m.id === updated.member.id ? updated.member : m));
         setSelectedMember(updated.member);
       } else {
-        alert('ไม่สามารถบันทึกรูปภาพได้');
+        toast.error('ไม่สามารถบันทึกรูปภาพได้');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('เกิดข้อผิดพลาดในการอัปโหลด');
+      toast.error('เกิดข้อผิดพลาดในการอัปโหลด');
     } finally {
       setUploading(false);
     }

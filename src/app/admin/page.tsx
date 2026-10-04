@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,7 +20,7 @@ export default function AdminPanel() {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
     } else {
-      alert("รหัสผ่านไม่ถูกต้อง");
+      toast.error("รหัสผ่านไม่ถูกต้อง");
     }
   };
 
@@ -46,7 +47,7 @@ export default function AdminPanel() {
       setData(Array.isArray(json) ? json : json.data || []);
     } catch (error) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
     }
     setLoading(false);
   };
@@ -67,11 +68,11 @@ export default function AdminPanel() {
       if (res.ok) {
         fetchData();
       } else {
-        alert("ลบข้อมูลไม่สำเร็จ");
+        toast.error("ลบข้อมูลไม่สำเร็จ");
       }
     } catch (error) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+      toast.error("เกิดข้อผิดพลาดในการลบข้อมูล");
     }
   };
 

@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { HiXMark, HiPencil, HiEllipsisVertical, HiPlus, HiCheck, HiDocumentText, HiPaperAirplane, HiTrash } from 'react-icons/hi2';
 import ConfirmModal from '../ConfirmModal';
@@ -140,7 +141,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       onUpdate();
     } else {
       if (file.size > 5 * 1024 * 1024) {
-        alert('ไฟล์เอกสารทั่วไปต้องมีขนาดไม่เกิน 5MB');
+        toast.error('ไฟล์เอกสารทั่วไปต้องมีขนาดไม่เกิน 5MB');
         return;
       }
       const reader = new FileReader();
