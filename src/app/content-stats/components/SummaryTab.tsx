@@ -100,28 +100,28 @@ export default function SummaryTab() {
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>พนักงาน</th>
-                    <th>จำนวนชิ้นงาน</th>
-                    <th>ยอดวิวรวม</th>
-                    <th>ยอดวิวเฉลี่ย/ชิ้น</th>
-                    <th>Reach รวม</th>
-                    <th>Engagement รวม</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>พนักงาน</th>
+                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>จำนวนชิ้นงาน</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>ยอดวิวรวม</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>ยอดวิวเฉลี่ย/ชิ้น</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Reach รวม</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Engagement รวม</th>
                   </tr>
                 </thead>
                 <tbody>
                   {summaryData.map(stat => (
-                    <tr key={stat.id}>
-                      <td style={{ fontWeight: 600 }}>{stat.name}</td>
-                      <td>{stat.count}</td>
-                      <td>{stat.views.toLocaleString()}</td>
-                      <td>{stat.avgViews.toLocaleString()}</td>
-                      <td>{stat.reach.toLocaleString()}</td>
-                      <td>{stat.engagement.toLocaleString()}</td>
+                    <tr key={stat.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ fontWeight: 600, textAlign: 'left', padding: '0.75rem' }}>{stat.name}</td>
+                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>{stat.count}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 500 }}>{stat.views.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{stat.avgViews.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{stat.reach.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{stat.engagement.toLocaleString()}</td>
                     </tr>
                   ))}
                   {summaryData.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '1rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
                     </tr>
                   )}
                 </tbody>
@@ -137,37 +137,37 @@ export default function SummaryTab() {
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>อันดับ</th>
-                    <th>คอนเทนต์</th>
-                    <th>ผู้รับผิดชอบ</th>
-                    <th>Views</th>
-                    <th>Reach</th>
-                    <th>Engagement</th>
+                    <th style={{ textAlign: 'center', padding: '0.75rem', width: '60px' }}>อันดับ</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', width: '45%' }}>คอนเทนต์</th>
+                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>ผู้รับผิดชอบ</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Views</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Reach</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Engagement</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topContents.map((content, idx) => {
                     const metric = content.metrics?.find((mx: any) => mx.snapshot === 'D+7') || content.metrics?.[0] || {};
                     return (
-                      <tr key={content.id}>
-                        <td style={{ fontWeight: 700, color: idx < 3 ? '#f59e0b' : '#64748b' }}>#{idx + 1}</td>
-                        <td style={{ maxWidth: '300px' }}>
+                      <tr key={content.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ fontWeight: 700, color: idx < 3 ? '#f59e0b' : '#64748b', textAlign: 'center', padding: '0.75rem' }}>#{idx + 1}</td>
+                        <td style={{ maxWidth: '400px', padding: '0.75rem' }}>
                           <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             <span style={{ color: getCompanyColor(content.company), marginRight: '4px' }}>[{content.company}]</span>
                             {content.title}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{content.platform} • {new Date(content.publishDate).toLocaleDateString('th-TH')}</div>
                         </td>
-                        <td>{content.member?.name}</td>
-                        <td style={{ fontWeight: 600, color: '#3b82f6' }}>{(metric.views || 0).toLocaleString()}</td>
-                        <td>{(metric.reach || 0).toLocaleString()}</td>
-                        <td>{((metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0)).toLocaleString()}</td>
+                        <td style={{ textAlign: 'center', padding: '0.75rem' }}>{content.member?.name}</td>
+                        <td style={{ fontWeight: 600, color: '#3b82f6', textAlign: 'right', padding: '0.75rem' }}>{(metric.views || 0).toLocaleString()}</td>
+                        <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{(metric.reach || 0).toLocaleString()}</td>
+                        <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{((metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0)).toLocaleString()}</td>
                       </tr>
                     );
                   })}
                   {topContents.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '1rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
                     </tr>
                   )}
                 </tbody>
