@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { HiChartBar, HiStar } from 'react-icons/hi2';
+import { useState, useEffect, type CSSProperties } from 'react';
+import { HiChartBar, HiDocumentText, HiEye, HiArrowTrendingUp, HiChatBubbleLeftRight, HiUsers, HiTrophy } from 'react-icons/hi2';
 import { getCompanyColor } from '@/lib/colors';
+import styles from './SummaryTab.module.css';
 
 export default function SummaryTab() {
   const [summaryData, setSummaryData] = useState<any[]>([]);
@@ -105,171 +106,178 @@ export default function SummaryTab() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1e293b' }}>รายงานสรุปผล (D+7)</h3>
-        <select className="form-input" style={{ width: 'auto' }} value={monthFilter} onChange={e => setMonthFilter(e.target.value)}>
-          {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-            <option key={m} value={m.toString()}>เดือน {m}</option>
-          ))}
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
-          <option value="2024">2024</option>
-          <option value="2025">2025</option>
-          <option value="2026">2026</option>
-        </select>
+    <div className={styles.report}>
+      <div className={styles.toolbar}>
+        <div className={styles.reportHeading}>
+          <span className={styles.eyebrow}>ภาพรวมประจำเดือน</span>
+          <div className={styles.title}>
+            <h3>รายงานสรุปผล</h3>
+            <span className={styles.snapshotBadge}>D+7</span>
+          </div>
+          <p className={styles.subtitle}>ผลงานทีม คอนเทนต์ยอดนิยม และภาพรวมเพจ</p>
+        </div>
+        <div className={styles.filters}>
+          <label className={styles.filterField}>
+            <span>เดือน</span>
+            <select className="form-input" value={monthFilter} onChange={e => setMonthFilter(e.target.value)}>
+              {['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'].map((month, index) => (
+                <option key={index + 1} value={(index + 1).toString()}>{month}</option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.filterField}>
+            <span>ปี ค.ศ.</span>
+            <select className="form-input" value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {loading ? (
-        <div className="loading-spinner" style={{ margin: '2rem auto' }}></div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-                    {/* Overview Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>คอนเทนต์ที่สร้าง (ชิ้น)</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#0f172a' }}>{totals.contents.toLocaleString()}</div>
-            </div>
-            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>ยอดวิวรวม (Views)</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#3b82f6' }}>{totals.views.toLocaleString()}</div>
-            </div>
-            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>การเข้าถึงรวม (Reach)</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#10b981' }}>{totals.reach.toLocaleString()}</div>
-            </div>
-            <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '0.5rem' }}>Engagement รวม</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#f59e0b' }}>{totals.engagement.toLocaleString()}</div>
-            </div>
-          </div>
-
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiChartBar color="#6366f1" /> สรุปผลงานรายบุคคล
-              </h4>
-            </div>
-            <div style={{ overflowX: 'auto', padding: '0 1.25rem 1.25rem' }}>
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead style={{ backgroundColor: "#f8fafc" }}>
-                  <tr>
-                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>พนักงาน</th>
-                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>จำนวนชิ้นงาน</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>ยอดวิวรวม</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>ยอดวิวเฉลี่ย/ชิ้น</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Reach รวม</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Engagement รวม</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {summaryData.map(stat => (
-                    <tr key={stat.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ fontWeight: 600, textAlign: 'left', padding: '0.75rem' }}>{stat.name}</td>
-                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>{stat.count}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 500 }}>{stat.views.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{stat.avgViews.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{stat.reach.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{stat.engagement.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                  {summaryData.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-                    <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiStar color="#f59e0b" /> 10 อันดับคอนเทนต์ยอดวิวสูงสุด
-              </h4>
-            </div>
-            <div style={{ overflowX: 'auto', padding: '0 1.25rem 1.25rem' }}>
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead style={{ backgroundColor: "#f8fafc" }}>
-                  <tr>
-                    <th style={{ textAlign: 'center', padding: '0.75rem', width: '60px' }}>อันดับ</th>
-                    <th style={{ textAlign: 'left', padding: '0.75rem', width: '45%' }}>คอนเทนต์</th>
-                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>ผู้รับผิดชอบ</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Views</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Reach</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Engagement</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topContents.map((content, idx) => {
-                    const metric = content.metrics?.find((mx: any) => mx.snapshot === 'D+7') || content.metrics?.[0] || {};
-                    return (
-                      <tr key={content.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ fontWeight: 700, color: idx < 3 ? '#f59e0b' : '#64748b', textAlign: 'center', padding: '0.75rem' }}>#{idx + 1}</td>
-                        <td style={{ maxWidth: '400px', padding: '0.75rem' }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            <span style={{ color: getCompanyColor(content.company), marginRight: '4px' }}>[{content.company}]</span>
-                            {content.title}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{content.platform} • {new Date(content.publishDate).toLocaleDateString('th-TH')}</div>
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '0.75rem' }}>{content.member?.name}</td>
-                        <td style={{ fontWeight: 600, color: '#3b82f6', textAlign: 'right', padding: '0.75rem' }}>{(metric.views || 0).toLocaleString()}</td>
-                        <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{(metric.reach || 0).toLocaleString()}</td>
-                        <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{((metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0)).toLocaleString()}</td>
-                      </tr>
-                    );
-                  })}
-                  {topContents.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลในเดือนนี้</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-                    <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiChartBar color="#10b981" /> สรุปภาพรวมเพจ
-              </h4>
-            </div>
-            <div style={{ overflowX: 'auto', padding: '0 1.25rem 1.25rem' }}>
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead style={{ backgroundColor: "#f8fafc" }}>
-                  <tr>
-                    <th style={{ textAlign: 'left', padding: '0.75rem' }}>ชื่อเพจ / ช่อง</th>
-                    <th style={{ textAlign: 'center', padding: '0.75rem' }}>แพลตฟอร์ม</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>ผู้ติดตามสะสม</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>Reach รวม</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem' }}>จำนวนแชท/Inbox</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {channelSummary.map(ch => (
-                    <tr key={ch.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ fontWeight: 600, textAlign: 'left', padding: '0.75rem' }}>{ch.name}</td>
-                      <td style={{ textAlign: 'center', padding: '0.75rem', color: '#64748b' }}>{ch.platform}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 500 }}>{ch.followers.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{ch.reach.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', color: '#64748b' }}>{ch.messages.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                  {channelSummary.length === 0 && (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>ไม่มีข้อมูลช่อง กรุณาตั้งค่าช่องในแท็บ "ภาพรวมเพจ"</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+        <div className={styles.loading} role="status">
+          <div className="loading-spinner" aria-hidden="true" />
+          <span className={styles.loadingText}>กำลังโหลดรายงาน…</span>
         </div>
+      ) : (
+        <>
+          <div className={styles.metrics} role="group" aria-label="ยอดรวมประจำเดือน">
+            <div className={styles.metric}>
+              <span className={styles.metricIcon} aria-hidden="true"><HiDocumentText /></span>
+              <div><div className={styles.metricLabel}>คอนเทนต์ที่สร้าง (ชิ้น)</div><div className={styles.metricValue}>{totals.contents.toLocaleString()}</div></div>
+            </div>
+            <div className={`${styles.metric} ${styles.metricViews}`}>
+              <span className={styles.metricIcon} aria-hidden="true"><HiEye /></span>
+              <div><div className={styles.metricLabel}>ยอดวิวรวม · Views</div><div className={styles.metricValue}>{totals.views.toLocaleString()}</div></div>
+            </div>
+            <div className={`${styles.metric} ${styles.metricReach}`}>
+              <span className={styles.metricIcon} aria-hidden="true"><HiArrowTrendingUp /></span>
+              <div><div className={styles.metricLabel}>การเข้าถึงรวม · Reach</div><div className={styles.metricValue}>{totals.reach.toLocaleString()}</div></div>
+            </div>
+            <div className={`${styles.metric} ${styles.metricEngagement}`}>
+              <span className={styles.metricIcon} aria-hidden="true"><HiChatBubbleLeftRight /></span>
+              <div><div className={styles.metricLabel}>Engagement รวม</div><div className={styles.metricValue}>{totals.engagement.toLocaleString()}</div></div>
+            </div>
+          </div>
+
+          <div className={styles.sections}>
+            <section className={styles.section} aria-labelledby="summary-channels-title">
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h4 id="summary-channels-title" className={styles.sectionTitle}><span className={`${styles.sectionIcon} ${styles.sectionIconGreen}`} aria-hidden="true"><HiChartBar /></span>สรุปภาพรวมเพจ</h4>
+                  <p className={styles.sectionDescription}>ผู้ติดตาม การเข้าถึง และแชทของแต่ละเพจ</p>
+                </div>
+                <span className={styles.countBadge}>{channelSummary.length} เพจ / ช่อง</span>
+              </div>
+              <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="ตารางภาพรวมเพจ เลื่อนแนวนอนได้">
+                <table className={styles.table} aria-label="สรุปภาพรวมเพจ">
+                  <thead><tr>
+                    <th scope="col">ชื่อเพจ / ช่อง</th>
+                    <th scope="col">แพลตฟอร์ม</th>
+                    <th scope="col" className={styles.numeric}>ผู้ติดตามสะสม</th>
+                    <th scope="col" className={styles.numeric}>Reach รวม</th>
+                    <th scope="col" className={styles.numeric}>จำนวนแชท/Inbox</th>
+                  </tr></thead>
+                  <tbody>
+                    {channelSummary.map(ch => (
+                      <tr key={ch.id}>
+                        <th scope="row" className={styles.channelName}>{ch.name}</th>
+                        <td><span className={styles.platformBadge}>{ch.platform}</span></td>
+                        <td className={`${styles.numeric} ${styles.primaryNumber}`}>{ch.followers.toLocaleString()}</td>
+                        <td className={`${styles.numeric} ${styles.muted}`}>{ch.reach.toLocaleString()}</td>
+                        <td className={`${styles.numeric} ${styles.muted}`}>{ch.messages.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                    {channelSummary.length === 0 && <tr><td colSpan={5}><div className={styles.emptyState}><HiDocumentText aria-hidden="true" /><span>ไม่มีข้อมูลช่อง กรุณาตั้งค่าช่องในแท็บ "ภาพรวมเพจ"</span></div></td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className={styles.section} aria-labelledby="summary-members-title">
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h4 id="summary-members-title" className={styles.sectionTitle}><span className={styles.sectionIcon} aria-hidden="true"><HiUsers /></span>สรุปผลงานรายบุคคล</h4>
+                  <p className={styles.sectionDescription}>เปรียบเทียบจำนวนชิ้นงานและผลลัพธ์ของทีม</p>
+                </div>
+                <span className={styles.countBadge}>{summaryData.length} คน</span>
+              </div>
+              <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="ตารางผลงานรายบุคคล เลื่อนแนวนอนได้">
+                <table className={styles.table} aria-label="สรุปผลงานรายบุคคล">
+                  <thead><tr>
+                    <th scope="col">พนักงาน</th>
+                    <th scope="col" className={styles.numeric}>จำนวนชิ้นงาน</th>
+                    <th scope="col" className={styles.numeric}>ยอดวิวรวม</th>
+                    <th scope="col" className={styles.numeric}>ยอดวิวเฉลี่ย/ชิ้น</th>
+                    <th scope="col" className={styles.numeric}>Reach รวม</th>
+                    <th scope="col" className={styles.numeric}>Engagement รวม</th>
+                  </tr></thead>
+                  <tbody>
+                    {summaryData.map(stat => (
+                      <tr key={stat.id}>
+                        <th scope="row"><div className={styles.person}><span className={styles.avatar} aria-hidden="true">{stat.name.slice(0, 2).toUpperCase()}</span><span className={styles.personName}>{stat.name}</span></div></th>
+                        <td className={styles.numeric}><span className={styles.workCount}>{stat.count}</span></td>
+                        <td className={`${styles.numeric} ${styles.primaryNumber}`}>{stat.views.toLocaleString()}</td>
+                        <td className={`${styles.numeric} ${styles.muted}`}>{stat.avgViews.toLocaleString()}</td>
+                        <td className={`${styles.numeric} ${styles.muted}`}>{stat.reach.toLocaleString()}</td>
+                        <td className={`${styles.numeric} ${styles.muted}`}>{stat.engagement.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                    {summaryData.length === 0 && <tr><td colSpan={6}><div className={styles.emptyState}><HiDocumentText aria-hidden="true" /><span>ไม่มีข้อมูลในเดือนนี้</span></div></td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className={styles.section} aria-labelledby="summary-top-title">
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h4 id="summary-top-title" className={styles.sectionTitle}><span className={`${styles.sectionIcon} ${styles.sectionIconAmber}`} aria-hidden="true"><HiTrophy /></span>10 อันดับคอนเทนต์ยอดวิวสูงสุด</h4>
+                  <p className={styles.sectionDescription}>เรียงตามยอดวิวจากมากไปน้อยในเดือนที่เลือก</p>
+                </div>
+                <span className={styles.countBadge}>{topContents.length} รายการ</span>
+              </div>
+              <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="ตารางอันดับคอนเทนต์ เลื่อนแนวนอนได้">
+                <table className={`${styles.table} ${styles.contentTable}`} aria-label="10 อันดับคอนเทนต์ยอดวิวสูงสุด">
+                  <colgroup><col style={{ width: '7%' }} /><col style={{ width: '43%' }} /><col style={{ width: '14%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '14%' }} /></colgroup>
+                  <thead><tr>
+                    <th scope="col" className={styles.rankCell}>อันดับ</th>
+                    <th scope="col">คอนเทนต์</th>
+                    <th scope="col">ผู้รับผิดชอบ</th>
+                    <th scope="col" className={styles.numeric}>Views</th>
+                    <th scope="col" className={styles.numeric}>Reach</th>
+                    <th scope="col" className={styles.numeric}>Engagement</th>
+                  </tr></thead>
+                  <tbody>
+                    {topContents.map((content, idx) => {
+                      const metric = content.metrics?.find((mx: any) => mx.snapshot === 'D+7') || content.metrics?.[0] || {};
+                      const rankStyle = idx === 0 ? styles.rankGold : idx === 1 ? styles.rankSilver : idx === 2 ? styles.rankBronze : '';
+                      return (
+                        <tr key={content.id}>
+                          <td className={styles.rankCell}><span className={`${styles.rankBadge} ${rankStyle}`} aria-label={`อันดับ ${idx + 1}`}>{idx + 1}</span></td>
+                          <th scope="row" className={styles.contentCell}>
+                            <div className={styles.contentTitle} title={content.title}>{content.title}</div>
+                            <div className={styles.contentMeta}>
+                              <span className={styles.companyBadge} style={{ '--company-color': getCompanyColor(content.company) } as CSSProperties}>{content.company}</span>
+                              <span>{content.platform}</span><span aria-hidden="true">·</span><span>{new Date(content.publishDate).toLocaleDateString('th-TH')}</span>
+                            </div>
+                          </th>
+                          <td className={styles.personName}>{content.member?.name}</td>
+                          <td className={`${styles.numeric} ${styles.primaryNumber}`}>{(metric.views || 0).toLocaleString()}</td>
+                          <td className={`${styles.numeric} ${styles.muted}`}>{(metric.reach || 0).toLocaleString()}</td>
+                          <td className={`${styles.numeric} ${styles.muted}`}>{((metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0)).toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
+                    {topContents.length === 0 && <tr><td colSpan={6}><div className={styles.emptyState}><HiDocumentText aria-hidden="true" /><span>ไม่มีข้อมูลในเดือนนี้</span></div></td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </>
       )}
     </div>
   );
