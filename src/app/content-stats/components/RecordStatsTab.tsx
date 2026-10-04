@@ -159,7 +159,7 @@ export default function RecordStatsTab() {
             <thead>
               <tr>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>วันที่โพสต์</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '30%' }}>คอนเทนต์</th>
+                <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '45%' }}>คอนเทนต์</th>
                 <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', width: '100px' }}>ผู้รับผิดชอบ</th>
                 <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Views</th>
                 <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', width: '70px', fontSize: '0.85rem' }}>Reach</th>
@@ -239,7 +239,7 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
           </div>
         )}
       </td>
-      <td style={{ padding: '0.5rem', maxWidth: '250px', verticalAlign: 'middle' }}>
+      <td style={{ padding: '0.5rem', maxWidth: '450px', verticalAlign: 'middle' }}>
         <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           <span style={{ color: getCompanyColor(content.company), marginRight: '4px' }}>[{content.company}]</span>
           {content.title}
