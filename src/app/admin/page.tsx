@@ -1,5 +1,5 @@
-import { toast } from 'react-hot-toast';
 "use client";
+import { toast } from 'react-hot-toast';
 
 import { useState, useEffect } from "react";
 import { HiTrash, HiOutlineDatabase, HiLogout, HiRefresh } from "react-icons/hi";
