@@ -219,7 +219,6 @@ export default function PageOverviewTab() {
                 <th style={{ textAlign: 'left', padding: '0.5rem 0.5rem' }}>ชื่อเพจ / ช่อง</th>
                 <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>ผู้ติดตามสะสม</th>
                 <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>Reach รวม</th>
-                <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>จำนวนแชท/Inbox</th>
                 <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>ผู้ดูแล</th>
                 <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>วันที่เก็บข้อมูล</th>
                 <th style={{ textAlign: 'center', padding: '0.5rem 0.5rem' }}>จัดการ</th>
@@ -241,9 +240,6 @@ export default function PageOverviewTab() {
                     </td>
                     <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <input type="number" className="form-input" style={{ width: '80px', margin: '0 auto', textAlign: 'center', padding: '0.2rem' }} value={data.reach ?? ''} onChange={e => handleChange(ch.id, 'reach', e.target.value)} placeholder="0" />
-                    </td>
-                    <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
-                      <input type="number" className="form-input" style={{ width: '80px', margin: '0 auto', textAlign: 'center', padding: '0.2rem' }} value={data.messages ?? ''} onChange={e => handleChange(ch.id, 'messages', e.target.value)} placeholder="0" />
                     </td>
                     <td style={{ padding: '0.25rem 0.5rem', textAlign: 'center' }}>
                       <select 
@@ -275,7 +271,7 @@ export default function PageOverviewTab() {
               })}
               {channels.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                     ยังไม่มีข้อมูลช่อง กรุณากด "ตั้งค่าชื่อเพจ/ช่อง" ด้านขวาบน
                   </td>
                 </tr>
