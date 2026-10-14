@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { memberAssignmentFilter, serializeAssignments } from '@/lib/assignments';
 
 const prisma = new PrismaClient();
 
@@ -14,8 +15,12 @@ export async function GET(request: Request) {
     
     let whereClause: any = {};
     
-    if (memberId && memberId !== 'all') whereClause.memberId = memberId;
-    if (company && company !== 'all') whereClause.company = company;
+    const assignmentFilters = [];
+    if (memberId && memberId !== 'all') assignmentFilters.push(memberAssignmentFilter(memberId));
+    if (company && company !== 'all') assignmentFilters.push({
+      OR: [{ company }, { companies: { has: company } }]
+    });
+    if (assignmentFilters.length) whereClause.AND = assignmentFilters;
     if (platform && platform !== 'all') {
       whereClause.platform = { contains: platform, mode: 'insensitive' };
     }
@@ -46,7 +51,18 @@ export async function GET(request: Request) {
       take: 200 // reasonable limit
     });
 
-    return NextResponse.json({ contents });
+    const serialized = contents.map(serializeAssignments);
+    const assignedIds = [...new Set(serialized.flatMap(content => content.memberIds).filter(id => id !== 'all'))];
+    const assignedMembers = assignedIds.length ? await prisma.teamMember.findMany({
+      where: { id: { in: assignedIds } },
+      select: { id: true, name: true, avatar: true }
+    }) : [];
+    const membersById = new Map(assignedMembers.map(member => [member.id, member]));
+
+    return NextResponse.json({ contents: serialized.map(content => ({
+      ...content,
+      assignedMembers: content.memberIds.map(id => membersById.get(id)).filter(Boolean)
+    })) });
   } catch (error: any) {
     console.error('Error fetching content metrics:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

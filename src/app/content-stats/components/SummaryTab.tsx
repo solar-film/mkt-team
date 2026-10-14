@@ -3,7 +3,39 @@
 import { useState, useEffect, type CSSProperties } from 'react';
 import { HiChartBar, HiDocumentText, HiEye, HiArrowTrendingUp, HiChatBubbleLeftRight, HiUsers, HiTrophy } from 'react-icons/hi2';
 import { getCompanyColor } from '@/lib/colors';
+import { memberSelectionLabel, parseSelection } from '@/lib/assignments';
 import styles from './SummaryTab.module.css';
+
+export function summarizeContentMetrics(contents: any[]) {
+  const memberStats: Record<string, any> = {};
+  const totals = { contents: 0, views: 0, reach: 0, engagement: 0 };
+  contents.forEach(content => {
+    const memberIds = parseSelection(content.memberIds?.length ? content.memberIds : content.memberId).sort();
+    const key = JSON.stringify(memberIds);
+    const name = memberSelectionLabel(memberIds, content.assignedMembers || (content.member ? [content.member] : []));
+    const metric = content.metrics?.find((mx: any) => mx.snapshot === 'D+7') || content.metrics?.[0] || {};
+    const views = metric.views || 0;
+    const reach = metric.reach || 0;
+    const engagement = (metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0);
+
+    if (!memberStats[key]) memberStats[key] = { id: key, name, count: 0, views: 0, reach: 0, engagement: 0 };
+    memberStats[key].count += 1;
+    memberStats[key].views += views;
+    memberStats[key].reach += reach;
+    memberStats[key].engagement += engagement;
+    // Shared work belongs to one owner group and contributes once to the overall totals.
+    totals.contents += 1;
+    totals.views += views;
+    totals.reach += reach;
+    totals.engagement += engagement;
+  });
+  const summary = Object.values(memberStats).map((stat: any) => ({
+    ...stat,
+    avgViews: stat.count > 0 ? Math.round(stat.views / stat.count) : 0,
+    avgReach: stat.count > 0 ? Math.round(stat.reach / stat.count) : 0
+  })).sort((a, b) => b.views - a.views);
+  return { summary, totals };
+}
 
 export default function SummaryTab() {
   const [summaryData, setSummaryData] = useState<any[]>([]);
@@ -34,37 +66,10 @@ export default function SummaryTab() {
           return d.getMonth() + 1 === parseInt(monthFilter) && d.getFullYear() === parseInt(yearFilter);
         });
 
-        // 1. Aggregation by member
-        const memberStats: Record<string, any> = {};
-        filtered.forEach((c: any) => {
-          const m = c.memberId;
-          const mName = c.member?.name || 'Unknown';
-          const metric = c.metrics?.find((mx: any) => mx.snapshot === 'D+7') || c.metrics?.[0] || {};
-          
-          if (!memberStats[m]) {
-            memberStats[m] = { id: m, name: mName, count: 0, views: 0, reach: 0, engagement: 0 };
-          }
-          
-          memberStats[m].count += 1;
-          memberStats[m].views += (metric.views || 0);
-          memberStats[m].reach += (metric.reach || 0);
-          memberStats[m].engagement += ((metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0));
-        });
-
-        const summaryArr = Object.values(memberStats).map((s: any) => ({
-          ...s,
-          avgViews: s.count > 0 ? Math.round(s.views / s.count) : 0,
-          avgReach: s.count > 0 ? Math.round(s.reach / s.count) : 0
-        }));
-        let tContents = 0, tViews = 0, tReach = 0, tEng = 0;
-        summaryArr.forEach(s => {
-          tContents += s.count;
-          tViews += s.views;
-          tReach += s.reach;
-          tEng += s.engagement;
-        });
-        setTotals({ contents: tContents, views: tViews, reach: tReach, engagement: tEng });
-        setSummaryData(summaryArr.sort((a, b) => b.views - a.views));
+        // 1. Aggregate individual work and shared owner groups without duplicating a content.
+        const { summary, totals } = summarizeContentMetrics(filtered);
+        setTotals(totals);
+        setSummaryData(summary);
 
         // 2. Top 10 Contents
         const sortedContents = [...filtered].sort((a: any, b: any) => {
@@ -85,7 +90,7 @@ export default function SummaryTab() {
       const cmData = await cmRes.json();
 
       if (chData.channels) {
-        const combined = chData.channels.map((ch: any) => {
+        const combined: any[] = chData.channels.map((ch: any) => {
           const m = cmData.metrics?.find((mx: any) => mx.channelId === ch.id) || {};
           return {
             ...ch,
@@ -199,15 +204,15 @@ export default function SummaryTab() {
             <section className={styles.section} aria-labelledby="summary-members-title">
               <div className={styles.sectionHeader}>
                 <div>
-                  <h4 id="summary-members-title" className={styles.sectionTitle}><span className={styles.sectionIcon} aria-hidden="true"><HiUsers /></span>สรุปผลงานรายบุคคล</h4>
-                  <p className={styles.sectionDescription}>เปรียบเทียบจำนวนชิ้นงานและผลลัพธ์ของทีม</p>
+                  <h4 id="summary-members-title" className={styles.sectionTitle}><span className={styles.sectionIcon} aria-hidden="true"><HiUsers /></span>สรุปผลงานตามผู้รับผิดชอบ</h4>
+                  <p className={styles.sectionDescription}>งานร่วมแสดงชื่อผู้รับผิดชอบครบทุกคน และนับผลงานหนึ่งครั้งต่อกลุ่ม</p>
                 </div>
-                <span className={styles.countBadge}>{summaryData.length} คน</span>
+                <span className={styles.countBadge}>{summaryData.length} กลุ่มผู้รับผิดชอบ</span>
               </div>
-              <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="ตารางผลงานรายบุคคล เลื่อนแนวนอนได้">
-                <table className={styles.table} aria-label="สรุปผลงานรายบุคคล">
+              <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="ตารางผลงานตามผู้รับผิดชอบ เลื่อนแนวนอนได้">
+                <table className={styles.table} aria-label="สรุปผลงานตามผู้รับผิดชอบ">
                   <thead><tr>
-                    <th scope="col">พนักงาน</th>
+                    <th scope="col">ผู้รับผิดชอบ</th>
                     <th scope="col" className={styles.numeric}>จำนวนชิ้นงาน</th>
                     <th scope="col" className={styles.numeric}>ยอดวิวรวม</th>
                     <th scope="col" className={styles.numeric}>ยอดวิวเฉลี่ย/ชิ้น</th>
@@ -260,11 +265,13 @@ export default function SummaryTab() {
                           <th scope="row" className={styles.contentCell}>
                             <div className={styles.contentTitle} title={content.title}>{content.title}</div>
                             <div className={styles.contentMeta}>
-                              <span className={styles.companyBadge} style={{ '--company-color': getCompanyColor(content.company) } as CSSProperties}>{content.company}</span>
+                              {parseSelection(content.companies?.length ? content.companies : content.company).map(company => (
+                                <span key={company} className={styles.companyBadge} style={{ '--company-color': getCompanyColor(company) } as CSSProperties}>{company}</span>
+                              ))}
                               <span>{content.platform}</span><span aria-hidden="true">·</span><span>{new Date(content.publishDate).toLocaleDateString('th-TH')}</span>
                             </div>
                           </th>
-                          <td className={styles.personName}>{content.member?.name}</td>
+                          <td className={styles.personName}>{memberSelectionLabel(content.memberIds?.length ? content.memberIds : content.memberId, content.assignedMembers || (content.member ? [content.member] : []))}</td>
                           <td className={`${styles.numeric} ${styles.primaryNumber}`}>{(metric.views || 0).toLocaleString()}</td>
                           <td className={`${styles.numeric} ${styles.muted}`}>{(metric.reach || 0).toLocaleString()}</td>
                           <td className={`${styles.numeric} ${styles.muted}`}>{((metric.likes || 0) + (metric.comments || 0) + (metric.shares || 0) + (metric.saves || 0)).toLocaleString()}</td>

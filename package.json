@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "echo 'Skipping lint'",
     "postinstall": "prisma generate",
-    "test:meetings": "tsx --test tests/meeting-assignments.test.ts"
+    "test:meetings": "tsx --test tests/meeting-assignments.test.ts",
+    "test:shared-assignments": "tsx --test tests/meeting-assignments.test.ts tests/dashboard-shared-assignments.test.ts tests/content-metrics-assignments.test.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

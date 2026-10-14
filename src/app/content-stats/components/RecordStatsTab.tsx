@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCompanyColor } from '@/lib/colors';
+import { memberSelectionLabel, parseSelection } from '@/lib/assignments';
 
 export default function RecordStatsTab() {
   const { currentUserId } = useAuth();
@@ -181,7 +182,7 @@ export default function RecordStatsTab() {
                     initialMetric={metric} 
                     snapshot={snapshotFilter} 
                     dueAlert={dueAlert} 
-                    onSave={(data) => handleSave(content.id, data)}
+                    onSave={(data: Record<string, number | null>) => handleSave(content.id, data)}
                     saving={savingId === content.id}
                   />
                 );
@@ -253,7 +254,9 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
       </td>
       <td style={{ padding: '0.5rem', maxWidth: '450px', verticalAlign: 'middle' }}>
         <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          <span style={{ color: getCompanyColor(content.company), marginRight: '4px' }}>[{content.company}]</span>
+          {parseSelection(content.companies?.length ? content.companies : content.company).map(company => (
+            <span key={company} style={{ color: getCompanyColor(company), marginRight: '4px' }}>[{company}]</span>
+          ))}
           {content.title}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#64748b' }}>
@@ -281,7 +284,7 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
           )}
         </div>
       </td>
-      <td style={{ padding: '0.5rem', verticalAlign: 'middle', fontSize: '0.85rem' }}>{content.member?.name}</td>
+      <td style={{ padding: '0.5rem', verticalAlign: 'middle', fontSize: '0.85rem' }}>{memberSelectionLabel(content.memberIds?.length ? content.memberIds : content.memberId, content.assignedMembers || (content.member ? [content.member] : []))}</td>
       <td style={{ padding: '0.5rem', verticalAlign: 'middle' }}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <input type="number" className="form-input" style={{ width: '60px', padding: '0.2rem 0.4rem', fontSize: '0.8rem', textAlign: 'center' }} value={metrics.views} onChange={e => handleChange('views', e.target.value)} />

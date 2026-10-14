@@ -1,6 +1,7 @@
 'use client';
 
-import { matchesMemberSelection, matchesCompanySelection } from '@/lib/assignments';
+import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
+import { uniqueById } from '@/lib/dashboard-items';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -119,10 +120,15 @@ export default function DashboardPage() {
     ? members 
     : members.filter(m => m.id === filterMemberId);
 
+  // Shared records count once in team totals; member lists retain individual attribution.
+  const allTasks = uniqueById(filteredMembers.flatMap(m => m.tasks)).map(t => ({ ...t, memberName: memberSelectionLabel(t.memberId, members), itemType: 'task' }));
+  const allContents = uniqueById(filteredMembers.flatMap(m => m.contents)).map(c => ({ ...c, memberName: memberSelectionLabel(c.memberId, members), itemType: 'content', deadline: c.publishDate }));
+  const allItems = [...allTasks, ...allContents];
+
   // Calculate overall stats
-  const totalTasks = filteredMembers.reduce((sum, m) => sum + m.tasks.length, 0);
-  const completedTasks = filteredMembers.reduce((sum, m) => sum + m.tasks.filter(t => t.status === 'done').length, 0);
-  const totalContent = filteredMembers.reduce((sum, m) => sum + m.contents.length, 0);
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter(t => t.status === 'done').length;
+  const totalContent = allContents.length;
   
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
@@ -143,10 +149,6 @@ export default function DashboardPage() {
     : 0;
 
   // Get recent tasks sorted by deadline
-  const allTasks = filteredMembers.flatMap(m => m.tasks.map(t => ({ ...t, memberName: m.name, itemType: 'task', memberId: m.id })));
-  const allContents = filteredMembers.flatMap(m => m.contents.map(c => ({ ...c, memberName: m.name, itemType: 'content', deadline: c.publishDate, memberId: m.id })));
-  const allItems = [...allTasks, ...allContents];
-  
   const upcomingTasks = allItems
     .filter(t => t.deadline && t.status !== 'done')
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
@@ -516,7 +518,7 @@ export default function DashboardPage() {
             </thead>
             <tbody>
               {upcomingTasks.map((t, i) => (
-                <tr key={t.id} style={{ borderBottom: i < upcomingTasks.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
+                <tr key={`${t.itemType}:${t.id}`} style={{ borderBottom: i < upcomingTasks.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
                   <td style={{ padding: '0.75rem 0', maxWidth: '200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <div style={{ width: '20px', height: '20px', backgroundColor: t.itemType === 'task' ? '#fff7ed' : '#eff6ff', color: t.itemType === 'task' ? '#f97316' : '#3b82f6', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
