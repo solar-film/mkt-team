@@ -1,5 +1,7 @@
 'use client';
 
+import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
+
 import { useEffect, useState, useMemo } from 'react';
 import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList, HiEllipsisVertical } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
@@ -357,16 +359,16 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
   const filteredItems = items.filter(item => {
     if (filterMemberId && item.memberId !== 'all') {
-      if (!item.memberId?.includes(filterMemberId)) return false;
+      if (!matchesMemberSelection(item.memberId, filterMemberId)) return false;
     }
     if (filterType !== 'all' && item.itemType !== filterType) return false;
-    if (filterCompany !== 'all' && item.company !== filterCompany) return false;
+    if (filterCompany !== 'all' && !matchesCompanySelection(item.company, filterCompany)) return false;
     if (filterPlatform !== 'all' && item.platform !== filterPlatform) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchTitle = item.title?.toLowerCase().includes(q) || false;
       const matchDesc = item.description?.toLowerCase().includes(q) || false;
-      const memberName = item.memberId?.includes(',') ? 'หลายคน' : (members.find(m => m.id === item.memberId)?.name || '');
+      const memberName = memberSelectionLabel(item.memberId, members);
       const matchMember = memberName.toLowerCase().includes(q);
       if (!matchTitle && !matchDesc && !matchMember) return false;
     }
@@ -477,7 +479,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                   ) : item.member ? (
                     <MemberAvatar name={item.member.name} size="sm" />
                   ) : null}
-                  <span>{item.memberId === 'all' ? 'ทุกคน' : item.memberId?.includes(',') ? 'หลายคน' : (item.member?.name || 'ไม่ระบุ')}</span>
+                  <span>{memberSelectionLabel(item.memberId, members)}</span>
                 </div>
                 {item.itemType === 'task' && item.deadline && (
                   <span style={{ marginLeft: 'auto', color: new Date(item.deadline) < new Date() ? 'var(--color-danger)' : 'inherit' }}>
@@ -1048,7 +1050,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {viewItem.memberId === 'all' ? <span style={{ fontSize: '1.1rem' }}>👥</span> : <MemberAvatar name={viewItem.member?.name || 'ไม่ระบุ'} size="sm" />}
-                <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{viewItem.memberId === 'all' ? 'ทุกคน' : (viewItem.member?.name || 'ไม่ระบุ')}</span>
+                <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{memberSelectionLabel(viewItem.memberId, members)}</span>
               </div>
               <span style={{ backgroundColor: viewItem.status === 'todo' ? '#fffbeb' : viewItem.status === 'in_progress' ? '#eff6ff' : '#ecfdf5', color: viewItem.status === 'todo' ? '#f97316' : viewItem.status === 'in_progress' ? '#3b82f6' : '#10b981', padding: '0.25rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
                 {viewItem.status === 'todo' ? 'รอดำเนินการ' : viewItem.status === 'in_progress' ? 'กำลังทำ' : 'เสร็จเรียบร้อย'}

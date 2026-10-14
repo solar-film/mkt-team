@@ -21,6 +21,8 @@ import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
 import dynamic from 'next/dynamic';
+import ActionItemMultiSelect from './components/ActionItemMultiSelect';
+import { parseSelection, memberSelectionLabel } from '@/lib/assignments';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
@@ -119,6 +121,7 @@ export default function MeetingsPage() {
 
   // Action Items in form
   const [formItems, setFormItems] = useState<ItemForm[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Custom external attendees
   const [customAttendee, setCustomAttendee] = useState('');
@@ -197,7 +200,7 @@ export default function MeetingsPage() {
   const handleCopySummary = (meeting: Meeting, items: MeetingLinkedItem[]) => {
     const grouped: Record<string, MeetingLinkedItem[]> = {};
     items.forEach(item => {
-      const role = item.member?.role || 'ทั่วไป';
+      const role = parseSelection(item.memberId).length > 1 || item.memberId === 'all' ? 'ผู้รับผิดชอบร่วม' : item.member?.role || 'ทั่วไป';
       if (!grouped[role]) grouped[role] = [];
       grouped[role].push(item);
     });
@@ -216,7 +219,7 @@ export default function MeetingsPage() {
       text += `${emoji} ${role}\n`;
       roleItems.forEach(item => {
         const companyStr = item.company ? `${item.company}: ` : '';
-        text += `o [ ] ${companyStr}${item.title}\n`;
+        text += `o [ ] ${companyStr}${item.title} — ${memberSelectionLabel(item.memberId, members)}\n`;
       });
       text += '\n';
     });
@@ -274,95 +277,42 @@ export default function MeetingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    const items = formItems.filter(item => item.title.trim());
+    if (items.some(item => !parseSelection(item.company).length || !parseSelection(item.memberId).length)) {
+      toast.error('กรุณาเลือกบริษัทและผู้รับผิดชอบของแต่ละรายการ');
+      return;
+    }
+    setIsSaving(true);
     try {
-      const body = {
-        ...form,
-        attendees: form.attendees.join(','),
-      };
-
-      let newMeetingId = editingId;
-
-      if (isEditing && editingId) {
-        await fetch('/api/meetings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingId, ...body }),
-        });
-      } else {
-        const res = await fetch('/api/meetings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const created = await res.json();
-        newMeetingId = created.id;
-      }
-
-      // Create Task/Content for each action item
-      if (newMeetingId && formItems.length > 0) {
-        for (const item of formItems.filter(i => i.title.trim())) {
-          
-          if (item.itemCategory === 'task') {
-            const payload = {
-              title: item.title,
-              memberId: item.memberId,
-              deadline: item.deadline,
-              meetingId: newMeetingId,
-              status: 'todo',
-              priority: 'medium',
-              company: item.company,
-            };
-            
-            if (isEditing && item.id && !item.isNew) {
-              await fetch('/api/tasks', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: item.id, ...payload }),
-              });
-            } else if (item.isNew || !isEditing) {
-              await fetch('/api/tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-              });
-            }
-          } else {
-            const payload = {
-              title: item.title,
-              memberId: item.memberId,
-              publishDate: item.deadline,
-              meetingId: newMeetingId,
-              status: 'draft',
-              platform: 'Facebook',
-              type: 'post',
-              company: item.company,
-            };
-            
-            if (isEditing && item.id && !item.isNew) {
-              await fetch('/api/content', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: item.id, ...payload }),
-              });
-            } else if (item.isNew || !isEditing) {
-              await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-              });
-            }
-          }
-        }
-      }
-
+      const res = await fetch('/api/meetings', {
+        method: isEditing && editingId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          ...(isEditing && editingId ? { id: editingId } : {}),
+          attendees: form.attendees.join(','),
+          items: items.map(item => ({
+            ...(item.id ? { id: item.id } : {}),
+            title: item.title,
+            itemCategory: item.itemCategory,
+            companies: parseSelection(item.company),
+            memberIds: parseSelection(item.memberId),
+            deadline: item.deadline,
+          })),
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'บันทึกประชุมไม่สำเร็จ');
+      toast.success('บันทึกสำเร็จ');
       setIsModalOpen(false);
       resetForm();
       setLoading(true);
-      fetchMeetings();
-      // Clear cached items so they reload
-      setMeetingItems({});
+      await fetchMeetings();
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'บันทึกประชุมไม่สำเร็จ');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -658,9 +608,9 @@ export default function MeetingsPage() {
                                     <span style={{ fontSize: '0.7rem', backgroundColor: '#e2e8f0', padding: '0.1rem 0.3rem', borderRadius: '4px', marginRight: '0.4rem', color: '#475569' }}>{item.itemCategory === 'content' ? 'คอนเทนต์' : 'ทั่วไป'}</span>
                                     {item.title}
                                   </span>
-                                  {item.member && (
-                                    <MemberAvatar name={item.member.name} size="sm" />
-                                  )}
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                                    {parseSelection(item.company).join(', ')} · {memberSelectionLabel(item.memberId, members)}
+                                  </span>
                                   {(item.deadline || item.publishDate) && (
                                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
                                       📅 {formatDate(item.deadline || item.publishDate || '')}
@@ -886,7 +836,7 @@ export default function MeetingsPage() {
                     <HiXMark style={{ fontSize: '1.1rem' }} />
                   </button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   <select
                     className="form-select"
                     style={{ fontSize: '0.8rem' }}
@@ -896,28 +846,6 @@ export default function MeetingsPage() {
                     <option value="task">งานทั่วไป</option>
                     <option value="content">คอนเทนต์</option>
                   </select>
-                  <select
-                    className="form-select"
-                    style={{ fontSize: '0.8rem' }}
-                    value={item.company}
-                    onChange={e => updateFormItem(idx, 'company', e.target.value)}
-                  >
-                    <option value="GFS">GFS</option>
-                    <option value="MHL">MHL</option>
-                    <option value="CAR">CAR</option>
-                  </select>
-                  <select
-                    className="form-select"
-                    style={{ fontSize: '0.8rem' }}
-                    value={item.memberId}
-                    onChange={e => updateFormItem(idx, 'memberId', e.target.value)}
-                  >
-                    <option value="">-- ผู้รับผิดชอบ --</option>
-                    <option value="all">ทุกคน</option>
-                    {activeMembers.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
                   <input
                     type="date"
                     className="form-input"
@@ -926,13 +854,31 @@ export default function MeetingsPage() {
                     onChange={e => updateFormItem(idx, 'deadline', e.target.value)}
                   />
                 </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '0.75rem' }}>
+                  <ActionItemMultiSelect
+                    label="บริษัท"
+                    options={['GFS', 'MHL', 'CAR'].map(company => ({ value: company, label: company }))}
+                    value={parseSelection(item.company)}
+                    onChange={values => updateFormItem(idx, 'company', values.join(','))}
+                  />
+                  <ActionItemMultiSelect
+                    label="ผู้รับผิดชอบ"
+                    options={[
+                      { value: 'all', label: 'ทุกคน' },
+                      ...members.filter(member => member.status !== 'inactive' || parseSelection(item.memberId).includes(member.id)).map(member => ({ value: member.id, label: member.name })),
+                    ]}
+                    value={parseSelection(item.memberId)}
+                    onChange={values => updateFormItem(idx, 'memberId', values.join(','))}
+                    exclusiveValue="all"
+                  />
+                </div>
               </div>
             ))}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-            <button type="submit" className="btn btn-primary">{isEditing ? 'บันทึกการแก้ไข' : 'สร้างบันทึก'}</button>
+            <button type="button" className="btn btn-secondary" disabled={isSaving} onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
+            <button type="submit" className="btn btn-primary" disabled={isSaving}>{isSaving ? 'กำลังบันทึก...' : isEditing ? 'บันทึกการแก้ไข' : 'สร้างบันทึก'}</button>
           </div>
         </form>
       </Modal>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { matchesMemberSelection, serializeAssignments } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,14 +11,30 @@ export async function GET(request: NextRequest) {
 
     const members = await prisma.teamMember.findMany({
       where: { id: { not: 'all' } },
-      include: includeRelations ? {
-        tasks: true,
-        kpis: true,
-        contents: true
-      } : undefined
+      include: {
+        tasks: includeRelations,
+        kpis: includeRelations,
+        contents: includeRelations
+      }
     })
 
     if (includeRelations) {
+      const ids = members.map(member => member.id)
+      const sharedWhere = { OR: [{ memberIds: { hasSome: ids } }, { memberIds: { has: 'all' } }] }
+      const [sharedTasks, sharedContents] = await Promise.all([
+        prisma.task.findMany({ where: sharedWhere }),
+        prisma.content.findMany({ where: sharedWhere })
+      ])
+      members.forEach(member => {
+        member.tasks = member.tasks.map(serializeAssignments)
+        member.contents = member.contents.map(serializeAssignments)
+        sharedTasks.map(serializeAssignments).forEach(task => {
+          if (matchesMemberSelection(task.memberId, member.id) && !member.tasks.some(existing => existing.id === task.id)) member.tasks.push(task)
+        })
+        sharedContents.map(serializeAssignments).forEach(content => {
+          if (matchesMemberSelection(content.memberId, member.id) && !member.contents.some(existing => existing.id === content.id)) member.contents.push(content)
+        })
+      })
       const ideas = await prisma.ideaNote.findMany({
         where: { category: { in: ['task', 'content'] } }
       });

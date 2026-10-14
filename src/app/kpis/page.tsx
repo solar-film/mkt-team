@@ -1,5 +1,7 @@
 'use client';
 
+import { matchesMemberSelection, matchesCompanySelection } from '@/lib/assignments';
+
 import { useEffect, useState } from 'react';
 import { HiPlus, HiPencilSquare, HiOutlineTrash } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
@@ -63,8 +65,8 @@ export default function KPIsPage() {
         if (data && data.members) {
           const enrichedMembers = data.members.map((m: any) => ({
             ...m,
-            tasks: data.tasks?.filter((t: any) => t.memberId === m.id || t.memberId?.includes(m.id)) || [],
-            contents: data.contents?.filter((c: any) => c.memberId === m.id || c.memberId?.includes(m.id)) || [],
+            tasks: data.tasks?.filter((t: any) => matchesMemberSelection(t.memberId, m.id)) || [],
+            contents: data.contents?.filter((c: any) => matchesMemberSelection(c.memberId, m.id)) || [],
             kpis: data.kpis?.filter((k: any) => k.memberId === m.id) || []
           }));
           setMembers(enrichedMembers);
@@ -324,13 +326,13 @@ export default function KPIsPage() {
               {(() => {
                 const getStats = (company: string) => {
                   const cTasks = (member.tasks || []).filter(t => {
-                    if (t.company !== company) return false;
+                    if (!matchesCompanySelection(t.company, company)) return false;
                     if (!t.deadline) return false;
                     const d = new Date(t.deadline);
                     return (d.getMonth() + 1) === filterMonth && d.getFullYear() === filterYear;
                   });
                   const cContents = (member.contents || []).filter(c => {
-                    if (c.company !== company) return false;
+                    if (!matchesCompanySelection(c.company, company)) return false;
                     if (!c.publishDate) return false;
                     const d = new Date(c.publishDate);
                     return (d.getMonth() + 1) === filterMonth && d.getFullYear() === filterYear;

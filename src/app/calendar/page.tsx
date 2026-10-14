@@ -1,5 +1,7 @@
 'use client';
 
+import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
+
 import { useEffect, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
@@ -104,7 +106,7 @@ export default function CalendarPage() {
               id: t.id, title: t.title, status: t.status, memberId: t.memberId,
               date: t.deadline.split('T')[0], type: 'task',
               startDate: t.startDate ? t.startDate.split('T')[0] : t.deadline.split('T')[0],
-              member: Array.isArray(members) ? members.find(m => m.id === t.memberId) : undefined,
+              member: Array.isArray(members) ? members.find(m => matchesMemberSelection(t.memberId, m.id)) : undefined,
               fullItem: t
             });
           }
@@ -117,7 +119,7 @@ export default function CalendarPage() {
             unified.push({
               id: c.id, title: c.title, status: c.status, memberId: c.memberId,
               date: c.publishDate.split('T')[0], type: 'content',
-              member: Array.isArray(members) ? members.find(m => m.id === c.memberId) : undefined,
+              member: Array.isArray(members) ? members.find(m => matchesMemberSelection(c.memberId, m.id)) : undefined,
               fullItem: c
             });
           }
@@ -351,7 +353,7 @@ export default function CalendarPage() {
   }
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const filteredItems = filterMemberId ? items.filter(i => i.memberId === filterMemberId) : items;
+  const filteredItems = filterMemberId ? items.filter(i => matchesMemberSelection(i.memberId, filterMemberId)) : items;
 
   // 1. Sort items globally
   const sortedItems = [...filteredItems].sort((a, b) => {
@@ -449,7 +451,7 @@ export default function CalendarPage() {
             <div 
               key={`${item.type}-${item.id}`} 
               className={item.type === 'event' ? 'calendar-task-item status-event' : `calendar-task-item status-${item.status} ${spanClass}`} 
-              title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}${item.title} (${item.member?.name || 'ไม่ระบุ'})`}
+              title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}${item.title} (${memberSelectionLabel(item.memberId, membersList)})`}
               onClick={(e) => handleItemClick(e, item)}
               style={item.type === 'event' 
                 ? { backgroundColor: '#fce7f3', borderColor: '#ec4899', color: '#be185d', fontWeight: 600, height: '28px' } 
@@ -1163,7 +1165,7 @@ export default function CalendarPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--color-surface-hover)', padding: '0.25rem 0.75rem', borderRadius: '20px' }}>
                   {viewItem.memberId === 'all' ? <span style={{ fontSize: '1.1rem' }}>👥</span> : viewItem.member ? <MemberAvatar name={viewItem.member.name} size="sm" /> : null}
-                  <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{viewItem.memberId === 'all' ? 'ทุกคน' : (viewItem.member?.name || 'ไม่ระบุ')}</span>
+                  <span style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 500 }}>{memberSelectionLabel(viewItem.memberId, membersList)}</span>
                   </div>
                   
                   {viewItem.type !== 'event' && (

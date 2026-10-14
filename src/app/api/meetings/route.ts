@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { serializeAssignments, AssignmentValidationError } from '@/lib/assignments'
+import { saveMeetingActions } from '@/lib/meeting-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,8 +42,8 @@ export async function GET(request: NextRequest) {
 
     const meetingsWithItems = meetings.map(m => ({
       ...m,
-      tasks: tasks.filter(t => t.meetingId === m.id),
-      contents: contents.filter(c => c.meetingId === m.id)
+      tasks: tasks.filter(t => t.meetingId === m.id).map(serializeAssignments),
+      contents: contents.filter(c => c.meetingId === m.id).map(serializeAssignments)
     }))
 
     return NextResponse.json(meetingsWithItems)
@@ -60,22 +62,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
     }
 
-    const newMeeting = await prisma.meeting.create({
-      data: {
-        title,
-        date: new Date(date),
-        time: time || null,
-        company: company || 'GFS',
-        status: status || 'upcoming',
-        attendees: attendees || null,
-        agenda: agenda || null,
-        notes: notes || null,
-        createdBy: createdBy || null
-      }
+    const newMeeting = await prisma.$transaction(async tx => {
+      const meeting = await tx.meeting.create({
+        data: {
+          title,
+          date: new Date(date),
+          time: time || null,
+          company: company || 'GFS',
+          status: status || 'upcoming',
+          attendees: attendees || null,
+          agenda: agenda || null,
+          notes: notes || null,
+          createdBy: createdBy || null
+        }
+      })
+      await saveMeetingActions(tx, meeting.id, body.items)
+      return meeting
     })
 
     return NextResponse.json({ success: true, meeting: newMeeting })
   } catch (error) {
+    if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add meeting' }, { status: 500 })
   }
@@ -88,23 +95,28 @@ export async function PUT(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-    const updatedMeeting = await prisma.meeting.update({
-      where: { id },
-      data: {
-        title: title !== undefined ? title : undefined,
-        date: date !== undefined ? new Date(date) : undefined,
-        time: time !== undefined ? time : undefined,
-        company: company !== undefined ? company : undefined,
-        status: status !== undefined ? status : undefined,
-        attendees: attendees !== undefined ? attendees : undefined,
-        agenda: agenda !== undefined ? agenda : undefined,
-        notes: notes !== undefined ? notes : undefined,
-        createdBy: createdBy !== undefined ? createdBy : undefined
-      }
+    const updatedMeeting = await prisma.$transaction(async tx => {
+      const meeting = await tx.meeting.update({
+        where: { id },
+        data: {
+          title: title !== undefined ? title : undefined,
+          date: date !== undefined ? new Date(date) : undefined,
+          time: time !== undefined ? time : undefined,
+          company: company !== undefined ? company : undefined,
+          status: status !== undefined ? status : undefined,
+          attendees: attendees !== undefined ? attendees : undefined,
+          agenda: agenda !== undefined ? agenda : undefined,
+          notes: notes !== undefined ? notes : undefined,
+          createdBy: createdBy !== undefined ? createdBy : undefined
+        }
+      })
+      await saveMeetingActions(tx, meeting.id, body.items)
+      return meeting
     })
 
     return NextResponse.json({ success: true, meeting: updatedMeeting })
   } catch (error) {
+    if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update meeting' }, { status: 500 })
   }

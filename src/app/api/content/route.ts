@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
+import { assignmentData } from '@/lib/assignment-storage'
+import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,10 +15,7 @@ export async function GET(request: NextRequest) {
     const where: any = {}
     if (meetingId) where.meetingId = meetingId
     if (memberId && memberId !== 'all') {
-      where.OR = [
-        { memberId: memberId },
-        { memberId: 'all' }
-      ]
+      Object.assign(where, memberAssignmentFilter(memberId))
     }
 
     const contents = await prisma.content.findMany({
@@ -31,8 +30,9 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(contents)
+    return NextResponse.json(contents.map(serializeAssignments))
   } catch (error) {
+    if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch content' }, { status: 500 })
   }
@@ -43,10 +43,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId, notifyLine } = body
 
-    if (!title || !memberId) {
-      return NextResponse.json({ error: 'Title and memberId are required' }, { status: 400 })
+    if (!title) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
 
+    const assignments = await assignmentData(body, prisma, true)
     const newContent = await prisma.content.create({
       data: {
         title,
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest) {
         platform: platform || '',
         status: status || 'draft',
         publishDate: publishDate ? new Date(publishDate) : null,
-        company: company || 'GFS',
-        memberId,
+        ...assignments,
+        memberId: assignments.memberId!,
         link: link || null,
         kpiId: kpiId || null,
         meetingId: meetingId || null
@@ -73,8 +74,9 @@ export async function POST(request: NextRequest) {
       await sendLineNotify(message)
     }
 
-    return NextResponse.json({ success: true, content: newContent })
+    return NextResponse.json({ success: true, content: serializeAssignments(newContent) })
   } catch (error) {
+    if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add content' }, { status: 500 })
   }
@@ -87,6 +89,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
+    const assignments = await assignmentData(body, prisma)
     const updatedContent = await prisma.content.update({
       where: { id },
       data: {
@@ -96,8 +99,7 @@ export async function PUT(request: NextRequest) {
         platform: platform !== undefined ? platform : undefined,
         status: status !== undefined ? status : undefined,
         publishDate: publishDate !== undefined ? (publishDate ? new Date(publishDate) : null) : undefined,
-        company: company !== undefined ? company : undefined,
-        memberId: memberId !== undefined ? memberId : undefined,
+        ...assignments,
         link: link !== undefined ? link : undefined,
         kpiId: kpiId !== undefined ? kpiId : undefined,
         meetingId: meetingId !== undefined ? meetingId : undefined
@@ -117,8 +119,9 @@ export async function PUT(request: NextRequest) {
       await sendLineNotify(message)
     }
 
-    return NextResponse.json({ success: true, content: updatedContent })
+    return NextResponse.json({ success: true, content: serializeAssignments(updatedContent) })
   } catch (error) {
+    if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update content' }, { status: 500 })
   }
@@ -137,6 +140,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete content' }, { status: 500 })
   }

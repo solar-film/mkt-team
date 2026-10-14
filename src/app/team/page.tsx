@@ -1,5 +1,7 @@
 'use client';
 
+import { matchesMemberSelection } from '@/lib/assignments';
+
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { HiPlus, HiBriefcase, HiCheckCircle, HiDocumentText, HiOutlineTrash, HiPencilSquare, HiLockClosed, HiCog } from 'react-icons/hi2';
@@ -49,8 +51,8 @@ export default function TeamPage() {
         if (data && data.members) {
           const enrichedMembers = data.members.map((m: any) => ({
             ...m,
-            tasks: data.tasks?.filter((t: any) => t.memberId === m.id || t.memberId?.includes(m.id)) || [],
-            contents: data.contents?.filter((c: any) => c.memberId === m.id || c.memberId?.includes(m.id)) || [],
+            tasks: data.tasks?.filter((t: any) => matchesMemberSelection(t.memberId, m.id)) || [],
+            contents: data.contents?.filter((c: any) => matchesMemberSelection(c.memberId, m.id)) || [],
             kpis: data.kpis?.filter((k: any) => k.memberId === m.id) || []
           }));
           setMembers(enrichedMembers);

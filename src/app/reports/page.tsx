@@ -1,5 +1,7 @@
 'use client';
 
+import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
+
 import { useEffect, useState } from 'react';
 import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare, HiFire, HiMinus, HiArrowDown } from 'react-icons/hi2';
 import { FaFacebook, FaInstagram, FaYoutube, FaTiktok, FaMapMarkerAlt, FaLink } from 'react-icons/fa';
@@ -10,6 +12,7 @@ import { getCompanyColor } from '@/lib/colors';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
+  memberId: string;
   priority: string; deadline: string | null; platform?: string;
   link?: string;
   kpiId?: string;
@@ -81,8 +84,8 @@ export default function ReportsPage() {
         if (data && data.members) {
           const enrichedMembers = data.members.map((m: any) => ({
             ...m,
-            tasks: data.tasks?.filter((t: any) => t.memberId === m.id || t.memberId?.includes(m.id)) || [],
-            contents: data.contents?.filter((c: any) => c.memberId === m.id || c.memberId?.includes(m.id)) || [],
+            tasks: data.tasks?.filter((t: any) => matchesMemberSelection(t.memberId, m.id)) || [],
+            contents: data.contents?.filter((c: any) => matchesMemberSelection(c.memberId, m.id)) || [],
             kpis: data.kpis?.filter((k: any) => k.memberId === m.id) || []
           }));
           setMembers(enrichedMembers);
@@ -100,15 +103,18 @@ export default function ReportsPage() {
   }
 
   // Flatten data
-  let allItems: any[] = [];
+  const allItems: any[] = [];
+  const reportedItems = new Set<string>();
   members.forEach(m => {
     if (m.status === 'inactive') return;
     
     m.tasks.forEach(t => {
+      if (reportedItems.has(`task:${t.id}`)) return;
+      reportedItems.add(`task:${t.id}`);
       allItems.push({
         ...t,
-        memberName: m.name,
-        memberId: m.id,
+        memberName: memberSelectionLabel(t.memberId, members),
+        memberId: t.memberId,
         itemType: 'task',
         kpiId: t.kpiId,
         date: t.deadline
@@ -116,10 +122,12 @@ export default function ReportsPage() {
     });
     
     m.contents.forEach(c => {
+      if (reportedItems.has(`content:${c.id}`)) return;
+      reportedItems.add(`content:${c.id}`);
       allItems.push({
         ...c,
-        memberName: m.name,
-        memberId: m.id,
+        memberName: memberSelectionLabel(c.memberId, members),
+        memberId: c.memberId,
         itemType: 'content',
         kpiId: c.kpiId,
         date: c.publishDate
@@ -130,7 +138,7 @@ export default function ReportsPage() {
   // Apply filters
   let filteredItems = allItems.filter(item => {
     // 1. Member Filter
-    if (memberFilter !== 'all' && item.memberId !== memberFilter) return false;
+    if (memberFilter !== 'all' && !matchesMemberSelection(item.memberId, memberFilter)) return false;
     
     // 2. Type Filter
     if (typeFilter !== 'all' && item.itemType !== typeFilter) return false;
@@ -146,7 +154,7 @@ export default function ReportsPage() {
     
     // Company Filter
     if (companyFilter !== 'all') {
-      if (item.company !== companyFilter) return false;
+      if (!matchesCompanySelection(item.company, companyFilter)) return false;
     }
     
     // 4. Date Filter

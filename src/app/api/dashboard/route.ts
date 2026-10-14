@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { serializeAssignments, memberAssignmentFilter } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,19 +13,13 @@ export async function GET(request: NextRequest) {
     const taskWhere: any = {}
     if (meetingId) taskWhere.meetingId = meetingId
     if (memberId && memberId !== 'all') {
-      taskWhere.OR = [
-        { memberId: memberId },
-        { memberId: 'all' }
-      ]
+      Object.assign(taskWhere, memberAssignmentFilter(memberId))
     }
 
     const contentWhere: any = {}
     if (meetingId) contentWhere.meetingId = meetingId
     if (memberId && memberId !== 'all') {
-      contentWhere.OR = [
-        { memberId: memberId },
-        { memberId: 'all' }
-      ]
+      Object.assign(contentWhere, memberAssignmentFilter(memberId))
     }
 
     const ideaWhere: any = {};
@@ -125,8 +120,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      tasks: finalTasks,
-      contents: finalContents,
+      tasks: finalTasks.map(serializeAssignments),
+      contents: finalContents.map(serializeAssignments),
       members,
       kpis,
       meetings,
