@@ -15,7 +15,7 @@ The connected Supabase account currently exposes a different CRM database, so th
 ## Validation
 
 - `npm run test:meetings`: 9 tests cover migration/backfill, saving one shared task, editing without duplicates, preserving completion/priority/links, rejecting unrelated item IDs, transaction rollback, legacy updates, everyone, and checkbox selection.
-- `npm run test:shared-assignments`: also covers dashboard totals, secondary owner/company filters, and complete shared-owner labels. Team-wide totals count each record once; per-person lists retain shared attribution. Content statistics show one row per complete owner group.
+- `npm run test:shared-assignments`: also covers dashboard totals, secondary owner/company filters, complete shared-owner labels, and mocked notification payloads. Team-wide totals count each record once; per-person lists retain shared attribution. Content statistics show one row per complete owner group. Existing LINE notifications and deadline reminders name every selected owner.
 - `npm run build -- --webpack`: passed. The repository already skips TypeScript validation during builds.
 - `tsc --noEmit --incremental false`: passed after adding explicit types to the affected statistics components.
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
 import { assignmentData } from '@/lib/assignment-storage'
+import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (notifyLine) {
-      const memberName = newContent.member?.name || 'ทีมงาน'
+      const memberName = notificationMemberLabel(newContent, await notificationMembers([newContent], prisma))
       const dateStr = publishDate ? new Date(publishDate).toLocaleDateString('th-TH') : '-'
       const message = `\n📢 คอนเทนต์ใหม่: ${title}\nรายละเอียด: ${description || '-'}\nช่องทาง: ${platform || '-'}\nผู้รับผิดชอบ: ${memberName}\nวันที่เผยแพร่: ${dateStr}`
       await sendLineNotify(message)
@@ -110,7 +111,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (notifyLine) {
-      const memberName = updatedContent.member?.name || 'ทีมงาน'
+      const memberName = notificationMemberLabel(updatedContent, await notificationMembers([updatedContent], prisma))
       let statStr = 'Draft'
       if (status === 'published') statStr = '✅ Published'
       if (status === 'scheduled') statStr = '🗓️ Scheduled'

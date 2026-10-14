@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +40,8 @@ export async function GET() {
       return NextResponse.json({ message: 'No tasks due soon' })
     }
 
+    const members = await notificationMembers(tasksDueSoon, prisma)
+
     let messageText = '🚨 *แจ้งเตือนกำหนดส่งงาน* 🚨\n\n'
     
     const dueTomorrow = tasksDueSoon.filter(t => {
@@ -59,7 +62,7 @@ export async function GET() {
     if (overdue.length > 0) {
       messageText += '🔥 *เลยกำหนดแล้ว:*\n'
       overdue.forEach(t => {
-        messageText += `- ${t.title} (@${t.member.name})\n`
+        messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
       })
       messageText += '\n'
     }
@@ -67,7 +70,7 @@ export async function GET() {
     if (dueTomorrow.length > 0) {
       messageText += '⏰ *ต้องส่งพรุ่งนี้:*\n'
       dueTomorrow.forEach(t => {
-        messageText += `- ${t.title} (@${t.member.name})\n`
+        messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
       })
       messageText += '\n'
     }
@@ -75,7 +78,7 @@ export async function GET() {
     if (due3Days.length > 0) {
       messageText += '⏳ *ต้องส่งในอีก 3 วัน:*\n'
       due3Days.forEach(t => {
-        messageText += `- ${t.title} (@${t.member.name})\n`
+        messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
       })
     }
 

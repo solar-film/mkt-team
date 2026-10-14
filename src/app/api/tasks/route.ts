@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
 import { assignmentData } from '@/lib/assignment-storage'
+import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (notifyLine) {
-      const memberName = newTask.member?.name || 'ทีมงาน'
+      const memberName = notificationMemberLabel(newTask, await notificationMembers([newTask], prisma))
       const dateStr = deadline ? new Date(deadline).toLocaleDateString('th-TH') : '-'
       let pStr = 'ปานกลาง'
       if (priority === 'high') pStr = 'ด่วนมาก'
@@ -118,7 +119,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (notifyLine) {
-      const memberName = updatedTask.member?.name || 'ทีมงาน'
+      const memberName = notificationMemberLabel(updatedTask, await notificationMembers([updatedTask], prisma))
       let statStr = 'รอดำเนินการ'
       if (status === 'done') statStr = '✅ เสร็จสิ้น'
       if (status === 'in_progress') statStr = '🔄 กำลังทำ'
