@@ -6,11 +6,16 @@ Meetings and their action items save in one transaction. Editing assignments pre
 
 ## Database and release order
 
-1. Apply `supabase/migrations/20261014103959_shared_task_assignments.sql` to the database used by **MKT-GFS**. This adds and backfills array fields and indexes; it does not delete records. Do this before deploying the new code. Confirm the database belongs to this app before applying it.
-2. Run `npm ci` (generates Prisma Client), then `npm run test:shared-assignments`.
+1. Run `npm ci` (generates Prisma Client), then `npm run test:release`.
+2. Apply `supabase/migrations/20261014103959_shared_task_assignments.sql` to the database used by **MKT-GFS** before activating the new code. This adds and backfills array fields and indexes; it does not delete records. Confirm the database belongs to this app before applying it.
 3. Deploy only when the user requests publishing. Keep database credentials in environment configuration.
 
-The connected Supabase account currently exposes a different CRM database, so the migration has been verified with in-memory Postgres and has not been applied to the live MKT database.
+For the first production release, `vercel.release.json` runs `scripts/apply-shared-assignments.cjs` inside the existing Vercel production environment, before building the app. Sensitive database credentials stay in Vercel. The runner requires the exact MKT project and production environment, checks the legacy schema, and verifies the new fields, indexes, backfill, and unchanged record counts in one transaction. A failed check rolls back and stops the build. The default `vercel.json` and normal build do not run migrations.
+
+```sh
+vercel deploy --prod --skip-domain --project prj_0BMpPn1cvL54ectUokSnERZxwNnN --scope goo-d-s-projects --local-config vercel.release.json
+vercel promote <verified-deployment-url> --scope goo-d-s-projects
+```
 
 ## Validation
 
@@ -18,6 +23,7 @@ The connected Supabase account currently exposes a different CRM database, so th
 - `npm run test:shared-assignments`: also covers dashboard totals, secondary owner/company filters, complete shared-owner labels, and mocked notification payloads. Team-wide totals count each record once; per-person lists retain shared attribution. Content statistics show one row per complete owner group. Existing LINE notifications and deadline reminders name every selected owner.
 - `npm run build -- --webpack`: passed. The repository already skips TypeScript validation during builds.
 - `tsc --noEmit --incremental false`: passed after adding explicit types to the affected statistics components.
+- `node --test tests/production-migration-runner.test.cjs`: checks production/project guards, migration idempotency, wrong-database refusal, rollback and verification failures, and secret-safe logging using isolated Postgres and mocks.
 
 ## Continuing on another computer
 

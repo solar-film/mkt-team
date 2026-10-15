@@ -9,7 +9,8 @@
     "lint": "echo 'Skipping lint'",
     "postinstall": "prisma generate",
     "test:meetings": "tsx --test tests/meeting-assignments.test.ts",
-    "test:shared-assignments": "tsx --test tests/meeting-assignments.test.ts tests/dashboard-shared-assignments.test.ts tests/content-metrics-assignments.test.ts tests/notification-assignments.test.ts"
+    "test:shared-assignments": "tsx --test tests/meeting-assignments.test.ts tests/dashboard-shared-assignments.test.ts tests/content-metrics-assignments.test.ts tests/notification-assignments.test.ts",
+    "test:release": "npm run test:shared-assignments && node --test tests/production-migration-runner.test.cjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
