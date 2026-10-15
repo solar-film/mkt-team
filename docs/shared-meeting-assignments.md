@@ -28,3 +28,9 @@ vercel promote <verified-deployment-url> --scope goo-d-s-projects
 ## Continuing on another computer
 
 After the user requests a GitHub push, clone or pull the repository on the other computer and configure its environment separately. The local read-only preview helper is specific to this computer and is not part of production code.
+
+## Production release status — 15 October 2026
+
+The migration was applied to the verified MKT database (`xoyhctcdgxxeowchoqfr`) through the owner's authenticated SQL Editor. Preflight counts matched the production API. The transaction verified four new array fields, two GIN indexes, completed backfill, and unchanged record counts: 189 tasks and 1,001 contents. No records were deleted.
+
+Source changes were pushed to `solar-film/mkt-team` on `main`. Activation of the new website is still blocked before build: Vercel's linked `supabase-coral-garden` integration reports live status `suspended`. The Supabase Free organization displays egress of 5.16 GB against a 5 GB allowance for the cycle ending 19 October 2026. The existing production website remains on its previous deployment. Resolve the integration restriction before deploying; changing a paid plan needs the owner's billing decision. Keep the integration and its environment variables intact.
