@@ -54,3 +54,17 @@ Actual load-time and Supabase egress savings must be measured after deployment w
 5. For another machine, pull the published source, run `npm ci`, supply its private environment configuration, then run the normal development command. Environment secrets and local preview helpers are deliberately excluded from Git.
 
 Rollback restores the previous application commit without deleting data. It also restores the old performance/security weaknesses. Keep the already applied shared-assignment columns and historical metric/file records intact.
+
+## Release follow-up — 15 October 2026
+
+The owner authorized finishing publication, then explicitly chose to wait for the quota cycle reset on **19 October 2026** before deploying production. Live Vercel inspection still reports the linked Supabase resource as `Suspended`. No plan, billing or integration connection was changed.
+
+Both Vercel build configurations now run `scripts/check-release-env.cjs` before building or running migrations. A production build refuses missing, blank or masked values for the database, existing LINE access token/group, LINE channel secret, cron secret and admin password. This prevents a Git-triggered release from replacing the current website with disabled notifications/admin access. Local and preview builds remain available without production secrets. The complete release suite includes four additional guard tests (62 total).
+
+`CRON_SECRET` was generated securely and added to the verified MKT production project as a Secret. Its value was neither logged nor saved locally; read-back of the environment inventory confirms its presence. Vercel passes it to the scheduled endpoint automatically.
+
+The live environment inventory still lacks `LINE_CHANNEL_SECRET` and `ADMIN_PASSWORD`. Configure these as production Secrets in [the MKT Vercel environment settings](https://vercel.com/goo-d-s-projects/mkt-team/settings/environment-variables), without pasting their values into chat or committing them. The LINE channel secret must match the existing Messaging API channel. Use a strong new admin password. These configuration changes apply to a new deployment rather than modifying the running deployment ([Vercel environment documentation](https://vercel.com/docs/environment-variables)).
+
+Automatic Git deployment of `main` is temporarily disabled in `vercel.json` so this source push respects the instruction to wait. Other branches retain Vercel's default behavior. Re-enable `git.deploymentEnabled.main` only after the owner resumes publication and the readiness checks pass; manual production deployment remains a separate explicit step. This uses [Vercel's Git deployment configuration](https://vercel.com/docs/project-configuration/git-configuration).
+
+After the reset, verify that the integration is active; the date alone is not proof of recovery. Once the missing configuration and infrastructure restriction are resolved, deploy the saved main branch and complete the production smoke checks above. This request does not authorize a paid upgrade.

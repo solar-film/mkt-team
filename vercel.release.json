@@ -3,5 +3,5 @@
     { "path": "/api/cron/deadline", "schedule": "0 1 * * *" }
   ],
   "regions": ["sin1"],
-  "buildCommand": "node scripts/apply-shared-assignments.cjs && npm run build -- --webpack"
+  "buildCommand": "node scripts/check-release-env.cjs && node scripts/apply-shared-assignments.cjs && npm run build -- --webpack"
 }

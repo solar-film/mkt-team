@@ -1,4 +1,8 @@
 {
+  "buildCommand": "node scripts/check-release-env.cjs && npm run build -- --webpack",
+  "git": {
+    "deploymentEnabled": { "main": false }
+  },
   "crons": [
     {
       "path": "/api/cron/deadline",

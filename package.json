@@ -11,7 +11,7 @@
     "test:meetings": "tsx --test tests/meeting-assignments.test.ts",
     "test:shared-assignments": "tsx --test tests/meeting-assignments.test.ts tests/dashboard-shared-assignments.test.ts tests/content-metrics-assignments.test.ts tests/notification-assignments.test.ts",
     "test:performance-security": "tsx --test tests/performance-security.test.ts",
-    "test:release": "npm run test:shared-assignments && npm run test:performance-security && node --test tests/production-migration-runner.test.cjs"
+    "test:release": "npm run test:shared-assignments && npm run test:performance-security && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
