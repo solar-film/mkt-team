@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -65,7 +66,7 @@ export default function Sidebar() {
         setCurrentUser({ id: 'GUEST', name: 'ผู้เยี่ยมชม', role: 'Guest', avatar: null });
         return;
       }
-      fetch('/api/members')
+      fetchWorkspace('/api/members')
         .then(res => res.json())
         .then((data: Member[]) => {
           const user = data.find(m => m.id === currentUserId);

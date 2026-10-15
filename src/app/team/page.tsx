@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { matchesMemberSelection } from '@/lib/assignments';
 
@@ -33,7 +34,7 @@ export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -45,7 +46,7 @@ export default function TeamPage() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/dashboard', { cache: 'no-store' });
+      const res = await fetchWorkspace('/api/dashboard', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data && data.members) {
@@ -82,13 +83,13 @@ export default function TeamPage() {
     e.preventDefault();
     try {
       if (editingId) {
-        await fetch('/api/members', {
+        await fetchWorkspace('/api/members', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...formData, id: editingId })
         });
       } else {
-        await fetch('/api/members', {
+        await fetchWorkspace('/api/members', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
@@ -117,7 +118,7 @@ export default function TeamPage() {
   const confirmDelete = async () => {
     if (!memberToDelete) return;
     try {
-      await fetch('/api/members', { 
+      await fetchWorkspace('/api/members', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: memberToDelete, status: 'inactive' })
@@ -137,7 +138,7 @@ export default function TeamPage() {
   };
 
   if (isAdmin === null) return <div className="loading-container"><div className="loading-spinner"></div></div>;
-  
+
   if (isAdmin === false) {
     return (
       <div className="empty-state" style={{ height: '70vh' }}>
@@ -177,13 +178,13 @@ export default function TeamPage() {
           const completedTasks = member.tasks.filter(t => t.status === 'done').length;
           const totalContent = member.contents.length;
           const totalTasks = completedTasks + totalContent;
-          
+
           const kpis = member.kpis;
-          const avgKPI = kpis.length > 0 
+          const avgKPI = kpis.length > 0
             ? kpis.reduce((sum, k) => {
                 const target = k.target > 0 ? k.target : 1;
                 return sum + Math.min((k.current / target) * 100, 100);
-              }, 0) / kpis.length 
+              }, 0) / kpis.length
             : 0;
           const kpisMet = kpis.filter(k => k.current >= k.target).length;
 
@@ -192,7 +193,7 @@ export default function TeamPage() {
             ...member.tasks.map((t: any) => ({ ...t, itemType: 'task' })),
             ...member.contents.map((c: any) => ({ ...c, itemType: 'content' }))
           ];
-          
+
           const recentTasks = allItems
             .sort((a, b) => {
               const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -265,10 +266,10 @@ export default function TeamPage() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">ชื่อ - นามสกุล *</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              required 
+            <input
+              type="text"
+              className="form-input"
+              required
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
               placeholder="เช่น สมชาย ใจดี"
@@ -276,10 +277,10 @@ export default function TeamPage() {
           </div>
           <div className="form-group">
             <label className="form-label">ตำแหน่ง *</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              required 
+            <input
+              type="text"
+              className="form-input"
+              required
               value={formData.role}
               onChange={e => setFormData({...formData, role: e.target.value})}
               placeholder="เช่น Content Creator"

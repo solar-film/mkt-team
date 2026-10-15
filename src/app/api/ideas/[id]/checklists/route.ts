@@ -1,3 +1,5 @@
+import { invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -7,7 +9,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
   try {
     const params = await props.params;
     const ideaNoteId = params.id
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { title, assigneeId, deadline } = body
 
     if (!title) {
@@ -23,8 +25,10 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json(checklist)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to create checklist item' }, { status: 500 })
   }
@@ -33,7 +37,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
 export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
     const params = await props.params;
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, title, isDone, assigneeId, deadline } = body
 
     if (!id) {
@@ -41,7 +45,7 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
     }
 
     const checklist = await prisma.ideaChecklist.update({
-      where: { id },
+      where: { id, ideaNoteId: params.id },
       data: {
         title: title !== undefined ? title : undefined,
         isDone: isDone !== undefined ? isDone : undefined,
@@ -50,8 +54,10 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json(checklist)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update checklist item' }, { status: 500 })
   }
@@ -68,11 +74,13 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ id
     }
 
     await prisma.ideaChecklist.delete({
-      where: { id: checklistId }
+      where: { id: checklistId, ideaNoteId: params.id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete checklist item' }, { status: 500 })
   }

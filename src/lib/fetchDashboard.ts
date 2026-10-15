@@ -1,20 +1,17 @@
-let globalDashboardPromise: Promise<Response> | null = null;
-let globalDashboardPromiseTime = 0;
+import { fetchWorkspace, workspaceRevision } from '@/lib/workspace-fetch';
 
+const pending = new Map<string, Promise<Response>>();
+
+// Deduplicate simultaneous reads only, so completed reads cannot hide a subsequent save.
 export const fetchDashboardCached = (url: string) => {
-  // Only cache the main dashboard endpoint without specific filters
-  if (url !== '/api/dashboard' && url !== '/api/dashboard?memberId=all') {
-    return fetch(url, { cache: 'no-store' });
+  const key = `${url === '/api/dashboard?memberId=all' ? '/api/dashboard' : url}|${workspaceRevision()}`;
+  let request = pending.get(key);
+  if (!request) {
+    request = fetchWorkspace(url, { cache: 'no-store' });
+    pending.set(key, request);
+    void request.finally(() => {
+      if (pending.get(key) === request) pending.delete(key);
+    }).catch(() => {});
   }
-
-  const now = Date.now();
-  // Cache the promise for 2 seconds to deduplicate simultaneous requests
-  if (globalDashboardPromise && (now - globalDashboardPromiseTime < 2000)) {
-    return globalDashboardPromise.then(res => res.clone());
-  }
-
-  globalDashboardPromise = fetch(url, { cache: 'no-store' });
-  globalDashboardPromiseTime = now;
-  
-  return globalDashboardPromise.then(res => res.clone());
+  return request.then(response => response.clone());
 };

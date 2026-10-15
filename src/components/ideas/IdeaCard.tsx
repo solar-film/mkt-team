@@ -155,7 +155,7 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             <HiChatBubbleLeftEllipsis />
-            <span>{idea.comments?.length || 0}</span>
+            <span>{idea._count?.comments ?? idea.comments?.length ?? 0}</span>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { matchesMemberSelection, matchesCompanySelection } from '@/lib/assignments';
 
@@ -59,7 +60,7 @@ export default function KPIsPage() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/dashboard?t=' + Date.now());
+      const res = await fetchWorkspace('/api/dashboard?t=' + Date.now());
       if (res.ok) {
         const data = await res.json();
         if (data && data.members) {
@@ -81,7 +82,7 @@ export default function KPIsPage() {
 
   const fetchDict = async () => {
     try {
-      const res = await fetch('/api/kpi-dict?t=' + Date.now());
+      const res = await fetchWorkspace('/api/kpi-dict?t=' + Date.now());
       if (res.ok) setKpiDict(await res.json());
     } catch (error) {
       console.error('Failed to fetch KPI dictionary:', error);
@@ -95,7 +96,7 @@ export default function KPIsPage() {
   const handleSaveDict = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/kpi-dict', {
+      await fetchWorkspace('/api/kpi-dict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(kpiDict)
@@ -151,7 +152,7 @@ export default function KPIsPage() {
   const handleDelete = async (kpiId: string) => {
     if (!confirm('คุณต้องการลบเป้าหมาย KPI นี้ใช่หรือไม่?')) return;
     try {
-      await fetch(`/api/kpis?id=${kpiId}`, { method: 'DELETE' });
+      await fetchWorkspace(`/api/kpis?id=${kpiId}`, { method: 'DELETE' });
       fetchMembers();
     } catch (err) {
       console.error(err);
@@ -170,13 +171,13 @@ export default function KPIsPage() {
       };
       
       if (isEditing && editId) {
-        await fetch('/api/kpis', {
+        await fetchWorkspace('/api/kpis', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editId, ...body })
         });
       } else {
-        await fetch('/api/kpis', {
+        await fetchWorkspace('/api/kpis', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)

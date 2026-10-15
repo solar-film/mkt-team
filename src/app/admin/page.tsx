@@ -1,4 +1,5 @@
 "use client";
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { toast } from 'react-hot-toast';
 
 import { useState, useEffect } from "react";
@@ -14,35 +15,36 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(false);
 
   // Authenticate
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "oil2026") {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true");
-    } else {
-      toast.error("รหัสผ่านไม่ถูกต้อง");
-    }
+    try {
+      const response = await fetchWorkspace('/api/admin/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      if (response.ok) {
+        setIsAuthenticated(true);
+        setPassword('');
+      } else {
+        toast.error(response.status === 503 ? 'ยังไม่ได้ตั้งค่ารหัสผู้ดูแลบนเซิร์ฟเวอร์' : 'รหัสผ่านไม่ถูกต้อง');
+      }
+    } catch { toast.error('เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง'); }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetchWorkspace('/api/admin/session', { method: 'DELETE' });
     setIsAuthenticated(false);
     setPassword("");
-    sessionStorage.removeItem("admin_auth");
   };
 
   useEffect(() => {
-    if (sessionStorage.getItem("admin_auth") === "true") {
-      setIsAuthenticated(true);
-    }
+    void fetchWorkspace('/api/admin/session').then(response => response.json())
+      .then(data => setIsAuthenticated(data.authenticated === true)).catch(() => {});
   }, []);
 
   // Fetch Data
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Use correct endpoint for contents (it's /api/content)
-      const endpoint = activeTab === "contents" ? "/api/content" : `/api/${activeTab}`;
-      const res = await fetch(endpoint);
+      const endpoint = `/api/admin/data?table=${activeTab}`;
+      const res = await fetchWorkspace(endpoint);
       const json = await res.json();
       setData(Array.isArray(json) ? json : json.data || []);
     } catch (error) {
@@ -63,8 +65,8 @@ export default function AdminPanel() {
     if (!confirm("คุณแน่ใจหรือไม่ที่จะลบข้อมูลนี้? การกระทำนี้ไม่สามารถกู้คืนได้")) return;
     
     try {
-      const endpoint = activeTab === "contents" ? "/api/content" : `/api/${activeTab}`;
-      const res = await fetch(`${endpoint}?id=${id}`, { method: "DELETE" });
+      const endpoint = `/api/admin/data?table=${activeTab}`;
+      const res = await fetchWorkspace(`${endpoint}&id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (res.ok) {
         fetchData();
       } else {

@@ -1,9 +1,11 @@
+import { cachedJsonRead, invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
@@ -29,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(kpis)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch KPIs' }, { status: 500 })
   }
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { name, target, unit, month, year, memberId, company } = body
 
     if (!name || !memberId) {
@@ -59,8 +62,10 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, kpi: newKpi })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add KPI' }, { status: 500 })
   }
@@ -68,7 +73,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, name, target, current, unit, month, year, memberId, company } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -90,8 +95,10 @@ export async function PUT(request: NextRequest) {
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, kpi: updatedKpi })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update KPI' }, { status: 500 })
   }
@@ -108,9 +115,18 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete KPI' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["kpis", ...["memberId","month","year"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

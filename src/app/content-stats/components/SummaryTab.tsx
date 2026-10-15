@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { useState, useEffect, type CSSProperties } from 'react';
 import { HiChartBar, HiDocumentText, HiEye, HiArrowTrendingUp, HiChatBubbleLeftRight, HiUsers, HiTrophy } from 'react-icons/hi2';
@@ -55,7 +56,7 @@ export default function SummaryTab() {
     setLoading(true);
     try {
       // 1. Fetch content metrics
-      const res = await fetch(`/api/content-metrics?month=${monthFilter}&year=${yearFilter}`);
+      const res = await fetchWorkspace(`/api/content-metrics?month=${monthFilter}&year=${yearFilter}`);
       const data = await res.json();
       
       if (data.contents) {
@@ -83,8 +84,8 @@ export default function SummaryTab() {
 
       // 3. Fetch channel metrics for overview summary
       const [chRes, cmRes] = await Promise.all([
-        fetch('/api/channels'),
-        fetch(`/api/channel-metrics?month=${monthFilter}&year=${yearFilter}`)
+        fetchWorkspace('/api/channels'),
+        fetchWorkspace(`/api/channel-metrics?month=${monthFilter}&year=${yearFilter}`)
       ]);
       const chData = await chRes.json();
       const cmData = await cmRes.json();

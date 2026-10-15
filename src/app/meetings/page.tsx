@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { toast } from 'react-hot-toast';
 
 import { useEffect, useState } from 'react';
@@ -139,8 +140,8 @@ export default function MeetingsPage() {
   const fetchMeetings = async () => {
     try {
       const [meetingsRes, membersRes] = await Promise.all([
-        fetch('/api/meetings', { cache: 'no-store' }),
-        fetch('/api/members', { cache: 'no-store' }),
+        fetchWorkspace('/api/meetings', { cache: 'no-store' }),
+        fetchWorkspace('/api/members', { cache: 'no-store' }),
       ]);
       const meetingsData = await meetingsRes.json();
       const membersData = await membersRes.json();
@@ -285,7 +286,7 @@ export default function MeetingsPage() {
     }
     setIsSaving(true);
     try {
-      const res = await fetch('/api/meetings', {
+      const res = await fetchWorkspace('/api/meetings', {
         method: isEditing && editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -319,7 +320,7 @@ export default function MeetingsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await fetch(`/api/meetings?id=${deleteId}`, { method: 'DELETE' });
+      await fetchWorkspace(`/api/meetings?id=${deleteId}`, { method: 'DELETE' });
       setDeleteId(null);
       fetchMeetings();
       setMeetingItems(prev => {
@@ -339,7 +340,7 @@ export default function MeetingsPage() {
       : (item.status === 'published' ? 'draft' : 'published');
       
     try {
-      await fetch(isTask ? '/api/tasks' : '/api/content', {
+      await fetchWorkspace(isTask ? '/api/tasks' : '/api/content', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: item.id, status: newStatus }),

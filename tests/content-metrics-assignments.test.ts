@@ -27,8 +27,12 @@ function loadModule(path: string, mocks: Record<string, unknown> = {}, appended 
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
   vm.runInNewContext(compiled, {
-    exports, console, URL,
+    exports, console, URL, Request,
     require: (name: string) => {
+      if (name === '@/lib/workspace-cache') return { cachedJsonRead: (_key: string[], read: () => Promise<Response>) => read(), invalidateWorkspace: () => {} };
+      if (name === '@/lib/request-body') return require('../src/lib/request-body.ts');
+      if (name === '@/lib/workspace-fetch') return require('../src/lib/workspace-fetch.ts');
+      if (name === '@/lib/metric-input') return require('../src/lib/metric-input.ts');
       if (name in mocks) return mocks[name];
       if (name === '@/lib/assignments') return assignments;
       if (name === '@/lib/colors') return require('../src/lib/colors.ts');
@@ -61,9 +65,9 @@ const records = [
   { ...shared, id: 'everyone', memberIds: ['all'], company: 'CAR', companies: ['CAR'] },
 ];
 const api = loadModule('src/app/api/content-metrics/route.ts', {
-  '@prisma/client': { PrismaClient: class {
-    content = { findMany: async ({ where }: any) => records.filter(row => matchesWhere(row, where)) };
-    teamMember = { findMany: async ({ where }: any) => members.filter(member => where.id.in.includes(member.id)) };
+  '@/lib/prisma': { prisma: {
+    content: { findMany: async ({ where }: any) => records.filter(row => matchesWhere(row, where)) },
+    teamMember: { findMany: async ({ where }: any) => members.filter(member => where.id.in.includes(member.id)) },
   } },
 });
 
@@ -121,6 +125,30 @@ test('record rows display every company and responsible owner while retaining on
   assert.match(markup, /\[MHL\]/);
   assert.match(markup, /OIL, TAW/);
   assert.equal((markup.match(/<tr /g) || []).length, 1);
+});
+
+test('reopening and saving a zero-valued statistic keeps zero rather than clearing the field', () => {
+  const react = require('react');
+  const rowModule = loadModule('src/app/content-stats/components/RecordStatsTab.tsx', {
+    react: { ...react, useState: (value: unknown) => [value, () => {}], useEffect: () => {} },
+    '@/contexts/AuthContext': { useAuth: () => ({ currentUserId: 'oil' }) },
+  }, '\nexports.ContentRow = ContentRow;');
+  let saved: any;
+  const row = rowModule.ContentRow({ content: shared, initialMetric: { views: 0, reach: 0 }, snapshot: 'D+7', onSave: (value: any) => { saved = value; } });
+  const markup = renderToStaticMarkup(row);
+  assert.ok((markup.match(/value="0"/g) || []).length >= 2);
+  const buttons: any[] = [];
+  const visit = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(visit);
+    if (node.type === 'button' && node.props.onClick) buttons.push(node);
+    visit(node.props?.children);
+  };
+  visit(row);
+  buttons.at(-1).props.onClick();
+  assert.equal(saved.views, 0);
+  assert.equal(saved.reach, 0);
+  assert.equal(saved.likes, null);
 });
 
 test('top-content and summary tables show shared selections and shared-group wording', () => {

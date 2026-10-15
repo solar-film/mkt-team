@@ -64,7 +64,11 @@ const compiled = ts.transpileModule(readFileSync('src/app/api/meetings/route.ts'
 vm.runInNewContext(compiled, {
   exports: api, console,
   require: (name: string) => {
-    if (name === 'next/server') return require('next/server');
+    if (name === '@/lib/workspace-cache') return { cachedJsonRead: (_key: string[], read: () => Promise<Response>) => read(), invalidateWorkspace: () => {} };
+      if (name === '@/lib/request-body') return require('../src/lib/request-body.ts');
+      if (name === '@/lib/rich-text') return require('../src/lib/rich-text.ts');
+      if (name === '@/lib/integration-security') return require('../src/lib/integration-security.ts');
+      if (name === 'next/server') return require('next/server');
     if (name === '@/lib/assignments') return require('../src/lib/assignments.ts');
     if (name === '@/lib/meeting-actions') return { saveMeetingActions };
     if (name === '@/lib/prisma') return { prisma: { $transaction: (callback: (tx: Prisma.TransactionClient) => Promise<unknown>) => db.transaction(sql => callback(adapter(sql) as unknown as Prisma.TransactionClient)) } };

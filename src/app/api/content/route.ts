@@ -1,3 +1,5 @@
+import { cachedJsonRead, invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
@@ -7,7 +9,7 @@ import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
@@ -33,6 +35,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(contents.map(serializeAssignments))
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch content' }, { status: 500 })
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId, notifyLine } = body
 
     if (!title) {
@@ -75,8 +78,10 @@ export async function POST(request: NextRequest) {
       await sendLineNotify(message)
     }
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, content: serializeAssignments(newContent) })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add content' }, { status: 500 })
@@ -85,7 +90,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId, notifyLine } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -120,8 +125,10 @@ export async function PUT(request: NextRequest) {
       await sendLineNotify(message)
     }
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, content: serializeAssignments(updatedContent) })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update content' }, { status: 500 })
@@ -139,10 +146,19 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete content' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["content", ...["memberId","meetingId"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

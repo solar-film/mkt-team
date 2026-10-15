@@ -1,4 +1,6 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
@@ -85,7 +87,7 @@ export default function CalendarPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/dashboard', { cache: 'no-store' });
+      const res = await fetchWorkspace('/api/dashboard', { cache: 'no-store' });
       const data = await res.json();
       
       const tasks = data.tasks;
@@ -150,15 +152,9 @@ export default function CalendarPage() {
     if (typeof window !== 'undefined' && window.innerWidth >= 768) {
       setViewMode('week');
     }
-    fetchData();
-    
-    // Auto-refresh data every 2 minutes (120,000 ms)
-    const interval = setInterval(() => {
-      fetchData();
-    }, 120000);
-    
-    return () => clearInterval(interval);
   }, []);
+
+  useVisibleRefresh(fetchData, []);
 
   const handleCellClick = (dateStr: string) => {
     setIsEditing(false);
@@ -235,13 +231,13 @@ export default function CalendarPage() {
       };
       
       if (isEditing && editingItemId) {
-        await fetch('/api/tasks', {
+        await fetchWorkspace('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingItemId, ...body })
         });
       } else {
-        await fetch('/api/tasks', {
+        await fetchWorkspace('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })
@@ -270,13 +266,13 @@ export default function CalendarPage() {
       };
       
       if (isEditing && editingItemId) {
-        await fetch('/api/content', {
+        await fetchWorkspace('/api/content', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingItemId, ...body })
         });
       } else {
-        await fetch('/api/content', {
+        await fetchWorkspace('/api/content', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })
@@ -297,13 +293,13 @@ export default function CalendarPage() {
       const body = { ...eventForm };
       
       if (isEditing && editingItemId) {
-        await fetch('/api/events', {
+        await fetchWorkspace('/api/events', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingItemId, ...body })
         });
       } else {
-        await fetch('/api/events', {
+        await fetchWorkspace('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })
@@ -325,7 +321,7 @@ export default function CalendarPage() {
       message: 'ยืนยันการลบกิจกรรม/แจ้งเตือนนี้?',
       onConfirm: async () => {
         try {
-          await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+          await fetchWorkspace(`/api/events?id=${id}`, { method: 'DELETE' });
           setIsModalOpen(false);
           fetchData();
         } catch (err) {
@@ -1073,7 +1069,7 @@ export default function CalendarPage() {
                     title: 'ลบคอนเท้น',
                     message: 'ยืนยันการลบคอนเท้นนี้?',
                     onConfirm: () => {
-                      fetch(`/api/content?id=${editingItemId}`, { method: 'DELETE' }).then(() => {
+                      fetchWorkspace(`/api/content?id=${editingItemId}`, { method: 'DELETE' }).then(() => {
                         setIsModalOpen(false); fetchData();
                       });
                     }

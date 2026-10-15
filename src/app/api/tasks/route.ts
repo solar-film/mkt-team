@@ -1,3 +1,5 @@
+import { cachedJsonRead, invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
@@ -7,7 +9,7 @@ import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(tasks.map(serializeAssignments))
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId, notifyLine } = body
 
     if (!title) {
@@ -83,8 +86,10 @@ export async function POST(request: NextRequest) {
       await sendLineNotify(message)
     }
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, task: serializeAssignments(newTask) })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add task' }, { status: 500 })
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId, notifyLine } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -128,8 +133,10 @@ export async function PUT(request: NextRequest) {
       await sendLineNotify(message)
     }
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, task: serializeAssignments(updatedTask) })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
@@ -147,10 +154,19 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     if (error instanceof AssignmentValidationError) return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["tasks", ...["memberId","meetingId"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

@@ -133,25 +133,27 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
         reader.readAsDataURL(file);
       });
 
-      await fetch(`/api/ideas/${idea.id}/attachments`, {
+      const response = await fetch(`/api/ideas/${idea.id}/attachments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: file.name, type: 'image/jpeg', url: compressedBase64 })
       });
+      if (!response.ok) { toast.error('อัปโหลดไม่สำเร็จ ไฟล์ต้องมีขนาดไม่เกิน 3MB'); return; }
       onUpdate();
     } else {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('ไฟล์เอกสารทั่วไปต้องมีขนาดไม่เกิน 5MB');
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error('ไฟล์เอกสารทั่วไปต้องมีขนาดไม่เกิน 3MB');
         return;
       }
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        await fetch(`/api/ideas/${idea.id}/attachments`, {
+        const response = await fetch(`/api/ideas/${idea.id}/attachments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: file.name, type: file.type, url: base64String })
         });
+        if (!response.ok) { toast.error('อัปโหลดไม่สำเร็จ กรุณาลองอีกครั้ง'); return; }
         onUpdate();
       };
       reader.readAsDataURL(file);
@@ -556,7 +558,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             {idea.attachments?.map((file: any) => (
               <div key={file.id} style={{ width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', position: 'relative' }}>
                 {file.type.startsWith('image/') ? (
-                  <img src={file.url} alt={file.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img loading="lazy" src={file.url} alt={file.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', flexDirection: 'column' }}>
                     <HiDocumentText size={24} color="#94a3b8" />

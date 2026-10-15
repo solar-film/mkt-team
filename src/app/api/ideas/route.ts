@@ -1,13 +1,16 @@
+import { cachedJsonRead, invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
+    const listView = searchParams.get('view') === 'list'
 
     const where: any = {}
     if (memberId) {
@@ -16,9 +19,9 @@ export async function GET(request: NextRequest) {
 
     const ideas = await prisma.ideaNote.findMany({
       where,
-      include: {
+      include: listView ? { _count: { select: { comments: true } } } : {
         checklists: { orderBy: { createdAt: 'asc' } },
-        attachments: { orderBy: { createdAt: 'desc' } },
+        attachments: { select: { id: true, name: true, type: true, createdAt: true }, orderBy: { createdAt: 'desc' } },
         comments: { orderBy: { createdAt: 'asc' } }
       },
       orderBy: {
@@ -26,16 +29,22 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(ideas)
+    return NextResponse.json(ideas.map(idea => ({
+      ...idea,
+      attachments: 'attachments' in idea ? (idea.attachments as any[]).map(file => ({
+        ...file, url: `/api/ideas/${idea.id}/attachments?attachmentId=${encodeURIComponent(file.id)}`
+      })) : undefined,
+    })))
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
-    return NextResponse.json({ error: String(error) }, { status: 500 })
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { title, description, memberId, recommendedFor, company, status, priority, deadline, category, platform, kpiId } = body
 
     if (!title) {
@@ -71,8 +80,10 @@ export async function POST(request: NextRequest) {
       await sendLineNotify(message)
     }
 
+    invalidateWorkspace();
     return NextResponse.json(idea)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to create idea note' }, { status: 500 })
   }
@@ -80,7 +91,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, title, description, memberId, recommendedFor, company, status, priority, deadline, category, platform, kpiId } = body
 
     if (!id || !title) {
@@ -117,8 +128,10 @@ export async function PUT(request: NextRequest) {
       await sendLineNotify(message)
     }
 
+    invalidateWorkspace();
     return NextResponse.json(idea)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update idea note' }, { status: 500 })
   }
@@ -137,9 +150,18 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete idea note' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["ideas", ...["memberId","view"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

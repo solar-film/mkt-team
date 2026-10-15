@@ -1,10 +1,11 @@
+import { cachedJsonRead } from '@/lib/workspace-cache'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { serializeAssignments, memberAssignmentFilter } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
@@ -128,11 +129,18 @@ export async function GET(request: NextRequest) {
       events
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'private, no-store',
       },
     });
   } catch (error) {
     console.error('Dashboard API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["dashboard", ...["memberId","meetingId"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

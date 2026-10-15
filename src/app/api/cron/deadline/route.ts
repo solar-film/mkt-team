@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
+import { secretMatches } from '@/lib/integration-security'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET
+  if (!secret) return NextResponse.json({ error: 'Cron is not configured' }, { status: 503 })
+  if (!secretMatches(request.headers.get('authorization'), `Bearer ${secret}`)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)

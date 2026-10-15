@@ -19,7 +19,7 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
   vm.runInNewContext(compiled, {
     exports, console, URL,
     // Dummy VM-only values exercise the cron payload without reading real credentials.
-    process: { env: { LINE_CHANNEL_ACCESS_TOKEN: 'test-token', LINE_GROUP_ID: 'test-group' } },
+    process: { env: { LINE_CHANNEL_ACCESS_TOKEN: 'test-token', LINE_GROUP_ID: 'test-group', CRON_SECRET: 'test-cron' } },
     fetch: async (_url: string, options: { body: string }) => {
       pushed.push(JSON.parse(options.body).messages[0].text);
       return new Response('{}');
@@ -30,6 +30,10 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
       if (name === '@/lib/notification-assignees') return notifications;
       if (name === '@/lib/assignment-storage') return { assignmentData: async () => ({}) };
       if (name === '@/lib/line-notify') return { sendLineNotify: async (message: string) => { sent.push(message); } };
+      if (name === '@/lib/workspace-cache') return { cachedJsonRead: (_key: string[], read: () => Promise<Response>) => read(), invalidateWorkspace: () => {} };
+      if (name === '@/lib/request-body') return require('../src/lib/request-body.ts');
+      if (name === '@/lib/rich-text') return require('../src/lib/rich-text.ts');
+      if (name === '@/lib/integration-security') return require('../src/lib/integration-security.ts');
       if (name === 'next/server') return require(name);
       throw new Error(`Unexpected import ${name}`);
     },
@@ -136,7 +140,7 @@ test('deadline reminders batch assignee names once and preserve legacy/everyone 
   const db = { ...prisma, task: { findMany: async () => due } };
   const pushed: string[] = [];
   const route = loadRoute('src/app/api/cron/deadline/route.ts', db, [], pushed);
-  const response = await route.GET();
+  const response = await route.GET(new Request('http://localhost/api/cron/deadline', { headers: { Authorization: 'Bearer test-cron' } }));
   assert.equal(response.status, 200);
   assert.equal((await response.json()).notifiedCount, 3);
   assert.deepEqual(lookups, [['taw']]);
@@ -150,7 +154,7 @@ test('deadline run without due work skips name lookup and notifications', async 
   const { prisma, lookups } = fixtureDb();
   const pushed: string[] = [];
   const route = loadRoute('src/app/api/cron/deadline/route.ts', { ...prisma, task: { findMany: async () => [] } }, [], pushed);
-  const response = await route.GET();
+  const response = await route.GET(new Request('http://localhost/api/cron/deadline', { headers: { Authorization: 'Bearer test-cron' } }));
   assert.equal(response.status, 200);
   assert.deepEqual(lookups, []);
   assert.deepEqual(pushed, []);

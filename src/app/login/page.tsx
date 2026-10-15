@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { toast } from 'react-hot-toast';
 
 import { useState, useEffect, useRef } from 'react';
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetch('/api/members')
+    fetchWorkspace('/api/members')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -83,7 +84,7 @@ export default function LoginPage() {
         reader.readAsDataURL(file);
       });
 
-      const res = await fetch('/api/members', {
+      const res = await fetchWorkspace('/api/members', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

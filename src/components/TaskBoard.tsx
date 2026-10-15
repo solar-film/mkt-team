@@ -1,4 +1,6 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
@@ -157,16 +159,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
     }
   }, [currentUserId]);
 
-  useEffect(() => {
-    fetchData();
-    
-    // Auto-refresh data every 2 minutes (120,000 ms)
-    const interval = setInterval(() => {
-      fetchData();
-    }, 120000);
-    
-    return () => clearInterval(interval);
-  }, [filterMemberId]);
+  useVisibleRefresh(fetchData, [filterMemberId]);
 
   const handleStatusChange = async (item: UnifiedItem, newStatus: string) => {
     if (item.itemType === 'content' && newStatus === 'done' && !item.link) {
@@ -193,7 +186,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
         body = { id: payloadId, title: item.title.replace('💡 ', ''), status: ideaStatusMap[newStatus] || newStatus };
       }
       
-      await fetch(endpoint, {
+      await fetchWorkspace(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -215,10 +208,10 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
     try {
       if (itemToDelete.id.startsWith('idea_')) {
         const payloadId = itemToDelete.id.replace('idea_', '');
-        await fetch(`/api/ideas?id=${payloadId}`, { method: 'DELETE' });
+        await fetchWorkspace(`/api/ideas?id=${payloadId}`, { method: 'DELETE' });
       } else {
         const endpoint = itemToDelete.type === 'task' ? '/api/tasks' : '/api/content';
-        await fetch(`${endpoint}?id=${itemToDelete.id}`, { method: 'DELETE' });
+        await fetchWorkspace(`${endpoint}?id=${itemToDelete.id}`, { method: 'DELETE' });
       }
       setItemToDelete(null);
       fetchData();
@@ -275,20 +268,20 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       if (isEditing && editingItemId) {
         if (editingItemId.startsWith('idea_')) {
           const payloadId = editingItemId.replace('idea_', '');
-          await fetch('/api/ideas', {
+          await fetchWorkspace('/api/ideas', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: payloadId, title: taskForm.title.replace('💡 ', ''), description: taskForm.description, memberId: taskForm.memberId, priority: taskForm.priority, deadline: body.deadline, company: taskForm.company })
           });
         } else {
-          await fetch('/api/tasks', {
+          await fetchWorkspace('/api/tasks', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
           });
         }
       } else {
-        await fetch('/api/tasks', {
+        await fetchWorkspace('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })
@@ -319,20 +312,20 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       if (isEditing && editingItemId) {
         if (editingItemId.startsWith('idea_')) {
           const payloadId = editingItemId.replace('idea_', '');
-          await fetch('/api/ideas', {
+          await fetchWorkspace('/api/ideas', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: payloadId, title: contentForm.title.replace('💡 ', ''), description: contentForm.description, memberId: contentForm.memberId, platform: contentForm.platform, deadline: body.publishDate, company: contentForm.company })
           });
         } else {
-          await fetch('/api/content', {
+          await fetchWorkspace('/api/content', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
           });
         }
       } else {
-        await fetch('/api/content', {
+        await fetchWorkspace('/api/content', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })

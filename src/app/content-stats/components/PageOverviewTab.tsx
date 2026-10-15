@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { toast } from 'react-hot-toast';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ export default function PageOverviewTab() {
 
   useEffect(() => {
     fetchChannels();
-    fetch('/api/members')
+    fetchWorkspace('/api/members')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setMembers(data.filter(m => m.status !== 'inactive'));
@@ -36,7 +37,7 @@ export default function PageOverviewTab() {
 
   const fetchChannels = async () => {
     try {
-      const res = await fetch('/api/channels');
+      const res = await fetchWorkspace('/api/channels');
       const data = await res.json();
       if (data.channels) setChannels(data.channels);
     } catch (e) {
@@ -47,7 +48,7 @@ export default function PageOverviewTab() {
   const fetchMetrics = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/channel-metrics?month=${monthFilter}&year=${yearFilter}`);
+      const res = await fetchWorkspace(`/api/channel-metrics?month=${monthFilter}&year=${yearFilter}`);
       const data = await res.json();
       if (data.metrics) {
         const metricMap: Record<string, any> = {};
@@ -66,7 +67,7 @@ export default function PageOverviewTab() {
     e.preventDefault();
     if (!newChannelName) return;
     try {
-      await fetch('/api/channels', {
+      await fetchWorkspace('/api/channels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newChannelName, platform: newChannelPlatform })
@@ -81,7 +82,7 @@ export default function PageOverviewTab() {
   const handleDeleteChannel = async (id: string) => {
     if (!confirm('ยืนยันการลบช่องนี้? ข้อมูลสถิติของช่องนี้ทั้งหมดจะหายไป')) return;
     try {
-      await fetch(`/api/channels?id=${id}`, { method: 'DELETE' });
+      await fetchWorkspace(`/api/channels?id=${id}`, { method: 'DELETE' });
       fetchChannels();
     } catch (e) {
       console.error(e);
@@ -106,7 +107,7 @@ export default function PageOverviewTab() {
     const recordedDate = data.recordedDate || new Date().toISOString().split('T')[0];
 
     try {
-      const res = await fetch('/api/channel-metrics', {
+      const res = await fetchWorkspace('/api/channel-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,6 +133,8 @@ export default function PageOverviewTab() {
             recordedDate
           }
         }));
+      } else {
+        toast.error('บันทึกไม่สำเร็จ กรุณาตรวจสอบตัวเลขและลองอีกครั้ง');
       }
     } catch (e) {
       console.error(e);

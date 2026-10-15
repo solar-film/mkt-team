@@ -1,10 +1,12 @@
+import { cachedJsonRead, invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const start = searchParams.get('start')
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(events)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
   }
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   export async function POST(request: NextRequest) {
     try {
-      const body = await request.json()
+      const body = await readJsonBody(request)
       const { title, date, time, type, company, notifyLine } = body
   
       if (!title || !date) {
@@ -59,8 +62,10 @@ export async function GET(request: NextRequest) {
         await sendLineNotify(message)
       }
   
-      return NextResponse.json({ success: true, event: newEvent })
+      invalidateWorkspace();
+    return NextResponse.json({ success: true, event: newEvent })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add event' }, { status: 500 })
   }
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, title, date, time, type, company } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -84,8 +89,10 @@ export async function PUT(request: NextRequest) {
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, event: updatedEvent })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
   }
@@ -102,9 +109,18 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["events", ...["start","end"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

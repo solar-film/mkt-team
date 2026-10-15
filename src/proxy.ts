@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { browserWriteRejection } from '@/lib/browser-request';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ยกเว้น (Bypass) API บางตัวที่ต้องให้เซิร์ฟเวอร์ต่างประเทศเรียกเข้ามาได้
   // เช่น LINE Webhook (มักมาจากญี่ปุ่น) และ Vercel Cron Jobs (มักมาจากอเมริกา)
   if (
-    pathname.startsWith('/api/line-webhook') || 
-    pathname.startsWith('/api/cron')
+    pathname === '/api/line-webhook' ||
+    pathname.startsWith('/api/cron/')
   ) {
     return NextResponse.next();
   }
@@ -24,7 +25,15 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  return NextResponse.next();
+  if (pathname.startsWith('/api/')) {
+    const rejected = browserWriteRejection(request);
+    if (rejected) return NextResponse.json({ error: 'Request rejected' }, { status: rejected });
+  }
+  const response = NextResponse.next();
+  if (pathname.startsWith('/api/') && !/^\/api\/ideas\/[^/]+\/attachments$/.test(pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store');
+  }
+  return response;
 }
 
 export const config = {

@@ -1,3 +1,5 @@
+import { invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -30,6 +32,7 @@ export async function GET() {
     
     return NextResponse.json(dictionary)
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('Error fetching KPI dictionary:', error)
     return NextResponse.json({ error: 'Failed to fetch dictionary' }, { status: 500 })
   }
@@ -37,7 +40,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request, true)
     const jsonString = JSON.stringify(body)
     
     const note = await prisma.ideaNote.findFirst({
@@ -59,8 +62,10 @@ export async function POST(request: NextRequest) {
       })
     }
     
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('Error updating KPI dictionary:', error)
     return NextResponse.json({ error: 'Failed to update dictionary' }, { status: 500 })
   }

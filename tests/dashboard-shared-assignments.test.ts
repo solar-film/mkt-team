@@ -43,6 +43,7 @@ function renderDashboard(filterMemberId = 'all', perfTab = 'tasks', members = me
     exports, console,
     require: (name: string) => {
       if (name === 'react') return { ...React, useState: () => [states[stateIndex++], () => {}], useEffect: () => {} };
+      if (name === '@/lib/useVisibleRefresh') return { useVisibleRefresh: () => {} };
       if (name === 'react/jsx-runtime') return require(name);
       if (name === '@/contexts/AuthContext') return { useAuth: () => ({ currentUserId: 'non' }) };
       if (name === '@/lib/fetchDashboard') return { fetchDashboardCached: () => { throw new Error('Unexpected network request'); } };

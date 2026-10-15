@@ -1,6 +1,7 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { HiPlus, HiFunnel, HiMagnifyingGlass } from 'react-icons/hi2';
 import IdeaCard from '@/components/ideas/IdeaCard';
@@ -15,6 +16,35 @@ export default function IdeasPage() {
   
   // UI State
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [selectedIdea, setSelectedIdea] = useState<any>(null);
+  const [detailError, setDetailError] = useState(false);
+  const selection = useRef(selectedIdeaId);
+  selection.current = selectedIdeaId;
+  const detailRevision = useRef(0);
+
+  const fetchDetail = async (id: string, signal?: AbortSignal) => {
+    const revision = ++detailRevision.current;
+    try {
+      const response = await fetchWorkspace(`/api/ideas/${encodeURIComponent(id)}`, { cache: 'no-store', signal });
+      if (!response.ok) throw new Error('Unable to load note');
+      const detail = await response.json();
+      if (selection.current === id && revision === detailRevision.current) {
+        setSelectedIdea(detail);
+        setDetailError(false);
+      }
+    } catch {
+      if (!signal?.aborted && selection.current === id && revision === detailRevision.current) setDetailError(true);
+    }
+  };
+
+  useEffect(() => {
+    setSelectedIdea(null);
+    setDetailError(false);
+    if (!selectedIdeaId) return;
+    const controller = new AbortController();
+    void fetchDetail(selectedIdeaId, controller.signal);
+    return () => controller.abort();
+  }, [selectedIdeaId]);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -41,13 +71,9 @@ export default function IdeasPage() {
 
   const fetchData = async () => {
     try {
-      const [ideasRes, membersRes] = await Promise.all([
-        fetch('/api/ideas', { cache: 'no-store' }),
-        fetch('/api/members', { cache: 'no-store' })
-      ]);
-      
+      const ideasRes = await fetchWorkspace('/api/ideas?view=list', { cache: 'no-store' });
       if (ideasRes.ok) setIdeas(await ideasRes.json());
-      if (membersRes.ok) setMembers(await membersRes.json());
+      if (selection.current) await fetchDetail(selection.current);
     } catch (err) {
       console.error(err);
     } finally {
@@ -56,7 +82,14 @@ export default function IdeasPage() {
   };
 
   useEffect(() => {
-    if (!authLoading) fetchData();
+    if (!authLoading) {
+      void fetchData();
+      const controller = new AbortController();
+      void fetchWorkspace('/api/members', { cache: 'no-store', signal: controller.signal })
+        .then(response => response.ok ? response.json() : [])
+        .then(setMembers).catch(() => {});
+      return () => controller.abort();
+    }
   }, [authLoading]);
 
   // Handle default form memberId
@@ -76,7 +109,7 @@ export default function IdeasPage() {
         : `🔗 ${payload.link}`;
     }
 
-    await fetch('/api/ideas', {
+    await fetchWorkspace('/api/ideas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -137,8 +170,6 @@ export default function IdeasPage() {
     return idea.memberId?.includes(filterOwnerId);
   });
 
-  const selectedIdea = ideas.find(i => i.id === selectedIdeaId);
-
   const handleToggleStar = async (ideaId: string) => {
     const idea = ideas.find(i => i.id === ideaId);
     if (!idea || !currentUserId) return;
@@ -154,7 +185,7 @@ export default function IdeasPage() {
     // Optimistic UI update
     setIdeas(ideas.map(i => i.id === ideaId ? { ...i, recommendedFor: newStarredBy.join(',') } : i));
     
-    await fetch('/api/ideas', {
+    await fetchWorkspace('/api/ideas', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: ideaId, title: idea.title, recommendedFor: newStarredBy.join(',') })
@@ -262,12 +293,18 @@ export default function IdeasPage() {
         {selectedIdeaId && selectedIdea && (
           <div className="ideas-detail">
             <IdeaDetailPane 
+              key={selectedIdea.id}
               idea={selectedIdea} 
               members={members} 
               onClose={() => setSelectedIdeaId(null)} 
               onUpdate={fetchData} 
               currentUserId={currentUserId}
             />
+          </div>
+        )}
+        {selectedIdeaId && !selectedIdea && (
+          <div className="ideas-detail" style={{ padding: '2rem' }}>
+            {detailError ? <button className="btn btn-secondary" onClick={() => fetchDetail(selectedIdeaId)}>โหลดโน้ตอีกครั้ง</button> : <div className="loading-spinner" />}
           </div>
         )}
       </div>

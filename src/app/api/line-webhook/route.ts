@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validLineSignature } from '@/lib/integration-security'
+import { readBodyText, RequestBodyError } from '@/lib/request-body'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const secret = process.env.LINE_CHANNEL_SECRET
+    if (!secret) return NextResponse.json({ error: 'Webhook is not configured' }, { status: 503 })
+    const raw = await readBodyText(request, 1_000_000)
+    if (!validLineSignature(raw, request.headers.get('x-line-signature'), secret)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+    const body = JSON.parse(raw)
     const events = body.events || []
 
     for (const event of events) {
-      if (event.type === 'message' && event.message.type === 'text') {
+      if (event.type === 'message' && event.message?.type === 'text') {
         const text = event.message.text
         if (text === '!id') {
           // สามารถเป็น groupId หรือ userId ได้ (ในกรณีที่แชทส่วนตัว)
@@ -34,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('Webhook Error:', error)
     return NextResponse.json({ error: 'Webhook failed' }, { status: 500 })
   }

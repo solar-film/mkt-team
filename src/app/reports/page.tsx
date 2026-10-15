@@ -1,4 +1,5 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
@@ -78,7 +79,7 @@ export default function ReportsPage() {
   const [dateDay, setDateDay] = useState(currentDate.toISOString().split('T')[0]);
 
   useEffect(() => {
-    fetch('/api/dashboard?t=' + Date.now(), { cache: 'no-store' })
+    fetchWorkspace('/api/dashboard?t=' + Date.now(), { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data && data.members) {

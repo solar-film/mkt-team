@@ -1,4 +1,6 @@
 'use client';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { metricInputValue } from '@/lib/metric-input';
 import { toast } from 'react-hot-toast';
 
 import { useState, useEffect } from 'react';
@@ -24,7 +26,7 @@ export default function RecordStatsTab() {
 
   useEffect(() => {
     // Fetch members for filter
-    fetch('/api/members')
+    fetchWorkspace('/api/members')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -44,7 +46,7 @@ export default function RecordStatsTab() {
   const fetchContents = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/content-metrics?memberId=${memberFilter}&company=${companyFilter}&platform=${platformFilter}&month=${monthFilter}&year=${yearFilter}`);
+      const res = await fetchWorkspace(`/api/content-metrics?memberId=${memberFilter}&company=${companyFilter}&platform=${platformFilter}&month=${monthFilter}&year=${yearFilter}`);
       const data = await res.json();
       if (data.contents) {
         setContents(data.contents);
@@ -58,7 +60,7 @@ export default function RecordStatsTab() {
   const handleSave = async (contentId: string, metrics: any) => {
     setSavingId(contentId);
     try {
-      const res = await fetch('/api/content-metrics', {
+      const res = await fetchWorkspace('/api/content-metrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -202,23 +204,23 @@ export default function RecordStatsTab() {
 
 function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving }: any) {
   const [metrics, setMetrics] = useState({
-    views: initialMetric.views || '',
-    reach: initialMetric.reach || '',
-    likes: initialMetric.likes || '',
-    comments: initialMetric.comments || '',
-    shares: initialMetric.shares || '',
-    saves: initialMetric.saves || '',
-    linkClicks: initialMetric.linkClicks || ''
+    views: initialMetric.views ?? '',
+    reach: initialMetric.reach ?? '',
+    likes: initialMetric.likes ?? '',
+    comments: initialMetric.comments ?? '',
+    shares: initialMetric.shares ?? '',
+    saves: initialMetric.saves ?? '',
+    linkClicks: initialMetric.linkClicks ?? ''
   });
   useEffect(() => {
     setMetrics({
-      views: initialMetric.views || '',
-      reach: initialMetric.reach || '',
-      likes: initialMetric.likes || '',
-      comments: initialMetric.comments || '',
-      shares: initialMetric.shares || '',
-      saves: initialMetric.saves || '',
-      linkClicks: initialMetric.linkClicks || ''
+      views: initialMetric.views ?? '',
+      reach: initialMetric.reach ?? '',
+      likes: initialMetric.likes ?? '',
+      comments: initialMetric.comments ?? '',
+      shares: initialMetric.shares ?? '',
+      saves: initialMetric.saves ?? '',
+      linkClicks: initialMetric.linkClicks ?? ''
     });
   }, [snapshot, initialMetric?.id]);
 
@@ -229,13 +231,13 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
 
   const handleSave = () => {
     const dataToSave = {
-      views: metrics.views ? parseInt(metrics.views.toString(), 10) : null,
-      reach: metrics.reach ? parseInt(metrics.reach.toString(), 10) : null,
-      likes: metrics.likes ? parseInt(metrics.likes.toString(), 10) : null,
-      comments: metrics.comments ? parseInt(metrics.comments.toString(), 10) : null,
-      shares: metrics.shares ? parseInt(metrics.shares.toString(), 10) : null,
-      saves: metrics.saves ? parseInt(metrics.saves.toString(), 10) : null,
-      linkClicks: metrics.linkClicks ? parseInt(metrics.linkClicks.toString(), 10) : null,
+      views: metricInputValue(metrics.views),
+      reach: metricInputValue(metrics.reach),
+      likes: metricInputValue(metrics.likes),
+      comments: metricInputValue(metrics.comments),
+      shares: metricInputValue(metrics.shares),
+      saves: metricInputValue(metrics.saves),
+      linkClicks: metricInputValue(metrics.linkClicks),
     };
     onSave(dataToSave);
   };

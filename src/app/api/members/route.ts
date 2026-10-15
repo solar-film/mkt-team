@@ -1,10 +1,12 @@
+import { cachedJsonRead, invalidateWorkspace } from '@/lib/workspace-cache'
+import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { matchesMemberSelection, serializeAssignments } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function readGET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const includeRelations = searchParams.get('includeRelations') === 'true'
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
       const ideas = await prisma.ideaNote.findMany({
         where: { category: { in: ['task', 'content'] } }
       });
-      
+
       const mapIdeaStatus = (s: string) => {
         if (!s || s === 'รอดำเนินการ') return 'todo';
         if (s === 'เสร็จแล้ว') return 'done';
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
       ideas.forEach(idea => {
         const assignees = idea.memberId ? idea.memberId.split(',') : [];
         const boardStatus = mapIdeaStatus(idea.status);
-        
+
         assignees.forEach(memberId => {
           const member = members.find(m => m.id === memberId);
           if (member) {
@@ -71,7 +73,7 @@ export async function GET(request: NextRequest) {
               platform: idea.platform || 'General',
               publishDate: idea.deadline
             };
-            
+
             if (idea.category === 'task' && (member as any).tasks) {
               (member as any).tasks.push(mappedIdea as any);
             } else if (idea.category === 'content' && (member as any).contents) {
@@ -94,17 +96,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(members)
   } catch (error: any) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to fetch members', 
-      details: error?.message || String(error) 
+    return NextResponse.json({
+      error: 'Failed to fetch members'
     }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { name, role, company, avatar, status } = body
 
     if (!name || !role) {
@@ -121,8 +123,10 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, member: newMember })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to add member' }, { status: 500 })
   }
@@ -130,7 +134,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
     const { id, name, role, company, avatar, status } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -146,8 +150,10 @@ export async function PUT(request: NextRequest) {
       }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true, member: updatedMember })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to update member' }, { status: 500 })
   }
@@ -164,9 +170,18 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     })
 
+    invalidateWorkspace();
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Failed to delete member' }, { status: 500 })
   }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const key = ["members", ...["includeRelations"].map(name => url.searchParams.get(name) || '')];
+  const snapshot = new Request(url);
+  return cachedJsonRead(key, () => readGET(snapshot), url.searchParams.get('fresh') === '1');
 }

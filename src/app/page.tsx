@@ -3,7 +3,8 @@
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 import { uniqueById } from '@/lib/dashboard-items';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   HiClipboardDocumentList, 
@@ -53,7 +54,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = () => {
-    fetchDashboardCached('/api/dashboard')
+    return fetchDashboardCached('/api/dashboard')
       .then(res => res.json())
       .then(data => {
         if (data && data.error) {
@@ -79,16 +80,7 @@ export default function DashboardPage() {
       });
   };
 
-  useEffect(() => {
-    fetchData();
-    
-    // Auto-refresh data every 2 minutes (120,000 ms)
-    const interval = setInterval(() => {
-      fetchData();
-    }, 120000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  useVisibleRefresh(fetchData, []);
 
 
 
