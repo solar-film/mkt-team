@@ -77,7 +77,7 @@ test('failed and oversized cache responses are returned correctly and retried on
   assert.equal((await workspace.cachedJsonRead(['fail'], fail)).status, 503);
   assert.equal((await workspace.cachedJsonRead(['fail'], fail)).status, 503);
   assert.equal(reads, 2);
-  const large = 'x'.repeat(1_500_100);
+  const large = 'x'.repeat(1_900_100);
   assert.equal((await workspace.cachedJsonRead(['large'], async () => Response.json({ large }))).status, 200);
   assert.equal(values.size, 0);
 });
