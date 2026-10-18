@@ -50,7 +50,9 @@ async function readGET(request: Request) {
       prisma.kPI.findMany({
         orderBy: { month: 'desc' }
       }),
+      // Dashboard consumers only show meeting titles; agenda/notes are loaded on the meetings page.
       prisma.meeting.findMany({
+        select: { id: true, title: true, date: true, time: true, company: true, status: true, attendees: true, createdBy: true, createdAt: true, updatedAt: true },
         orderBy: { date: 'desc' }
       }),
       prisma.event.findMany({
