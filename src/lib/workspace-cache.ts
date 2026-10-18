@@ -1,10 +1,14 @@
 import { unstable_cache, revalidateTag } from 'next/cache';
 
 const WORKSPACE_TAG = 'mkt-workspace-v1';
+// Every app write expires the tag, so a long TTL only affects edits made outside the app.
+const CACHE_SECONDS = 3600;
+// Stay under the 2 MB Data Cache item limit; the full dashboard is ~1.3 MB today.
+const MAX_CACHED_BYTES = 1_900_000;
 
 // Internal query cache only. Responses must never enter a shared public CDN cache.
 export function cachedWorkspaceRead<T>(key: string[], read: () => Promise<T>): Promise<T> {
-  return unstable_cache(read, [WORKSPACE_TAG, JSON.stringify(key)], { revalidate: 120, tags: [WORKSPACE_TAG] })();
+  return unstable_cache(read, [WORKSPACE_TAG, JSON.stringify(key)], { revalidate: CACHE_SECONDS, tags: [WORKSPACE_TAG] })();
 }
 
 export function invalidateWorkspace() {
@@ -25,7 +29,7 @@ export async function cachedJsonRead(key: string[], read: () => Promise<Response
       const response = await read();
       const body = await response.text();
       // Oversized payloads and errors still reach the caller, but never fill the cache.
-      if (!response.ok || Buffer.byteLength(body) > 1_500_000) {
+      if (!response.ok || Buffer.byteLength(body) > MAX_CACHED_BYTES) {
         throw new Response(body, { status: response.status, headers: response.headers });
       }
       return { body, status: response.status };
