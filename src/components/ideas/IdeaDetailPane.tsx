@@ -1,4 +1,5 @@
 import { toast } from 'react-hot-toast';
+import { bangkokDateKey } from '@/lib/bangkok-date';
 import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import React, { useState, useRef, useEffect } from 'react';
 import { HiXMark, HiPencil, HiEllipsisVertical, HiPlus, HiCheck, HiDocumentText, HiPaperAirplane, HiTrash } from 'react-icons/hi2';
@@ -41,7 +42,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     link: initialLink,
     company: idea.company || '',
     priority: idea.priority || 'ด่วนมาก',
-    deadline: idea.deadline ? new Date(idea.deadline).toISOString().split('T')[0] : '',
+    deadline: idea.deadline ? bangkokDateKey(idea.deadline) : '',
     category: idea.category || 'idea',
     platform: idea.platform || '',
     kpiId: idea.kpiId || '',

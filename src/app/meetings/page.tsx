@@ -1,5 +1,6 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { bangkokDateKey } from '@/lib/bangkok-date';
 import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import { toast } from 'react-hot-toast';
 
@@ -208,7 +209,7 @@ export default function MeetingsPage() {
       grouped[role].push(item);
     });
 
-    const mDate = formatDate(meeting.date.split('T')[0]);
+    const mDate = formatDate(bangkokDateKey(meeting.date));
     let text = `สรุปรายการสิ่งที่ต้องทำ (To-Do List)\nจากการประชุม: ${meeting.title} (${mDate})\n\nโดยแบ่งตามส่วนงานเพื่อนำไปลงตารางปฏิบัติงานต่อได้ทันทีครับ\n\n`;
 
     Object.entries(grouped).forEach(([role, roleItems]) => {
@@ -253,7 +254,7 @@ export default function MeetingsPage() {
   const openEditModal = (meeting: Meeting) => {
     setForm({
       title: meeting.title,
-      date: meeting.date ? meeting.date.split('T')[0] : '',
+      date: meeting.date ? bangkokDateKey(meeting.date) : '',
       time: meeting.time || '',
       attendees: meeting.attendees ? meeting.attendees.split(',').filter(Boolean) : [],
       agenda: meeting.agenda || '',
@@ -270,7 +271,7 @@ export default function MeetingsPage() {
         itemCategory: item.itemCategory,
         company: item.company || 'GFS',
         memberId: item.memberId || '',
-        deadline: (item.itemCategory === 'task' ? item.deadline : item.publishDate)?.split('T')[0] || '',
+        deadline: bangkokDateKey((item.itemCategory === 'task' ? item.deadline : item.publishDate) || ''),
       })));
     } else {
       setFormItems([]);

@@ -1,5 +1,6 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { bangkokDateKey } from '@/lib/bangkok-date';
 import { yearOptions } from '@/lib/year-options';
 import { toast } from 'react-hot-toast';
 
@@ -105,7 +106,7 @@ export default function PageOverviewTab() {
     // If no recordedById is set yet, default to current user
     const recordedById = data.recordedById || currentUserId;
     // If no recordedDate is set yet, default to today
-    const recordedDate = data.recordedDate || new Date().toISOString().split('T')[0];
+    const recordedDate = data.recordedDate || bangkokDateKey(new Date());
 
     try {
       const res = await fetchWorkspace('/api/channel-metrics', {
@@ -231,7 +232,7 @@ export default function PageOverviewTab() {
                 const data = metrics[ch.id] || {};
                 
                 // Format date for the input
-                const dateVal = data.recordedDate ? new Date(data.recordedDate).toISOString().split('T')[0] : '';
+                const dateVal = data.recordedDate ? bangkokDateKey(data.recordedDate) : '';
 
                 return (
                   <tr key={ch.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
