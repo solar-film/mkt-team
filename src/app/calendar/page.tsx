@@ -6,7 +6,7 @@ import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -52,6 +52,8 @@ export default function CalendarPage() {
   const [kpis, setKpis] = useState<any[]>([]);
   const [filterMemberId, setFilterMemberId] = useState('');
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
+  const latestRequestRef = useRef(0);
 
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
@@ -90,11 +92,14 @@ export default function CalendarPage() {
   };
 
   const fetchData = async () => {
+    const request = ++latestRequestRef.current;
     try {
-      setLoading(true);
+      // Only the first load shows the spinner; background refreshes keep the calendar on screen.
+      if (!hasLoadedRef.current) setLoading(true);
       const res = await fetchWorkspace('/api/dashboard', { cache: 'no-store' });
       const data = await res.json();
-      
+      if (request !== latestRequestRef.current) return; // a newer request will update the calendar
+
       const tasks = data.tasks;
       const contents = data.contents;
       const events = data.events;
@@ -146,10 +151,11 @@ export default function CalendarPage() {
       }
 
       setItems(unified);
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (request === latestRequestRef.current) setLoading(false);
     }
   };
 

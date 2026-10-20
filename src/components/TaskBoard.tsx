@@ -4,7 +4,7 @@ import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -112,13 +112,20 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const [contentForm, setContentForm] = useState({
     title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: ''
   });
+  const shownFilterRef = useRef<string | null>(null);
+  const latestRequestRef = useRef(0);
 
   const fetchData = async () => {
-    setLoading(true);
+    const request = ++latestRequestRef.current;
+    const filter = filterMemberId;
+    // Only the first load or a new member filter replaces the board with a spinner;
+    // background refreshes keep the board (and any open form) on screen.
+    if (shownFilterRef.current !== filter) setLoading(true);
     try {
-      const res = await fetchDashboardCached('/api/dashboard' + (filterMemberId ? `?memberId=${filterMemberId}` : ''));
+      const res = await fetchDashboardCached('/api/dashboard' + (filter ? `?memberId=${filter}` : ''));
       const data = await res.json();
-      
+      if (request !== latestRequestRef.current) return; // a newer request will update the board
+
       const tasksData = data.tasks;
       const contentsData = data.contents;
       const membersData = data.members;
@@ -151,10 +158,11 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       setKpis(Array.isArray(kpisData) ? kpisData : []);
       setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
       setEvents(Array.isArray(eventsData) ? eventsData : []);
+      shownFilterRef.current = filter;
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (request === latestRequestRef.current) setLoading(false);
     }
   };
 
