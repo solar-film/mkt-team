@@ -35,7 +35,8 @@ function membersFor(selectedTasks = tasks, selectedContents = contents) {
 // Render the real page with loaded API data. The mock replaces network/lifecycle/chart
 // surfaces only, so assertions cover the dashboard's actual aggregation and display.
 function renderDashboard(filterMemberId = 'all', perfTab = 'tasks', members = membersFor()) {
-  const states = [members, false, filterMemberId, perfTab, null];
+  // State order: members, loading, member filter, performance tab, selected month (fixtures are October 2026), error.
+  const states = [members, false, filterMemberId, perfTab, { year: 2026, month: 10 }, null];
   let stateIndex = 0;
   const exports: { default?: () => React.ReactNode } = {};
   const childrenOnly = ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children);
@@ -50,6 +51,8 @@ function renderDashboard(filterMemberId = 'all', perfTab = 'tasks', members = me
       if (name === '@/lib/assignments') return require('../src/lib/assignments.ts');
       if (name === '@/lib/dashboard-items') return require('../src/lib/dashboard-items.ts');
       if (name === '@/lib/colors') return require('../src/lib/colors.ts');
+      if (name === '@/lib/month-filter') return require('../src/lib/month-filter.ts');
+      if (name === '@/lib/year-options') return require('../src/lib/year-options.ts');
       if (name === 'next/link') return { default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement('a', { href }, children), __esModule: true };
       if (name.startsWith('@/components/')) return { default: childrenOnly, __esModule: true };
       if (name === 'recharts' || name === 'react-icons/hi2') return new Proxy({}, { get: () => childrenOnly });
@@ -84,11 +87,27 @@ test('team cards and company totals count shared records once across all assigne
   assert.equal(cardValue(html, 'งานค้าง'), 2);
   assert.equal(cardValue(html, 'งานเสร็จแล้ว'), 1);
   assert.equal(cardValue(html, 'คอนเทนต์ที่ผลิต'), 1);
-  assert.match(html, /จากทั้งหมด 3 งาน/);
+  assert.match(html, /จาก 3 งานที่กำหนดส่งใน ต\.ค\. 2026/);
   assert.deepEqual(companyCounts(html, 'GFS'), [2, 1]);
   assert.deepEqual(companyCounts(html, 'MHL'), [2, 0]);
   assert.deepEqual(companyCounts(html, 'CAR'), [1, 0]);
   assert.deepEqual(companyCounts(html, 'รวมทั้งหมด'), [4, 1]);
+});
+
+test('monthly view counts only the selected month but keeps earlier unfinished work pending', () => {
+  const september = { ...shared, deadline: '2026-09-10' };
+  const monthTasks = [
+    ...tasks,
+    { ...september, id: 'sep-open', title: 'September open task', status: 'todo', company: 'GFS' },
+    { ...september, id: 'sep-done', title: 'September done task', status: 'done', company: 'GFS' },
+  ];
+  const monthContents = [...contents, { ...shared, id: 'sep-content', title: 'September content', status: 'done', company: 'GFS', publishDate: '2026-09-12' }];
+  const html = renderDashboard('all', 'tasks', membersFor(monthTasks, monthContents));
+  assert.equal(cardValue(html, 'งานค้าง'), 3); // two October tasks + one unfinished September task
+  assert.equal(cardValue(html, 'งานเสร็จแล้ว'), 1); // the September completion is not October work
+  assert.equal(cardValue(html, 'คอนเทนต์ที่ผลิต'), 1);
+  assert.match(html, /รวมค้างจากเดือนก่อน\/ไม่มีกำหนด 1 งาน/);
+  assert.deepEqual(companyCounts(html, 'GFS'), [2, 1]);
 });
 
 test('upcoming records appear once and retain every responsible person', () => {

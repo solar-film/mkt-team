@@ -4,8 +4,23 @@ import { bangkokDateKey } from '../src/lib/bangkok-date';
 import { ideaBoardStatus, isContentDone } from '../src/lib/dashboard-items';
 import { requireOk, saveErrorMessage } from '../src/lib/save-result';
 import { yearOptions } from '../src/lib/year-options';
+import { currentBangkokMonth, dueByEndOf, inMonth, monthLabel } from '../src/lib/month-filter';
 import { readFileSync } from 'node:fs';
 import { loadSource } from './route-harness';
+
+test('dashboard months follow the Thai calendar and keep earlier unfinished work pending', () => {
+  const october = { year: 2026, month: 10 };
+  assert.deepEqual(currentBangkokMonth(new Date('2026-10-31T17:30:00.000Z')), { year: 2026, month: 11 });
+  assert.equal(monthLabel(october), 'ต.ค. 2026');
+  // Due 1 Oct 00:00 in Bangkok is stored as 30 Sep 17:00 UTC.
+  assert.equal(inMonth('2026-09-30T17:00:00.000Z', october), true);
+  assert.equal(inMonth('2026-10-31T17:00:00.000Z', october), false);
+  assert.equal(inMonth(null, october), false);
+  assert.equal(dueByEndOf('2026-08-15T03:00:00.000Z', october), true);
+  assert.equal(dueByEndOf('2026-10-20T03:00:00.000Z', october), true);
+  assert.equal(dueByEndOf('2026-11-02T03:00:00.000Z', october), false);
+  assert.equal(dueByEndOf(null, october), true);
+});
 
 test('year filters always include the current and next year', () => {
   assert.deepEqual(yearOptions(new Date('2026-10-20')), [2024, 2025, 2026, 2027]);

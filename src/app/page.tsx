@@ -2,6 +2,8 @@
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 import { isContentDone, uniqueById } from '@/lib/dashboard-items';
+import { THAI_MONTHS, currentBangkokMonth, dueByEndOf, inMonth, monthKey, monthLabel, type MonthRef } from '@/lib/month-filter';
+import { yearOptions } from '@/lib/year-options';
 
 import { useState } from 'react';
 import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
@@ -50,6 +52,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
   const [perfTab, setPerfTab] = useState<'tasks' | 'contents'>('contents');
+  // Cards, team performance and company breakdown follow this month; it starts at the current Thai month.
+  const [period, setPeriod] = useState<MonthRef>(() => currentBangkokMonth());
 
   const [error, setError] = useState<string | null>(null);
 
@@ -117,14 +121,18 @@ export default function DashboardPage() {
   const allContents = uniqueById(filteredMembers.flatMap(m => m.contents)).map(c => ({ ...c, memberName: memberSelectionLabel(c.memberId, members), itemType: 'content', deadline: c.publishDate }));
   const allItems = [...allTasks, ...allContents];
 
-  // Calculate overall stats
-  const totalTasks = allTasks.length;
-  const completedTasks = allTasks.filter(t => t.status === 'done').length;
-  const totalContent = allContents.length;
-  
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
+  // Monthly stats: tasks belong to their deadline month, content to its publish month (Thai calendar).
+  const isCurrentPeriod = monthKey(period) === monthKey(currentBangkokMonth());
+  const periodName = monthLabel(period);
+  const monthTasks = allTasks.filter(t => inMonth(t.deadline, period));
+  const completedTasks = monthTasks.filter(t => t.status === 'done').length;
+  const totalContent = allContents.filter(c => inMonth(c.publishDate, period)).length;
+  // Pending also keeps earlier unfinished work (and work without a deadline) visible.
+  const pendingTasks = allTasks.filter(t => t.status !== 'done' && dueByEndOf(t.deadline, period));
+  const carriedOverTasks = pendingTasks.filter(t => !inMonth(t.deadline, period)).length;
+
+  const currentMonth = period.month;
+  const currentYear = period.year;
 
   const currentMonthKpis = filteredMembers.flatMap(m => m.kpis).filter(k => k.month === currentMonth && k.year === currentYear && k.name !== 'งานทั่วไป');
   const avgKPI = currentMonthKpis.length > 0 
@@ -207,9 +215,11 @@ export default function DashboardPage() {
   const teamPerformance = members
     .filter(m => m.name.toLowerCase() !== 'oil')
     .map(m => {
-      const mItems = perfTab === 'tasks' ? m.tasks : m.contents;
-      const mCompleted = mItems.filter(t => t.status === 'done').length;
-      const mTotal = mItems.length;
+      const isDone = (item: any) => perfTab === 'tasks' ? item.status === 'done' : isContentDone(item.status);
+      const dateOf = (item: any) => perfTab === 'tasks' ? item.deadline : item.publishDate;
+      const mItems: any[] = perfTab === 'tasks' ? m.tasks : m.contents;
+      const mCompleted = mItems.filter(item => isDone(item) && inMonth(dateOf(item), period)).length;
+      const mPending = mItems.filter(item => !isDone(item) && dueByEndOf(dateOf(item), period)).length;
       
       const mKpis = m.kpis.filter(k => k.month === currentMonth && k.year === currentYear && k.name !== 'งานทั่วไป');
       let kpiPercent = 0;
@@ -230,7 +240,7 @@ export default function DashboardPage() {
         name: m.name,
         percent: kpiPercent,
         completed: mCompleted,
-        pending: mTotal - mCompleted
+        pending: mPending
       };
     })
     .sort((a, b) => b.percent - a.percent);
@@ -238,7 +248,7 @@ export default function DashboardPage() {
   // 4. Company Breakdown
   const companies = ['GFS', 'MHL', 'CAR'];
   const companyData = companies.map(comp => {
-    const cItems = allItems.filter(item => matchesCompanySelection(item.company, comp));
+    const cItems = allItems.filter(item => inMonth(item.deadline, period) && matchesCompanySelection(item.company, comp));
     const cCompleted = cItems.filter(item => item.status === 'done').length;
     const cTotal = cItems.length;
     const percent = cTotal > 0 ? Math.round((cCompleted / cTotal) * 100) : 0;
@@ -250,7 +260,7 @@ export default function DashboardPage() {
     };
   });
   
-  const uniqueCompanyItems = allItems.filter(item => companies.some(company => matchesCompanySelection(item.company, company)));
+  const uniqueCompanyItems = allItems.filter(item => inMonth(item.deadline, period) && companies.some(company => matchesCompanySelection(item.company, company)));
   const totalCompanyItems = uniqueCompanyItems.length;
   const totalCompanyCompleted = uniqueCompanyItems.filter(item => item.status === 'done').length;
   const totalCompanyPercent = totalCompanyItems > 0 ? Math.round((totalCompanyCompleted / totalCompanyItems) * 100) : 0;
@@ -279,7 +289,24 @@ export default function DashboardPage() {
             พร้อมลุยงานให้เป้าหมายวันนี้กัน!
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>เดือน:</span>
+          <select
+            aria-label="เลือกเดือน"
+            value={period.month}
+            onChange={e => setPeriod({ ...period, month: Number(e.target.value) })}
+            style={{ padding: '0.5rem 0.75rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', fontWeight: 600 }}
+          >
+            {THAI_MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
+          </select>
+          <select
+            aria-label="เลือกปี"
+            value={period.year}
+            onChange={e => setPeriod({ ...period, year: Number(e.target.value) })}
+            style={{ padding: '0.5rem 0.75rem', borderRadius: '24px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', outline: 'none', fontWeight: 600 }}
+          >
+            {yearOptions().map(year => <option key={year} value={year}>{year}</option>)}
+          </select>
           <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>กำลังดูข้อมูลของ:</span>
           <select 
             value={filterMemberId}
@@ -306,12 +333,12 @@ export default function DashboardPage() {
             <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>งานค้าง</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#f97316', lineHeight: 1 }}>{totalTasks - completedTasks}</span>
+            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#f97316', lineHeight: 1 }}>{pendingTasks.length}</span>
             <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, paddingBottom: '0.35rem' }}>งาน</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>จากทั้งหมด {totalTasks} งาน</span>
-            <span style={{ fontSize: '0.75rem', color: '#f97316', fontWeight: 700, backgroundColor: '#fff7ed', padding: '0.15rem 0.4rem', borderRadius: '8px' }}>▲ {tasksCreatedYesterday} <span style={{ fontWeight: 500 }}>จากเมื่อวาน</span></span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{carriedOverTasks > 0 ? `รวมค้างจากเดือนก่อน/ไม่มีกำหนด ${carriedOverTasks} งาน` : `ณ สิ้น ${periodName}`}</span>
+            {isCurrentPeriod && <span style={{ fontSize: '0.75rem', color: '#f97316', fontWeight: 700, backgroundColor: '#fff7ed', padding: '0.15rem 0.4rem', borderRadius: '8px' }}>▲ {tasksCreatedYesterday} <span style={{ fontWeight: 500 }}>จากเมื่อวาน</span></span>}
           </div>
         </div>
 
@@ -328,8 +355,8 @@ export default function DashboardPage() {
             <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, paddingBottom: '0.35rem' }}>คอนเทนต์</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>จากทั้งหมดในระบบ</span>
-            <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, backgroundColor: '#eff6ff', padding: '0.15rem 0.4rem', borderRadius: '8px' }}>▲ {contentCreatedYesterday} <span style={{ fontWeight: 500 }}>จากเมื่อวาน</span></span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>วันเผยแพร่ใน {periodName}</span>
+            {isCurrentPeriod && <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, backgroundColor: '#eff6ff', padding: '0.15rem 0.4rem', borderRadius: '8px' }}>▲ {contentCreatedYesterday} <span style={{ fontWeight: 500 }}>จากเมื่อวาน</span></span>}
           </div>
         </div>
 
@@ -346,8 +373,8 @@ export default function DashboardPage() {
             <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, paddingBottom: '0.35rem' }}>งาน</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ปิดจ๊อบสำเร็จ</span>
-            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, backgroundColor: '#ecfdf5', padding: '0.15rem 0.4rem', borderRadius: '8px' }}>▲ {tasksCompletedYesterday} <span style={{ fontWeight: 500 }}>จากเมื่อวาน</span></span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>จาก {monthTasks.length} งานที่กำหนดส่งใน {periodName}</span>
+            {isCurrentPeriod && <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, backgroundColor: '#ecfdf5', padding: '0.15rem 0.4rem', borderRadius: '8px' }}>▲ {tasksCompletedYesterday} <span style={{ fontWeight: 500 }}>จากเมื่อวาน</span></span>}
           </div>
         </div>
 
@@ -363,7 +390,7 @@ export default function DashboardPage() {
             <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#8b5cf6', lineHeight: 1 }}>{Math.round(avgKPI || 0)}%</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>เป้าหมายรายเดือน 100%</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>เป้าหมาย {periodName} 100%</span>
           </div>
           {/* Decorative circular progress */}
           <div style={{ position: 'absolute', right: '1.5rem', bottom: '1.5rem', width: '60px', height: '60px', borderRadius: '50%', background: `conic-gradient(#8b5cf6 ${Math.round(avgKPI || 0)}%, #f1f5f9 0)` }}>
@@ -436,7 +463,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <HiOutlineUserGroup size={24} color="#6366f1" />
               <div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Team Performance</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Team Performance <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>· {periodName}</span></h2>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                   <button 
                     onClick={() => setPerfTab('tasks')}
@@ -538,7 +565,7 @@ export default function DashboardPage() {
             <HiOutlineChartBarSquare size={24} color="#8b5cf6" />
             <div>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Company Breakdown</h2>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>ผลงานตามบริษัท</p>
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>ผลงานตามบริษัท · {periodName}</p>
             </div>
           </div>
 
