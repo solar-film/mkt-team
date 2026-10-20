@@ -54,6 +54,7 @@ function renderDashboard(filterMemberId = 'all', perfTab = 'tasks', members = me
       if (name === '@/lib/month-filter') return require('../src/lib/month-filter.ts');
       if (name === '@/lib/year-options') return require('../src/lib/year-options.ts');
       if (name === '@/lib/task-kpi') return require('../src/lib/task-kpi.ts');
+      if (name === '@/lib/workspace-fetch') return { fetchWorkspace: () => { throw new Error('Unexpected network request'); } };
       if (name === 'next/link') return { default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement('a', { href }, children), __esModule: true };
       if (name.startsWith('@/components/')) return { default: childrenOnly, __esModule: true };
       if (name === 'recharts' || name === 'react-icons/hi2') return new Proxy({}, { get: () => childrenOnly });

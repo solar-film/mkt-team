@@ -14,7 +14,8 @@
     "test:avatars": "tsx --test tests/member-avatar.test.ts",
     "test:consistency": "tsx --test tests/date-status-consistency.test.ts",
     "test:completion-link": "tsx --test tests/completion-link.test.ts",
-    "test:release": "npm run test:shared-assignments && npm run test:performance-security && npm run test:avatars && npm run test:consistency && npm run test:completion-link && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs"
+    "test:stats-due": "tsx --test tests/stats-due.test.ts",
+    "test:release": "npm run test:shared-assignments && npm run test:performance-security && npm run test:avatars && npm run test:consistency && npm run test:completion-link && npm run test:stats-due && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

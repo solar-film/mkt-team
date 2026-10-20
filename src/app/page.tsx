@@ -6,7 +6,8 @@ import { THAI_MONTHS, currentBangkokMonth, dueByEndOf, inMonth, monthKey, monthL
 import { yearOptions } from '@/lib/year-options';
 import { taskHasKpi } from '@/lib/task-kpi';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -57,6 +58,16 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState<MonthRef>(() => currentBangkokMonth());
 
   const [error, setError] = useState<string | null>(null);
+  // Content statistics this person still has to record, shown as a reminder banner.
+  const [statsDue, setStatsDue] = useState<{ total: number; overdue: number } | null>(null);
+
+  useEffect(() => {
+    if (!currentUserId || currentUserId === 'GUEST') return;
+    fetchWorkspace(`/api/content-metrics/due?memberId=${currentUserId}`)
+      .then(res => res.json())
+      .then(data => setStatsDue(typeof data.total === 'number' ? { total: data.total, overdue: data.overdue || 0 } : null))
+      .catch(() => setStatsDue(null));
+  }, [currentUserId]);
 
   const fetchData = () => {
     return fetchDashboardCached('/api/dashboard')
@@ -321,6 +332,13 @@ export default function DashboardPage() {
           </select>
         </div>
       </div>
+
+      {statsDue && statsDue.total > 0 && (
+        <Link href="/content-stats?tab=record" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', textDecoration: 'none', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412', borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontWeight: 600, fontSize: '0.9rem' }}>
+          <span>📊 คุณมีสถิติคอนเทนต์ที่ต้องกรอก {statsDue.total} รายการ{statsDue.overdue > 0 ? ` (เลยกำหนด ${statsDue.overdue})` : ''}</span>
+          <span style={{ whiteSpace: 'nowrap' }}>ไปกรอก →</span>
+        </Link>
+      )}
 
       {/* Top Row: 4 Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>

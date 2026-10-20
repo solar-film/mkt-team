@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HiChartPie, HiPencilSquare } from 'react-icons/hi2';
 
 // We can put sub-components here for the tabs
@@ -10,6 +10,12 @@ import PageOverviewTab from './components/PageOverviewTab';
 
 export default function ContentStatsPage() {
   const [activeTab, setActiveTab] = useState('page_overview'); // 'page_overview', 'record', 'summary'
+
+  // Reminder links open a tab directly, e.g. /content-stats?tab=record.
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab === 'record' || tab === 'summary' || tab === 'page_overview') setActiveTab(tab);
+  }, []);
 
   return (
     <div style={{ padding: '0 0.5rem' }}>

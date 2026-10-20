@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { secretMatches } from '@/lib/integration-security'
+import { STATS_TRACKING_START_UTC, pendingStats, statsReminderText } from '@/lib/stats-due'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,50 +43,69 @@ export async function GET(request: Request) {
       return diffDays === 1 || diffDays === 3 || diffDays < 0
     })
 
-    if (tasksDueSoon.length === 0) {
+    // Content statistics that are due but not recorded (content published from 1 Oct 2026).
+    const statsContents = await prisma.content.findMany({
+      where: { publishDate: { gte: STATS_TRACKING_START_UTC } },
+      select: {
+        id: true, title: true, status: true, platform: true, company: true, publishDate: true,
+        memberId: true, memberIds: true, metrics: { select: { snapshot: true } },
+      },
+    })
+    const statsDue = pendingStats(statsContents)
+
+    if (tasksDueSoon.length === 0 && statsDue.length === 0) {
       return NextResponse.json({ message: 'No tasks due soon' })
     }
 
-    const members = await notificationMembers(tasksDueSoon, prisma)
+    let messageText = ''
+    if (tasksDueSoon.length > 0) {
+      const members = await notificationMembers(tasksDueSoon, prisma)
 
-    let messageText = '🚨 *แจ้งเตือนกำหนดส่งงาน* 🚨\n\n'
-    
-    const dueTomorrow = tasksDueSoon.filter(t => {
-      const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      return diffDays === 1
-    })
-    
-    const due3Days = tasksDueSoon.filter(t => {
-      const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      return diffDays === 3
-    })
-    
-    const overdue = tasksDueSoon.filter(t => {
-      const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      return diffDays < 0
-    })
-
-    if (overdue.length > 0) {
-      messageText += '🔥 *เลยกำหนดแล้ว:*\n'
-      overdue.forEach(t => {
-        messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
+      messageText += '🚨 *แจ้งเตือนกำหนดส่งงาน* 🚨\n\n'
+      
+      const dueTomorrow = tasksDueSoon.filter(t => {
+        const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays === 1
       })
-      messageText += '\n'
+      
+      const due3Days = tasksDueSoon.filter(t => {
+        const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays === 3
+      })
+      
+      const overdue = tasksDueSoon.filter(t => {
+        const diffDays = Math.ceil((new Date(t.deadline!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays < 0
+      })
+
+      if (overdue.length > 0) {
+        messageText += '🔥 *เลยกำหนดแล้ว:*\n'
+        overdue.forEach(t => {
+          messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
+        })
+        messageText += '\n'
+      }
+
+      if (dueTomorrow.length > 0) {
+        messageText += '⏰ *ต้องส่งพรุ่งนี้:*\n'
+        dueTomorrow.forEach(t => {
+          messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
+        })
+        messageText += '\n'
+      }
+
+      if (due3Days.length > 0) {
+        messageText += '⏳ *ต้องส่งในอีก 3 วัน:*\n'
+        due3Days.forEach(t => {
+          messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
+        })
+      }
     }
 
-    if (dueTomorrow.length > 0) {
-      messageText += '⏰ *ต้องส่งพรุ่งนี้:*\n'
-      dueTomorrow.forEach(t => {
-        messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
-      })
-      messageText += '\n'
-    }
-
-    if (due3Days.length > 0) {
-      messageText += '⏳ *ต้องส่งในอีก 3 วัน:*\n'
-      due3Days.forEach(t => {
-        messageText += `- ${t.title} (@${notificationMemberLabel(t, members)})\n`
-      })
+    if (statsDue.length > 0) {
+      const ownerIds = [...new Set(statsDue.flatMap(item => item.ownerIds).filter(id => id && id !== 'all'))]
+      const owners = ownerIds.length ? await prisma.teamMember.findMany({ where: { id: { in: ownerIds } }, select: { id: true, name: true } }) : []
+      messageText += `${messageText ? '\n' : ''}${statsReminderText(statsDue, new Map(owners.map(owner => [owner.id, owner.name])))}`
     }
 
     const LINE_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN
@@ -105,7 +125,7 @@ export async function GET(request: Request) {
       })
     }
 
-    return NextResponse.json({ success: true, notifiedCount: tasksDueSoon.length })
+    return NextResponse.json({ success: true, notifiedCount: tasksDueSoon.length, statsPending: statsDue.length })
   } catch (error) {
     console.error('Cron Error:', error)
     return NextResponse.json({ error: 'Failed to process cron' }, { status: 500 })

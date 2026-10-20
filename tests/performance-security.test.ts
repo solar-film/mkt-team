@@ -260,7 +260,7 @@ test('LINE verifies raw-body signature before sending, and cron rejects unauthen
   assert.equal((await line.POST(request('{"events":[{"type":"message","message":{"type":"text","text":"!id"}}]}'))).status, 401);
   const disabled = loadSource('src/app/api/line-webhook/route.ts');
   assert.equal((await disabled.POST(request(raw, signature))).status, 503);
-  const cron = loadSource('src/app/api/cron/deadline/route.ts', { '@/lib/prisma': { prisma: { task: { findMany: async () => { reads++; return []; } } } } }, globals);
+  const cron = loadSource('src/app/api/cron/deadline/route.ts', { '@/lib/prisma': { prisma: { task: { findMany: async () => { reads++; return []; } }, content: { findMany: async () => [] } } } }, globals);
   assert.equal((await cron.GET(new Request('http://localhost/api/cron/deadline'))).status, 401);
   assert.equal(reads, 0);
   assert.equal((await cron.GET(new Request('http://localhost/api/cron/deadline', { headers: { Authorization: 'Bearer test-cron' } }))).status, 200);

@@ -37,6 +37,7 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
       if (name === '@/lib/integration-security') return require('../src/lib/integration-security.ts');
       if (name === '@/lib/task-kpi') return require('../src/lib/task-kpi.ts');
       if (name === '@/lib/completion-link') return require('../src/lib/completion-link.ts');
+      if (name === '@/lib/stats-due') return require('../src/lib/stats-due.ts');
       if (name === 'next/server') return require(name);
       throw new Error(`Unexpected import ${name}`);
     },
@@ -48,7 +49,7 @@ function fixtureDb(record = shared) {
   const lookups: string[][] = [];
   const prisma = {
     task: { create: async () => record, update: async () => record, findUnique: async () => record },
-    content: { create: async () => record, update: async () => record, findUnique: async () => record },
+    content: { create: async () => record, update: async () => record, findUnique: async () => record, findMany: async () => [] as any[] },
     teamMember: { findMany: async ({ where }: { where: { id: { in: string[] } } }) => {
       lookups.push(where.id.in);
       return members.filter(member => where.id.in.includes(member.id));
@@ -151,6 +152,33 @@ test('deadline reminders batch assignee names once and preserve legacy/everyone 
   assert.match(pushed[0], /Legacy overdue \(@OIL\)/);
   assert.match(pushed[0], /Shared tomorrow \(@OIL, TAW\)/);
   assert.match(pushed[0], /Everyone deadline \(@ทุกคน\)/);
+});
+
+test('daily reminder lists content statistics due for each owner even without task deadlines', async () => {
+  const published = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000); // D+7 is two days late
+  const { prisma, lookups } = fixtureDb();
+  const db = {
+    ...prisma,
+    task: { findMany: async () => [] },
+    content: { findMany: async () => [
+      { id: 'c1', title: 'Post A', status: 'done', publishDate: published, memberId: 'oil', memberIds: ['oil', 'taw'], metrics: [] },
+      { id: 'c2', title: 'Post B', status: 'done', publishDate: published, memberId: 'oil', memberIds: ['oil'], metrics: [{ snapshot: 'D+7' }] },
+      { id: 'c3', title: 'Draft C', status: 'todo', publishDate: published, memberId: 'taw', memberIds: ['taw'], metrics: [] },
+    ] },
+  };
+  const pushed: string[] = [];
+  const route = loadRoute('src/app/api/cron/deadline/route.ts', db, [], pushed);
+  const response = await route.GET(new Request('http://localhost/api/cron/deadline', { headers: { Authorization: 'Bearer test-cron' } }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.notifiedCount, 0);
+  assert.equal(body.statsPending, 1);
+  assert.equal(pushed.length, 1);
+  assert.match(pushed[0], /สถิติคอนเทนต์ที่ต้องกรอก 1 รายการ/);
+  assert.match(pushed[0], /- OIL: D\+7 1 \(เลยกำหนดสุด 2 วัน\)/);
+  assert.match(pushed[0], /- TAW: D\+7 1 \(เลยกำหนดสุด 2 วัน\)/);
+  assert.doesNotMatch(pushed[0], /แจ้งเตือนกำหนดส่งงาน/);
+  assert.equal(JSON.stringify(lookups), JSON.stringify([['oil', 'taw']])); // owner names fetched once
 });
 
 test('deadline run without due work skips name lookup and notifications', async () => {

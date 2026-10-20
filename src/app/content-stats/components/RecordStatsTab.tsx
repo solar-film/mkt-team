@@ -4,7 +4,8 @@ import { yearOptions } from '@/lib/year-options';
 import { metricInputValue } from '@/lib/metric-input';
 import { toast } from 'react-hot-toast';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { pendingStats, type PendingStat } from '@/lib/stats-due';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCompanyColor } from '@/lib/colors';
 import { memberSelectionLabel, parseSelection } from '@/lib/assignments';
@@ -24,6 +25,8 @@ export default function RecordStatsTab() {
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
 
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [dueItems, setDueItems] = useState<PendingStat[]>([]);
+  const [focusId, setFocusId] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch members for filter
@@ -43,6 +46,49 @@ export default function RecordStatsTab() {
   useEffect(() => {
     fetchContents();
   }, [memberFilter, companyFilter, platformFilter, monthFilter, yearFilter]);
+
+  // Snapshots that are due but not yet recorded (content published from 1 Oct 2026), most overdue first.
+  const fetchDue = async () => {
+    try {
+      const res = await fetchWorkspace(`/api/content-metrics/due?memberId=${memberFilter}`);
+      const data = await res.json();
+      setDueItems(Array.isArray(data.items) ? data.items : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDue();
+  }, [memberFilter]);
+
+  // Bring the row chosen from the reminder list into view once its month has loaded.
+  useEffect(() => {
+    if (!focusId || loading) return;
+    document.getElementById(`stats-row-${focusId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [focusId, loading, contents]);
+
+  const openDueItem = (item: PendingStat) => {
+    const [year, month] = item.publishDate.split('-');
+    setSnapshotFilter(item.snapshot);
+    setCompanyFilter('all');
+    setPlatformFilter('all');
+    setMonthFilter(String(Number(month)));
+    setYearFilter(year);
+    setFocusId(item.contentId);
+  };
+
+  // Rows still waiting for the selected snapshot come first, most overdue at the top.
+  const dueByContent = useMemo(() => {
+    const map = new Map<string, PendingStat>();
+    pendingStats(contents).filter(item => item.snapshot === snapshotFilter).forEach(item => map.set(item.contentId, item));
+    return map;
+  }, [contents, snapshotFilter]);
+  const sortedContents = useMemo(() => {
+    const due = contents.filter(content => dueByContent.has(content.id))
+      .sort((a, b) => dueByContent.get(b.id)!.daysOverdue - dueByContent.get(a.id)!.daysOverdue);
+    return [...due, ...contents.filter(content => !dueByContent.has(content.id))];
+  }, [contents, dueByContent]);
 
   const fetchContents = async () => {
     setLoading(true);
@@ -75,6 +121,7 @@ export default function RecordStatsTab() {
         // Refresh or just indicate success
         toast.success('บันทึกสำเร็จ');
         fetchContents();
+        fetchDue();
       } else {
         toast.error('เกิดข้อผิดพลาดในการบันทึก');
       }
@@ -83,15 +130,6 @@ export default function RecordStatsTab() {
       toast.error('เกิดข้อผิดพลาด');
     }
     setSavingId(null);
-  };
-
-  const isD7Due = (publishDate: string) => {
-    if (!publishDate) return false;
-    const pubDate = new Date(publishDate);
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - pubDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 7;
   };
 
   return (
@@ -153,6 +191,25 @@ export default function RecordStatsTab() {
         </div>
       </div>
 
+      {dueItems.length > 0 && (
+        <div style={{ border: '1px solid #fecaca', backgroundColor: '#fff7f7', borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1rem' }}>
+          <div style={{ fontWeight: 700, color: '#b91c1c', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+            ⚠️ ต้องกรอกสถิติ {dueItems.length} รายการ{dueItems.some(item => item.daysOverdue > 0) ? ` (เลยกำหนด ${dueItems.filter(item => item.daysOverdue > 0).length})` : ''}
+          </div>
+          <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {dueItems.map(item => (
+              <div key={`${item.contentId}-${item.snapshot}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
+                <span style={{ backgroundColor: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>{item.snapshot}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
+                <span style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{memberSelectionLabel(item.ownerIds, members)}</span>
+                <span style={{ color: item.daysOverdue > 0 ? '#dc2626' : '#d97706', fontWeight: 600, whiteSpace: 'nowrap' }}>{item.daysOverdue > 0 ? `เลยกำหนด ${item.daysOverdue} วัน` : 'ครบกำหนดวันนี้'}</span>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => openDueItem(item)}>กรอก</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="loading-spinner" style={{ margin: '2rem auto' }}></div>
       ) : (
@@ -171,10 +228,10 @@ export default function RecordStatsTab() {
               </tr>
             </thead>
             <tbody>
-              {contents.map(content => {
+              {sortedContents.map(content => {
                 // Find existing metric for selected snapshot
                 const metric = content.metrics?.find((m: any) => m.snapshot === snapshotFilter) || {};
-                const dueAlert = snapshotFilter === 'D+7' && !metric.id && isD7Due(content.publishDate);
+                const dueAlert = dueByContent.get(content.id) || null;
                 
                 return (
                   <ContentRow 
@@ -183,6 +240,7 @@ export default function RecordStatsTab() {
                     initialMetric={metric} 
                     snapshot={snapshotFilter} 
                     dueAlert={dueAlert} 
+                    highlight={focusId === content.id}
                     onSave={(data: Record<string, number | null>) => handleSave(content.id, data)}
                     saving={savingId === content.id}
                   />
@@ -201,7 +259,7 @@ export default function RecordStatsTab() {
   );
 }
 
-function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving }: any) {
+function ContentRow({ content, initialMetric, snapshot, dueAlert, highlight, onSave, saving }: any) {
   const [metrics, setMetrics] = useState({
     views: initialMetric.views ?? '',
     reach: initialMetric.reach ?? '',
@@ -242,14 +300,14 @@ function ContentRow({ content, initialMetric, snapshot, dueAlert, onSave, saving
   };
 
   return (
-    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+    <tr id={`stats-row-${content.id}`} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: highlight ? '#fef9c3' : undefined }}>
       <td style={{ padding: '0.5rem', verticalAlign: 'middle' }}>
         <div style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
           {content.publishDate ? new Date(content.publishDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
         </div>
         {dueAlert && (
           <div style={{ marginTop: '2px' }}>
-            <span style={{ backgroundColor: '#fee2e2', color: '#ef4444', fontSize: '0.65rem', padding: '2px 4px', borderRadius: '4px', fontWeight: 600 }}>ครบ 7 วันรอกรอก</span>
+            <span style={{ backgroundColor: '#fee2e2', color: '#ef4444', fontSize: '0.65rem', padding: '2px 4px', borderRadius: '4px', fontWeight: 600 }}>ครบ {snapshot} รอกรอก{dueAlert.daysOverdue > 0 ? ` · เลย ${dueAlert.daysOverdue} วัน` : ''}</span>
           </div>
         )}
       </td>

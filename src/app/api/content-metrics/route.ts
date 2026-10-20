@@ -30,16 +30,18 @@ async function readGET(request: Request) {
       whereClause.platform = { contains: platform, mode: 'insensitive' };
     }
     
+    // Month and year boundaries follow the Thai calendar (UTC+7, no daylight saving).
+    const thaiMonthStart = (y: number, m: number) => new Date(Date.UTC(y, m - 1, 1) - 7 * 60 * 60 * 1000);
     if (month && year && month !== 'all' && year !== 'all') {
-      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const endDate = new Date(parseInt(year), parseInt(month), 1);
+      const startDate = thaiMonthStart(parseInt(year), parseInt(month));
+      const endDate = thaiMonthStart(parseInt(year), parseInt(month) + 1);
       whereClause.publishDate = {
         gte: startDate,
         lt: endDate
       };
     } else if (year && year !== 'all') {
-      const startDate = new Date(parseInt(year), 0, 1);
-      const endDate = new Date(parseInt(year) + 1, 0, 1);
+      const startDate = thaiMonthStart(parseInt(year), 1);
+      const endDate = thaiMonthStart(parseInt(year) + 1, 1);
       whereClause.publishDate = {
         gte: startDate,
         lt: endDate
@@ -50,7 +52,7 @@ async function readGET(request: Request) {
       where: whereClause,
       select: {
         id: true, title: true, company: true, companies: true, memberId: true, memberIds: true,
-        platform: true, publishDate: true, link: true,
+        platform: true, publishDate: true, link: true, status: true,
         member: { select: { id: true, name: true } },
         metrics: true
       },
