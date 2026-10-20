@@ -2,6 +2,7 @@ import { cachedJsonRead } from '@/lib/workspace-cache'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { serializeAssignments, memberAssignmentFilter } from '@/lib/assignments'
+import { MEMBER_LIST_SELECT, withAvatarUrls } from '@/lib/member-avatar'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,6 +46,7 @@ async function readGET(request: Request) {
       }),
       prisma.teamMember.findMany({
         where: { id: { not: 'all' } },
+        select: MEMBER_LIST_SELECT,
         orderBy: { name: 'asc' }
       }),
       prisma.kPI.findMany({
@@ -125,7 +127,7 @@ async function readGET(request: Request) {
     return NextResponse.json({
       tasks: finalTasks.map(serializeAssignments),
       contents: finalContents.map(serializeAssignments),
-      members,
+      members: await withAvatarUrls(members, prisma),
       kpis,
       meetings,
       events

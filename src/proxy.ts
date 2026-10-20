@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
     if (rejected) return NextResponse.json({ error: 'Request rejected' }, { status: rejected });
   }
   const response = NextResponse.next();
-  if (pathname.startsWith('/api/') && !/^\/api\/ideas\/[^/]+\/attachments$/.test(pathname)) {
+  if (pathname.startsWith('/api/') && !/^\/api\/(ideas\/[^/]+\/attachments|members\/[^/]+\/avatar)$/.test(pathname)) {
     response.headers.set('Cache-Control', 'private, no-store');
   }
   return response;

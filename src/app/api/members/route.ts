@@ -3,6 +3,7 @@ import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { matchesMemberSelection, serializeAssignments } from '@/lib/assignments'
+import { MEMBER_LIST_SELECT, validAvatar, withAvatarUrls } from '@/lib/member-avatar'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,8 @@ async function readGET(request: Request) {
 
     const members = await prisma.teamMember.findMany({
       where: { id: { not: 'all' } },
-      include: {
+      select: {
+        ...MEMBER_LIST_SELECT,
         tasks: includeRelations,
         kpis: includeRelations,
         contents: includeRelations
@@ -94,7 +96,7 @@ async function readGET(request: Request) {
       return a.name.localeCompare(b.name);
     })
 
-    return NextResponse.json(members)
+    return NextResponse.json(await withAvatarUrls(members, prisma))
   } catch (error: any) {
     if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
@@ -112,6 +114,9 @@ export async function POST(request: NextRequest) {
     if (!name || !role) {
       return NextResponse.json({ error: 'Name and role are required' }, { status: 400 })
     }
+    if (avatar !== undefined && !validAvatar(avatar)) {
+      return NextResponse.json({ error: 'Avatar must be an image of 100KB or less' }, { status: 400 })
+    }
 
     const newMember = await prisma.teamMember.create({
       data: {
@@ -120,11 +125,13 @@ export async function POST(request: NextRequest) {
         company: company || 'GFS',
         avatar: avatar || null,
         status: status || 'active'
-      }
+      },
+      select: MEMBER_LIST_SELECT
     })
 
     invalidateWorkspace();
-    return NextResponse.json({ success: true, member: newMember })
+    const [member] = await withAvatarUrls([newMember], prisma)
+    return NextResponse.json({ success: true, member })
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
@@ -138,6 +145,9 @@ export async function PUT(request: NextRequest) {
     const { id, name, role, company, avatar, status } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    if (avatar !== undefined && !validAvatar(avatar)) {
+      return NextResponse.json({ error: 'Avatar must be an image of 100KB or less' }, { status: 400 })
+    }
 
     const updatedMember = await prisma.teamMember.update({
       where: { id },
@@ -147,11 +157,13 @@ export async function PUT(request: NextRequest) {
         company: company !== undefined ? company : undefined,
         avatar: avatar !== undefined ? avatar : undefined,
         status: status !== undefined ? status : undefined
-      }
+      },
+      select: MEMBER_LIST_SELECT
     })
 
     invalidateWorkspace();
-    return NextResponse.json({ success: true, member: updatedMember })
+    const [member] = await withAvatarUrls([updatedMember], prisma)
+    return NextResponse.json({ success: true, member })
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)

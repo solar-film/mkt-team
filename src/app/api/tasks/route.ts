@@ -28,8 +28,7 @@ async function readGET(request: Request) {
           select: {
             id: true,
             name: true,
-            role: true,
-            avatar: true
+            role: true
           }
         }
       },
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
         kpiId: kpiId || null
       },
       include: {
-        member: { select: { id: true, name: true, avatar: true } }
+        member: { select: { id: true, name: true } }
       }
     })
 
@@ -119,7 +118,7 @@ export async function PUT(request: NextRequest) {
         kpiId: kpiId !== undefined ? kpiId : undefined
       },
       include: {
-        member: { select: { id: true, name: true, avatar: true } }
+        member: { select: { id: true, name: true } }
       }
     })
 

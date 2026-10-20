@@ -21,7 +21,7 @@ async function readGET(request: Request) {
       where,
       include: {
         member: {
-          select: { id: true, name: true, avatar: true }
+          select: { id: true, name: true }
         }
       },
       orderBy: {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         memberId
       },
       include: {
-        member: { select: { id: true, name: true, avatar: true } }
+        member: { select: { id: true, name: true } }
       }
     })
 
@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest) {
         memberId: memberId !== undefined ? memberId : undefined
       },
       include: {
-        member: { select: { id: true, name: true, avatar: true } }
+        member: { select: { id: true, name: true } }
       }
     })
 

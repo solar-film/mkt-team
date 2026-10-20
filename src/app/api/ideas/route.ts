@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (body.notifyLine) {
       let memberName = 'ทีมงาน'
       if (idea.memberId) {
-        const member = await prisma.teamMember.findUnique({ where: { id: idea.memberId } })
+        const member = await prisma.teamMember.findUnique({ where: { id: idea.memberId }, select: { name: true } })
         if (member) memberName = member.name
       }
       
@@ -118,7 +118,7 @@ export async function PUT(request: NextRequest) {
     if (body.notifyLine) {
       let memberName = 'ทีมงาน'
       if (idea.memberId) {
-        const member = await prisma.teamMember.findUnique({ where: { id: idea.memberId } })
+        const member = await prisma.teamMember.findUnique({ where: { id: idea.memberId }, select: { name: true } })
         if (member) memberName = member.name
       }
       
