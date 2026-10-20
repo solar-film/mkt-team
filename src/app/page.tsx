@@ -1,7 +1,7 @@
 'use client';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
-import { uniqueById } from '@/lib/dashboard-items';
+import { isContentDone, uniqueById } from '@/lib/dashboard-items';
 
 import { useState } from 'react';
 import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
@@ -132,7 +132,7 @@ export default function DashboardPage() {
         const target = Number(kpi.target) || 1;
         const member = filteredMembers.find(m => m.id === kpi.memberId);
         const linkedTasksDone = member?.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
-        const linkedContentsDone = member?.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+        const linkedContentsDone = member?.contents?.filter(c => c.kpiId === kpi.id && isContentDone(c.status)).length || 0;
         const autoCurrent = linkedTasksDone + linkedContentsDone;
         const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
         const percentage = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : (displayCurrent / target) * 100;
@@ -217,7 +217,7 @@ export default function DashboardPage() {
         const totalPercent = mKpis.reduce((sum, kpi) => {
           const target = Number(kpi.target) || 1;
           const linkedTasksDone = m.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
-          const linkedContentsDone = m.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+          const linkedContentsDone = m.contents?.filter(c => c.kpiId === kpi.id && isContentDone(c.status)).length || 0;
           const autoCurrent = linkedTasksDone + linkedContentsDone;
           const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
           const percentage = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / target) * 100, 100);

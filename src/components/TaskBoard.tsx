@@ -15,6 +15,9 @@ import { format } from 'date-fns';
 import { getCompanyColor, getMemberColor } from '@/lib/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchDashboardCached } from '@/lib/fetchDashboard';
+import { requireOk, saveErrorMessage } from '@/lib/save-result';
+import { bangkokDateKey } from '@/lib/bangkok-date';
+import { toast } from 'react-hot-toast';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 
 interface UnifiedItem {
@@ -186,15 +189,15 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
         body = { id: payloadId, title: item.title.replace('💡 ', ''), status: ideaStatusMap[newStatus] || newStatus };
       }
       
-      await fetchWorkspace(endpoint, {
+      await requireOk(fetchWorkspace(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-      });
-      // Optionally re-fetch
+      }));
     } catch (err) {
       console.error(err);
-      fetchData(); // revert on error
+      toast.error(saveErrorMessage(err));
+      fetchData(); // revert the optimistic status
     }
   };
 
@@ -208,15 +211,16 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
     try {
       if (itemToDelete.id.startsWith('idea_')) {
         const payloadId = itemToDelete.id.replace('idea_', '');
-        await fetchWorkspace(`/api/ideas?id=${payloadId}`, { method: 'DELETE' });
+        await requireOk(fetchWorkspace(`/api/ideas?id=${payloadId}`, { method: 'DELETE' }));
       } else {
         const endpoint = itemToDelete.type === 'task' ? '/api/tasks' : '/api/content';
-        await fetchWorkspace(`${endpoint}?id=${itemToDelete.id}`, { method: 'DELETE' });
+        await requireOk(fetchWorkspace(`${endpoint}?id=${itemToDelete.id}`, { method: 'DELETE' }));
       }
       setItemToDelete(null);
       fetchData();
     } catch (err) {
       console.error(err);
+      toast.error(saveErrorMessage(err));
     }
   };
 
@@ -245,7 +249,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
         platform: item.platform || 'Facebook',
         memberId: item.memberId || '',
         company: item.company || 'GFS',
-        publishDate: item.publishDate ? new Date(item.publishDate).toISOString().split('T')[0] : '',
+        publishDate: item.publishDate ? bangkokDateKey(item.publishDate) : '',
         kpiId: (item as any).kpiId || '',
         link: item.link || ''
       });
@@ -268,31 +272,33 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       if (isEditing && editingItemId) {
         if (editingItemId.startsWith('idea_')) {
           const payloadId = editingItemId.replace('idea_', '');
-          await fetchWorkspace('/api/ideas', {
+          await requireOk(fetchWorkspace('/api/ideas', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: payloadId, title: taskForm.title.replace('💡 ', ''), description: taskForm.description, memberId: taskForm.memberId, priority: taskForm.priority, deadline: body.deadline, company: taskForm.company })
-          });
+          }));
         } else {
-          await fetchWorkspace('/api/tasks', {
+          await requireOk(fetchWorkspace('/api/tasks', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
-          });
+          }));
         }
       } else {
-        await fetchWorkspace('/api/tasks', {
+        await requireOk(fetchWorkspace('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })
-        });
+        }));
       }
       setIsModalOpen(false);
       setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' });
       setNotifyLine(false);
       fetchData();
     } catch (err) {
+      // Keep the form open with what was typed so the user can retry.
       console.error(err);
+      toast.error(saveErrorMessage(err));
     }
   };
 
@@ -312,31 +318,33 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       if (isEditing && editingItemId) {
         if (editingItemId.startsWith('idea_')) {
           const payloadId = editingItemId.replace('idea_', '');
-          await fetchWorkspace('/api/ideas', {
+          await requireOk(fetchWorkspace('/api/ideas', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: payloadId, title: contentForm.title.replace('💡 ', ''), description: contentForm.description, memberId: contentForm.memberId, platform: contentForm.platform, deadline: body.publishDate, company: contentForm.company })
-          });
+          }));
         } else {
-          await fetchWorkspace('/api/content', {
+          await requireOk(fetchWorkspace('/api/content', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: editingItemId, ...body, notifyLine })
-          });
+          }));
         }
       } else {
-        await fetchWorkspace('/api/content', {
+        await requireOk(fetchWorkspace('/api/content', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...body, notifyLine })
-        });
+        }));
       }
       setIsModalOpen(false);
       setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' });
       setNotifyLine(false);
       fetchData();
     } catch (err) {
+      // Keep the form open with what was typed so the user can retry.
       console.error(err);
+      toast.error(saveErrorMessage(err));
     }
   };
 

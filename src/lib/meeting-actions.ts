@@ -6,6 +6,14 @@ export async function saveMeetingActions(db: Prisma.TransactionClient, meetingId
   if (input === undefined) return;
   if (!Array.isArray(input)) throw new AssignmentValidationError('รูปแบบรายการที่ต้องทำไม่ถูกต้อง');
 
+  // Items removed from the meeting form stay on the board with their status and links;
+  // they are only detached from this meeting. This runs before new items are created.
+  const keptIds = (category: string) => input
+    .filter(item => item?.itemCategory === category && typeof item.id === 'string' && item.id)
+    .map(item => item.id as string);
+  await db.task.updateMany({ where: { meetingId, id: { notIn: keptIds('task') } }, data: { meetingId: null } });
+  await db.content.updateMany({ where: { meetingId, id: { notIn: keptIds('content') } }, data: { meetingId: null } });
+
   for (const item of input) {
     if (!item || typeof item.title !== 'string' || !item.title.trim()) {
       throw new AssignmentValidationError('กรุณาระบุรายละเอียดของรายการที่ต้องทำ');

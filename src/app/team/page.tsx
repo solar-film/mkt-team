@@ -59,13 +59,15 @@ export default function TeamPage() {
           setMembers(enrichedMembers);
           if (currentUserId) {
             const user = enrichedMembers.find((m: any) => m.id === currentUserId);
-            if (user?.role === 'Admin') setIsAdmin(true);
+            // Non-admins previously stayed on the spinner because only the admin case was set.
+            setIsAdmin(user?.role === 'Admin');
           }
         }
       }
     } catch (error) {
       console.error('Failed to fetch members:', error);
     } finally {
+      setIsAdmin(prev => prev ?? false);
       setLoading(false);
     }
   };

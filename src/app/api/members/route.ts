@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { matchesMemberSelection, serializeAssignments } from '@/lib/assignments'
 import { MEMBER_LIST_SELECT, validAvatar, withAvatarUrls } from '@/lib/member-avatar'
+import { ideaBoardStatus } from '@/lib/dashboard-items'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,15 +44,9 @@ async function readGET(request: Request) {
         where: { category: { in: ['task', 'content'] } }
       });
 
-      const mapIdeaStatus = (s: string) => {
-        if (!s || s === 'รอดำเนินการ') return 'todo';
-        if (s === 'เสร็จแล้ว') return 'done';
-        return 'in_progress';
-      };
-
       ideas.forEach(idea => {
         const assignees = idea.memberId ? idea.memberId.split(',') : [];
-        const boardStatus = mapIdeaStatus(idea.status);
+        const boardStatus = ideaBoardStatus(idea.status);
 
         assignees.forEach(memberId => {
           const member = members.find(m => m.id === memberId);

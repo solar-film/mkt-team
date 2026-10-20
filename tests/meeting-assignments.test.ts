@@ -45,6 +45,14 @@ function adapter(sql: Sql) {
     update: ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => write(table, data, where.id),
     findFirst: async ({ where }: { where: { id: string; meetingId: string } }) =>
       (await sql.query(`SELECT * FROM "${table}" WHERE id = $1 AND "meetingId" = $2`, [where.id, where.meetingId])).rows[0] || null,
+    updateMany: async ({ where, data }: { where: { meetingId: string; id: { notIn: string[] } }; data: { meetingId: null } }) => {
+      assert.deepEqual(data, { meetingId: null });
+      const result = await sql.query(
+        `UPDATE "${table}" SET "meetingId" = NULL WHERE "meetingId" = $1 AND NOT (id = ANY(SELECT jsonb_array_elements_text($2::jsonb)))`,
+        [where.meetingId, JSON.stringify(where.id.notIn)],
+      );
+      return { count: result.affectedRows ?? 0 };
+    },
   });
   return {
     meeting: model('Meeting'), task: model('Task'), content: model('Content'),
@@ -148,6 +156,36 @@ test('editing a shared task preserves its done status and priority without creat
   assert.equal(tasks[0].status, 'done');
   assert.equal(tasks[0].priority, 'high');
   assert.deepEqual(tasks[0].memberIds, ['taw']);
+});
+
+test('removing an action from a meeting keeps the task and content on the board, only detached', async () => {
+  const response = await api.POST(request('POST', { title: 'Detach meeting', date: '2026-10-14', items: [
+    { ...action, title: 'Keep task' }, { ...action, title: 'Drop task' }, { ...action, title: 'Drop content', itemCategory: 'content' },
+  ] }));
+  const meetingId = (await response.json()).meeting.id;
+  const tasks = (await db.query<{ id: string; title: string }>('SELECT id, title FROM "Task" WHERE "meetingId" = $1', [meetingId])).rows;
+  const keep = tasks.find(task => task.title === 'Keep task')!;
+  const drop = tasks.find(task => task.title === 'Drop task')!;
+  const content = (await db.query<{ id: string }>('SELECT id FROM "Content" WHERE "meetingId" = $1', [meetingId])).rows[0];
+  await db.query('UPDATE "Task" SET status = \'done\' WHERE id = $1', [drop.id]);
+  await db.query('UPDATE "Content" SET link = \'https://example.com/kept\' WHERE id = $1', [content.id]);
+
+  const edited = await api.PUT(request('PUT', { id: meetingId, items: [
+    { ...action, id: keep.id, title: 'Keep task' }, { ...action, title: 'New task' },
+  ] }));
+  assert.equal(edited.status, 200);
+  const linked = (await db.query<{ title: string }>('SELECT title FROM "Task" WHERE "meetingId" = $1 ORDER BY title', [meetingId])).rows;
+  assert.deepEqual(linked.map(row => row.title), ['Keep task', 'New task']);
+  const dropped = (await db.query<{ status: string; meetingId: string | null }>('SELECT status, "meetingId" FROM "Task" WHERE id = $1', [drop.id])).rows[0];
+  assert.equal(dropped.status, 'done');
+  assert.equal(dropped.meetingId, null);
+  const keptContent = (await db.query<{ link: string; meetingId: string | null }>('SELECT link, "meetingId" FROM "Content" WHERE id = $1', [content.id])).rows[0];
+  assert.equal(keptContent.link, 'https://example.com/kept');
+  assert.equal(keptContent.meetingId, null);
+
+  const untouched = await api.PUT(request('PUT', { id: meetingId, title: 'Renamed only' }));
+  assert.equal(untouched.status, 200);
+  assert.equal((await db.query<{ count: number }>('SELECT count(*)::int AS count FROM "Task" WHERE "meetingId" = $1', [meetingId])).rows[0].count, 2);
 });
 
 test('a meeting cannot overwrite an action belonging to another meeting', async () => {

@@ -2,6 +2,7 @@
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { matchesMemberSelection, matchesCompanySelection } from '@/lib/assignments';
+import { isContentDone } from '@/lib/dashboard-items';
 
 import { useEffect, useState } from 'react';
 import { HiPlus, HiPencilSquare, HiOutlineTrash } from 'react-icons/hi2';
@@ -295,7 +296,7 @@ export default function KPIsPage() {
             if (monthKpis.length > 0) {
               const totalPercent = monthKpis.reduce((sum, k) => {
                 const linkedTasksDone = member.tasks?.filter(t => t.kpiId === k.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
-                const linkedContentsDone = member.contents?.filter(c => c.kpiId === k.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+                const linkedContentsDone = member.contents?.filter(c => c.kpiId === k.id && isContentDone(c.status)).length || 0;
                 const autoCurrent = linkedTasksDone + linkedContentsDone;
                 const displayCurrent = Math.max(Number(k.current) || 0, autoCurrent);
                 const percent = k.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / k.target) * 100, 100);
@@ -369,7 +370,7 @@ export default function KPIsPage() {
                     {monthKpis.length > 0 ? (
                       monthKpis.map(kpi => {
                         const linkedTasksDone = member.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
-                        const linkedContentsDone = member.contents?.filter(c => c.kpiId === kpi.id && (c.status === 'done' || c.status === 'เสร็จแล้ว')).length || 0;
+                        const linkedContentsDone = member.contents?.filter(c => c.kpiId === kpi.id && isContentDone(c.status)).length || 0;
                         const autoCurrent = linkedTasksDone + linkedContentsDone;
                         const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
                         const percent = kpi.target === 0 ? (displayCurrent > 0 ? 100 : 0) : Math.min((displayCurrent / kpi.target) * 100, 100);

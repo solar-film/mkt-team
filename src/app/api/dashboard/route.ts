@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { serializeAssignments, memberAssignmentFilter } from '@/lib/assignments'
 import { MEMBER_LIST_SELECT, withAvatarUrls } from '@/lib/member-avatar'
+import { ideaBoardStatus } from '@/lib/dashboard-items'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,13 +74,7 @@ async function readGET(request: Request) {
       const assignees = idea.memberId ? idea.memberId.split(',') : [];
       if (assignees.length === 0) return; // Unassigned ideas don't show on board
       
-      const mapIdeaStatus = (s: string) => {
-        if (!s || s === 'รอดำเนินการ' || s === 'pending') return 'todo';
-        if (s === 'เสร็จแล้ว' || s === 'done' || s === 'approved') return 'done';
-        return 'in_progress';
-      };
-
-      const boardStatus = mapIdeaStatus(idea.status);
+      const boardStatus = ideaBoardStatus(idea.status);
       const isMultiple = assignees.length > 1;
       const mem = members.find(m => m.id === assignees[0]);
       const memberObj = isMultiple ? null : (mem ? { id: mem.id, name: mem.name } : null);

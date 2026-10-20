@@ -2,6 +2,7 @@
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
+import { bangkokDateKey } from '@/lib/bangkok-date';
 
 import { useEffect, useState } from 'react';
 import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare, HiFire, HiMinus, HiArrowDown } from 'react-icons/hi2';
@@ -76,7 +77,7 @@ export default function ReportsPage() {
   const [dateFilterType, setDateFilterType] = useState('month'); // 'month' or 'day' or 'all'
   const [dateMonth, setDateMonth] = useState((currentDate.getMonth() + 1).toString());
   const [dateYear, setDateYear] = useState(currentDate.getFullYear().toString());
-  const [dateDay, setDateDay] = useState(currentDate.toISOString().split('T')[0]);
+  const [dateDay, setDateDay] = useState(bangkokDateKey(currentDate));
 
   useEffect(() => {
     fetchWorkspace('/api/dashboard?t=' + Date.now(), { cache: 'no-store' })
@@ -164,7 +165,7 @@ export default function ReportsPage() {
       if (dateFilterType === 'month') {
         if ((itemDate.getMonth() + 1).toString() !== dateMonth || itemDate.getFullYear().toString() !== dateYear) return false;
       } else if (dateFilterType === 'day') {
-        if (item.date.split('T')[0] !== dateDay) return false;
+        if (bangkokDateKey(item.date) !== dateDay) return false;
       }
     } else if (dateFilterType !== 'all') {
       return false; // No date but date filter is active

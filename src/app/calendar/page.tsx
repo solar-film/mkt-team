@@ -13,6 +13,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { getCompanyColor } from '@/lib/colors';
+import { bangkokDateKey } from '@/lib/bangkok-date';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 
 interface TeamMember {
@@ -106,8 +107,8 @@ export default function CalendarPage() {
           if (t.deadline) {
             unified.push({
               id: t.id, title: t.title, status: t.status, memberId: t.memberId,
-              date: t.deadline.split('T')[0], type: 'task',
-              startDate: t.startDate ? t.startDate.split('T')[0] : t.deadline.split('T')[0],
+              date: bangkokDateKey(t.deadline), type: 'task',
+              startDate: t.startDate ? bangkokDateKey(t.startDate) : bangkokDateKey(t.deadline),
               member: Array.isArray(members) ? members.find(m => matchesMemberSelection(t.memberId, m.id)) : undefined,
               fullItem: t
             });
@@ -120,7 +121,7 @@ export default function CalendarPage() {
           if (c.publishDate) {
             unified.push({
               id: c.id, title: c.title, status: c.status, memberId: c.memberId,
-              date: c.publishDate.split('T')[0], type: 'content',
+              date: bangkokDateKey(c.publishDate), type: 'content',
               member: Array.isArray(members) ? members.find(m => matchesMemberSelection(c.memberId, m.id)) : undefined,
               fullItem: c
             });
@@ -133,7 +134,7 @@ export default function CalendarPage() {
           if (e.date) {
             unified.push({
               id: e.id, title: e.title, status: 'event', memberId: '',
-              date: e.date.split('T')[0], type: 'event',
+              date: bangkokDateKey(e.date), type: 'event',
               fullItem: e
             });
           }
@@ -348,7 +349,7 @@ export default function CalendarPage() {
     gridCells.push(<div key={`empty-start-${i}`} className="calendar-cell empty-cell"></div>);
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = bangkokDateKey(new Date());
   const filteredItems = filterMemberId ? items.filter(i => matchesMemberSelection(i.memberId, filterMemberId)) : items;
 
   // 1. Sort items globally

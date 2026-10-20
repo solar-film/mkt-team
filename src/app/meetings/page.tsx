@@ -24,6 +24,7 @@ import MemberAvatar from '@/components/MemberAvatar';
 import dynamic from 'next/dynamic';
 import ActionItemMultiSelect from './components/ActionItemMultiSelect';
 import { parseSelection, memberSelectionLabel } from '@/lib/assignments';
+import { isContentDone } from '@/lib/dashboard-items';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
@@ -337,7 +338,7 @@ export default function MeetingsPage() {
     const isTask = item.itemCategory === 'task';
     const newStatus = isTask 
       ? (item.status === 'done' ? 'todo' : 'done')
-      : (item.status === 'published' ? 'draft' : 'published');
+      : (isContentDone(item.status) ? 'todo' : 'done');
       
     try {
       await fetchWorkspace(isTask ? '/api/tasks' : '/api/content', {
@@ -413,7 +414,7 @@ export default function MeetingsPage() {
           {meetings.map(meeting => {
             const isExpanded = expandedId === meeting.id;
             const items = meetingItems[meeting.id] || [];
-            const doneCount = items.filter(i => (i.itemCategory === 'task' ? i.status === 'done' : i.status === 'published')).length;
+            const doneCount = items.filter(i => (i.itemCategory === 'task' ? i.status === 'done' : isContentDone(i.status))).length;
             const totalCount = items.length;
 
             return (
@@ -573,7 +574,7 @@ export default function MeetingsPage() {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                               {items.map(item => {
-                                const isDone = item.itemCategory === 'task' ? item.status === 'done' : item.status === 'published';
+                                const isDone = item.itemCategory === 'task' ? item.status === 'done' : isContentDone(item.status);
                                 return (
                                 <div
                                   key={item.id}
