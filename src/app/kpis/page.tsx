@@ -51,6 +51,7 @@ export default function KPIsPage() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [checkingPassword, setCheckingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   
   const [kpiDict, setKpiDict] = useState<{id: string, name: string, description: string}[]>([]);
@@ -126,15 +127,29 @@ export default function KPIsPage() {
     }
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === '3107') {
-      setIsAdminMode(true);
-      setIsPasswordModalOpen(false);
-      setPasswordInput('');
-      setPasswordError('');
-    } else {
-      setPasswordError('รหัสผ่านไม่ถูกต้อง');
+    if (checkingPassword) return;
+    setCheckingPassword(true);
+    try {
+      // Checked on the server against ADMIN_PASSWORD, so no password is shipped in the page code.
+      const res = await fetch('/api/admin/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordInput })
+      });
+      if (res.ok) {
+        setIsAdminMode(true);
+        setIsPasswordModalOpen(false);
+        setPasswordInput('');
+        setPasswordError('');
+      } else {
+        setPasswordError(res.status === 503 ? 'ยังไม่ได้ตั้งรหัสผู้ดูแลระบบบนเซิร์ฟเวอร์' : 'รหัสผ่านไม่ถูกต้อง');
+      }
+    } catch {
+      setPasswordError('ตรวจรหัสผ่านไม่สำเร็จ กรุณาลองใหม่');
+    } finally {
+      setCheckingPassword(false);
     }
   };
 
@@ -557,14 +572,14 @@ export default function KPIsPage() {
               autoFocus
               value={passwordInput} 
               onChange={e => { setPasswordInput(e.target.value); setPasswordError(''); }} 
-              placeholder="รหัสผ่านสำหรับผู้ดูแลระบบ" 
+              placeholder="รหัสผู้ดูแลระบบ (รหัสเดียวกับหน้า Admin)"
               style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
             />
             {passwordError && <div style={{ color: 'var(--color-danger)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{passwordError}</div>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={() => { setIsPasswordModalOpen(false); setPasswordInput(''); setPasswordError(''); }}>ยกเลิก</button>
-            <button type="submit" className="btn btn-primary">ตกลง</button>
+            <button type="submit" className="btn btn-primary" disabled={checkingPassword}>{checkingPassword ? 'กำลังตรวจ...' : 'ตกลง'}</button>
           </div>
         </form>
       </Modal>
