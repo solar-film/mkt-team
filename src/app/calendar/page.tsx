@@ -17,6 +17,8 @@ import { format } from 'date-fns';
 import { getCompanyColor } from '@/lib/colors';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
+import TaskKpiSelect from '@/components/TaskKpiSelect';
+import { validTaskKpiId } from '@/lib/task-kpi';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -230,7 +232,8 @@ export default function CalendarPage() {
     try {
       const body = {
         ...taskForm,
-        deadline: taskForm.deadline ? new Date(taskForm.deadline).toISOString() : null
+        deadline: taskForm.deadline ? new Date(taskForm.deadline).toISOString() : null,
+        kpiId: kpis.length ? validTaskKpiId(kpis, taskForm.memberId, taskForm.deadline, taskForm.kpiId) : (taskForm.kpiId || null)
       };
       
       if (isEditing && editingItemId) {
@@ -958,7 +961,9 @@ export default function CalendarPage() {
                 />
               </div>
             </div>
-            {/* KPI selection removed from tasks as per user request */}
+            {!(isEditing && editingItemId?.startsWith('idea_')) && (
+              <TaskKpiSelect kpis={kpis} members={membersList} memberSelection={taskForm.memberId} deadline={taskForm.deadline} value={taskForm.kpiId} onChange={kpiId => setTaskForm({ ...taskForm, kpiId })} />
+            )}
             {!isEditing && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.5rem', padding: '0.75rem 1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
                 <input type="checkbox" id="notifyLineCalTask" checked={notifyLine} onChange={e => setNotifyLine(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#22c55e', cursor: 'pointer' }} />

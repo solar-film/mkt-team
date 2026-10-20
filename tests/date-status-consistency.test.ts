@@ -5,6 +5,7 @@ import { ideaBoardStatus, isContentDone } from '../src/lib/dashboard-items';
 import { requireOk, saveErrorMessage } from '../src/lib/save-result';
 import { yearOptions } from '../src/lib/year-options';
 import { currentBangkokMonth, dueByEndOf, inMonth, monthLabel } from '../src/lib/month-filter';
+import { taskKpiOptions, validTaskKpiId } from '../src/lib/task-kpi';
 import { readFileSync } from 'node:fs';
 import { loadSource } from './route-harness';
 
@@ -20,6 +21,23 @@ test('dashboard months follow the Thai calendar and keep earlier unfinished work
   assert.equal(dueByEndOf('2026-10-20T03:00:00.000Z', october), true);
   assert.equal(dueByEndOf('2026-11-02T03:00:00.000Z', october), false);
   assert.equal(dueByEndOf(null, october), true);
+});
+
+test('tasks offer only their assignees KPIs for the Thai month of the deadline', () => {
+  const kpis = [
+    { id: 'non-oct', name: 'ออกถ่ายงานนอกสถานที่', memberId: 'non', month: 10, year: 2026 },
+    { id: 'non-sep', name: 'เก็บรูปถ่ายงานติดตั้ง', memberId: 'non', month: 9, year: 2026 },
+    { id: 'taw-oct', name: 'งานทั่วไป', memberId: 'taw', month: 10, year: 2026 },
+  ];
+  // Due 1 Oct 00:00 Bangkok (stored 30 Sep 17:00 UTC) belongs to October.
+  assert.deepEqual(taskKpiOptions(kpis, 'non', '2026-09-30T17:00:00.000Z').map(kpi => kpi.id), ['non-oct']);
+  assert.deepEqual(taskKpiOptions(kpis, 'non,taw', '2026-10-20T03:00:00.000Z').map(kpi => kpi.id), ['non-oct', 'taw-oct']);
+  assert.deepEqual(taskKpiOptions(kpis, 'all', '2026-10-20T03:00:00.000Z').map(kpi => kpi.id), ['non-oct', 'taw-oct']);
+  assert.deepEqual(taskKpiOptions(kpis, 'non', ''), []);
+  assert.equal(validTaskKpiId(kpis, 'non', '2026-10-20T03:00:00.000Z', 'non-oct'), 'non-oct');
+  assert.equal(validTaskKpiId(kpis, 'taw', '2026-10-20T03:00:00.000Z', 'non-oct'), null);
+  assert.equal(validTaskKpiId(kpis, 'non', '2026-09-20T03:00:00.000Z', 'non-oct'), null);
+  assert.equal(validTaskKpiId(kpis, 'non', '2026-10-20T03:00:00.000Z', ''), null);
 });
 
 test('year filters always include the current and next year', () => {
