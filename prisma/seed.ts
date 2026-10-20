@@ -1,5 +1,19 @@
 import { PrismaClient } from '@prisma/client'
 
+// This seed deletes every Content, KPI, Task and TeamMember row before inserting sample data.
+// Run it only against a local database, and only when explicitly requested.
+function assertSafeToSeed() {
+  let host = ''
+  try { host = new URL(process.env.DATABASE_URL || '').hostname } catch {}
+  const localDatabase = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host)
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== 'yes' || !localDatabase) {
+    console.error('❌ ยกเลิก seed: สคริปต์นี้ลบข้อมูลทั้งตาราง ใช้ได้เฉพาะฐานข้อมูลในเครื่อง (localhost) และต้องตั้ง ALLOW_DESTRUCTIVE_SEED=yes')
+    process.exit(1)
+  }
+}
+
+assertSafeToSeed()
+
 const prisma = new PrismaClient()
 
 async function main() {
