@@ -21,6 +21,7 @@ import { toast } from 'react-hot-toast';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import TaskKpiSelect from '@/components/TaskKpiSelect';
 import { validTaskKpiIds } from '@/lib/task-kpi';
+import { hasLink, requiresLinkToComplete } from '@/lib/completion-link';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -175,7 +176,10 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   useVisibleRefresh(fetchData, [filterMemberId]);
 
   const handleStatusChange = async (item: UnifiedItem, newStatus: string) => {
-    if (item.itemType === 'content' && newStatus === 'done' && !item.link) {
+    // Content always needs its link to be completed; a task only when it counts towards a KPI.
+    // Idea cards keep their previous rule (content only) because ideas have no link field.
+    const needsLink = item.id.startsWith('idea_') ? item.itemType === 'content' : requiresLinkToComplete(item.itemType, (item as any).kpiId);
+    if (newStatus === 'done' && needsLink && !hasLink(item.link)) {
       setValidationAlert({ isOpen: true, item });
       return;
     }
@@ -1184,7 +1188,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
           }
         }}
         title="ข้อมูลไม่ครบถ้วน"
-        message={`กรุณาใส่ "ลิงก์ผลงาน" ก่อนเปลี่ยนสถานะเป็น เสร็จสิ้น (เพื่อใช้นับ KPI)`}
+        message={`กรุณาใส่ "ลิงก์ผลงาน" ก่อนเปลี่ยนสถานะเป็น เสร็จแล้ว (คอนเทนต์ทุกชิ้น และงานที่ผูก KPI ต้องมีลิงก์เพื่อใช้นับ KPI)`}
         confirmText="ใส่ลิงก์ผลงาน"
         cancelText="ปิด"
         type="warning"

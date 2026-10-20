@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
 import { assignmentData } from '@/lib/assignment-storage'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
+import { COMPLETION_LINK_MESSAGE, blocksCompletion } from '@/lib/completion-link'
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
@@ -51,6 +52,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
 
+    if (blocksCompletion('content', null, { status: status || 'draft', kpiId, link })) {
+      return NextResponse.json({ error: COMPLETION_LINK_MESSAGE }, { status: 400 })
+    }
+
     const assignments = await assignmentData(body, prisma, true)
     const newContent = await prisma.content.create({
       data: {
@@ -94,6 +99,18 @@ export async function PUT(request: NextRequest) {
     const { id, title, description, type, platform, status, publishDate, memberId, company, link, kpiId, meetingId, notifyLine } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+
+    if (status !== undefined || link !== undefined) {
+      const before = await prisma.content.findUnique({ where: { id }, select: { status: true, kpiId: true, link: true } })
+      if (before) {
+        const after = {
+          status: status !== undefined ? status : before.status,
+          kpiId: kpiId !== undefined ? kpiId : before.kpiId,
+          link: link !== undefined ? link : before.link,
+        }
+        if (blocksCompletion('content', before, after)) return NextResponse.json({ error: COMPLETION_LINK_MESSAGE }, { status: 400 })
+      }
+    }
 
     const assignments = await assignmentData(body, prisma)
     const updatedContent = await prisma.content.update({

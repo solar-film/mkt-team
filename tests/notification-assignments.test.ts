@@ -9,7 +9,8 @@ import * as notifications from '../src/lib/notification-assignees';
 
 const require = createRequire(import.meta.url);
 const members = [{ id: 'oil', name: 'OIL' }, { id: 'taw', name: 'TAW' }];
-const shared = { id: 'shared', title: 'Shared work', memberId: 'oil', memberIds: ['oil', 'taw'], member: members[0], company: 'GFS', companies: ['GFS'] };
+// Completed fixtures carry a link: finishing content (or KPI work) without one is refused by design.
+const shared = { id: 'shared', title: 'Shared work', link: 'https://example.com/work', memberId: 'oil', memberIds: ['oil', 'taw'], member: members[0], company: 'GFS', companies: ['GFS'] };
 
 function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string[] = []) {
   const exports: Record<string, (request?: Request) => Promise<Response>> = {};
@@ -35,6 +36,7 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
       if (name === '@/lib/rich-text') return require('../src/lib/rich-text.ts');
       if (name === '@/lib/integration-security') return require('../src/lib/integration-security.ts');
       if (name === '@/lib/task-kpi') return require('../src/lib/task-kpi.ts');
+      if (name === '@/lib/completion-link') return require('../src/lib/completion-link.ts');
       if (name === 'next/server') return require(name);
       throw new Error(`Unexpected import ${name}`);
     },
@@ -45,8 +47,8 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
 function fixtureDb(record = shared) {
   const lookups: string[][] = [];
   const prisma = {
-    task: { create: async () => record, update: async () => record },
-    content: { create: async () => record, update: async () => record },
+    task: { create: async () => record, update: async () => record, findUnique: async () => record },
+    content: { create: async () => record, update: async () => record, findUnique: async () => record },
     teamMember: { findMany: async ({ where }: { where: { id: { in: string[] } } }) => {
       lookups.push(where.id.in);
       return members.filter(member => where.id.in.includes(member.id));
@@ -64,7 +66,7 @@ for (const kind of ['tasks', 'content']) {
       const request = new Request(`http://localhost/api/${kind}`, {
         method, headers: { 'Content-Type': 'application/json' },
         // No assignment changes on PUT: labels must come from stored selections.
-        body: JSON.stringify({ id: shared.id, title: shared.title, status: 'done', notifyLine: true }),
+        body: JSON.stringify({ id: shared.id, title: shared.title, link: shared.link, status: 'done', notifyLine: true }),
       });
       const response = await route[method](request);
       assert.equal(response.status, 200);

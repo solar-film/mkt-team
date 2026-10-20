@@ -27,6 +27,7 @@ import dynamic from 'next/dynamic';
 import ActionItemMultiSelect from './components/ActionItemMultiSelect';
 import { parseSelection, memberSelectionLabel } from '@/lib/assignments';
 import { isContentDone } from '@/lib/dashboard-items';
+import { COMPLETION_LINK_MESSAGE, hasLink, requiresLinkToComplete } from '@/lib/completion-link';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
@@ -41,6 +42,8 @@ interface MeetingLinkedItem {
   meetingId: string;
   company?: string;
   itemCategory: 'task' | 'content';
+  link?: string | null;
+  kpiId?: string | null;
   member?: {
     id: string;
     name: string;
@@ -343,7 +346,12 @@ export default function MeetingsPage() {
     const newStatus = isTask 
       ? (item.status === 'done' ? 'todo' : 'done')
       : (isContentDone(item.status) ? 'todo' : 'done');
-      
+
+    if (newStatus === 'done' && requiresLinkToComplete(item.itemCategory, item.kpiId) && !hasLink(item.link)) {
+      toast.error(`${COMPLETION_LINK_MESSAGE} — เพิ่มลิงก์ได้ที่หน้าจัดการงาน`);
+      return;
+    }
+
     try {
       try {
         await requireOk(fetchWorkspace(isTask ? '/api/tasks' : '/api/content', {

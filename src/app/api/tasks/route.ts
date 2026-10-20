@@ -7,6 +7,7 @@ import { assignmentData } from '@/lib/assignment-storage'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 import { joinKpiIds } from '@/lib/task-kpi'
+import { COMPLETION_LINK_MESSAGE, blocksCompletion } from '@/lib/completion-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
 
+    if (blocksCompletion('task', null, { status: status || 'todo', kpiId: joinKpiIds(kpiId), link })) {
+      return NextResponse.json({ error: COMPLETION_LINK_MESSAGE }, { status: 400 })
+    }
+
     const assignments = await assignmentData(body, prisma, true)
     const newTask = await prisma.task.create({
       data: {
@@ -102,6 +107,18 @@ export async function PUT(request: NextRequest) {
     const { id, title, description, status, priority, startDate, deadline, memberId, company, meetingId, link, kpiId, notifyLine } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+
+    if (status !== undefined || kpiId !== undefined || link !== undefined) {
+      const before = await prisma.task.findUnique({ where: { id }, select: { status: true, kpiId: true, link: true } })
+      if (before) {
+        const after = {
+          status: status !== undefined ? status : before.status,
+          kpiId: kpiId !== undefined ? joinKpiIds(kpiId) : before.kpiId,
+          link: link !== undefined ? link : before.link,
+        }
+        if (blocksCompletion('task', before, after)) return NextResponse.json({ error: COMPLETION_LINK_MESSAGE }, { status: 400 })
+      }
+    }
 
     const assignments = await assignmentData(body, prisma)
     const updatedTask = await prisma.task.update({
