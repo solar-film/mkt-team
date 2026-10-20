@@ -1,5 +1,7 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { toast } from 'react-hot-toast';
+import { requireOk, saveErrorMessage } from '@/lib/save-result';
 
 import { matchesMemberSelection, matchesCompanySelection } from '@/lib/assignments';
 import { isContentDone } from '@/lib/dashboard-items';
@@ -97,11 +99,13 @@ export default function KPIsPage() {
   const handleSaveDict = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetchWorkspace('/api/kpi-dict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(kpiDict)
-      });
+      try {
+        await requireOk(fetchWorkspace('/api/kpi-dict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(kpiDict)
+        }));
+      } catch (error) { toast.error(saveErrorMessage(error)); return; }
       setIsDictModalOpen(false);
       fetchDict();
     } catch (error) {
@@ -153,7 +157,9 @@ export default function KPIsPage() {
   const handleDelete = async (kpiId: string) => {
     if (!confirm('คุณต้องการลบเป้าหมาย KPI นี้ใช่หรือไม่?')) return;
     try {
-      await fetchWorkspace(`/api/kpis?id=${kpiId}`, { method: 'DELETE' });
+      try {
+        await requireOk(fetchWorkspace(`/api/kpis?id=${kpiId}`, { method: 'DELETE' }));
+      } catch (error) { toast.error(saveErrorMessage(error)); return; }
       fetchMembers();
     } catch (err) {
       console.error(err);
@@ -172,17 +178,21 @@ export default function KPIsPage() {
       };
       
       if (isEditing && editId) {
-        await fetchWorkspace('/api/kpis', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editId, ...body })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/kpis', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editId, ...body })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       } else {
-        await fetchWorkspace('/api/kpis', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/kpis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       }
       
       setIsModalOpen(false);

@@ -1,4 +1,5 @@
 import { toast } from 'react-hot-toast';
+import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import React, { useState, useRef, useEffect } from 'react';
 import { HiXMark, HiPencil, HiEllipsisVertical, HiPlus, HiCheck, HiDocumentText, HiPaperAirplane, HiTrash } from 'react-icons/hi2';
 import ConfirmModal from '../ConfirmModal';
@@ -64,21 +65,25 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     e.preventDefault();
     if (!newChecklist.trim()) return;
     
-    await fetch(`/api/ideas/${idea.id}/checklists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newChecklist, assigneeId: newChecklistAssignee || null })
-    });
+    try {
+      await requireOk(fetch(`/api/ideas/${idea.id}/checklists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newChecklist, assigneeId: newChecklistAssignee || null })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     setNewChecklist('');
     onUpdate();
   };
 
   const handleToggleChecklist = async (checklistId: string, isDone: boolean) => {
-    await fetch(`/api/ideas/${idea.id}/checklists`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: checklistId, isDone: !isDone })
-    });
+    try {
+      await requireOk(fetch(`/api/ideas/${idea.id}/checklists`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: checklistId, isDone: !isDone })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     onUpdate();
   };
 
@@ -86,11 +91,13 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     e.preventDefault();
     if (!newComment.trim() || !currentUserId) return;
 
-    await fetch(`/api/ideas/${idea.id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: newComment, memberId: currentUserId })
-    });
+    try {
+      await requireOk(fetch(`/api/ideas/${idea.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newComment, memberId: currentUserId })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     setNewComment('');
     onUpdate();
   };
@@ -161,20 +168,24 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
   };
 
   const updateStatus = async (status: string) => {
-    await fetch('/api/ideas', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: idea.id, title: idea.title, status })
-    });
+    try {
+      await requireOk(fetch('/api/ideas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: idea.id, title: idea.title, status })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     onUpdate();
   };
 
   const updateAssignee = async (memberId: string) => {
-    await fetch('/api/ideas', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: idea.id, title: idea.title, memberId })
-    });
+    try {
+      await requireOk(fetch('/api/ideas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: idea.id, title: idea.title, memberId })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     onUpdate();
   };
 
@@ -184,7 +195,9 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       title: 'ลบโน๊ตไอเดีย',
       message: 'ยืนยันการลบโน๊ตนี้?',
       onConfirm: async () => {
-        await fetch(`/api/ideas?id=${idea.id}`, { method: 'DELETE' });
+        try {
+          await requireOk(fetch(`/api/ideas?id=${idea.id}`, { method: 'DELETE' }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
         onClose();
         onUpdate();
       }
@@ -197,7 +210,9 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       title: 'ลบ Checklist',
       message: 'ยืนยันการลบ Checklist นี้?',
       onConfirm: async () => {
-        await fetch(`/api/ideas/${idea.id}/checklists?checklistId=${checklistId}`, { method: 'DELETE' });
+        try {
+          await requireOk(fetch(`/api/ideas/${idea.id}/checklists?checklistId=${checklistId}`, { method: 'DELETE' }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
         onUpdate();
       }
     });
@@ -209,7 +224,9 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
       title: 'ลบความคิดเห็น',
       message: 'ยืนยันการลบความคิดเห็นนี้?',
       onConfirm: async () => {
-        await fetch(`/api/ideas/${idea.id}/comments?commentId=${commentId}`, { method: 'DELETE' });
+        try {
+          await requireOk(fetch(`/api/ideas/${idea.id}/comments?commentId=${commentId}`, { method: 'DELETE' }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
         onUpdate();
       }
     });
@@ -222,11 +239,13 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     } else {
       newAssignees = [...selectedAssignees, mId];
     }
-    await fetch('/api/ideas', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: idea.id, title: idea.title, memberId: newAssignees.join(',') })
-    });
+    try {
+      await requireOk(fetch('/api/ideas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: idea.id, title: idea.title, memberId: newAssignees.join(',') })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     onUpdate();
   };
 
@@ -240,11 +259,13 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     const finalPayload = { ...payload } as any;
     delete finalPayload.link; // Remove link before sending to API
 
-    await fetch('/api/ideas', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: idea.id, ...finalPayload })
-    });
+    try {
+      await requireOk(fetch('/api/ideas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: idea.id, ...finalPayload })
+      }));
+    } catch (error) { toast.error(saveErrorMessage(error)); return; }
     setIsEditing(false);
     onUpdate();
   };

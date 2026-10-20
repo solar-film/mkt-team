@@ -7,23 +7,22 @@ const DICT_TITLE = '__SYSTEM_KPI_DICTIONARY__'
 
 export async function GET() {
   try {
+    // The saved dictionary wins; the file used to override it, so edits made on the KPI page never appeared.
+    const note = await prisma.ideaNote.findFirst({
+      where: { title: DICT_TITLE },
+      select: { description: true }
+    })
+    if (note?.description) return NextResponse.json(JSON.parse(note.description))
+
+    // Seed content for a database that has never saved a dictionary.
     const fs = require('fs')
     const path = require('path')
     const dictPath = path.join(process.cwd(), 'new_dict.json')
-    
-    // Check if new_dict.json exists, and if so, use it to override the database
     if (fs.existsSync(dictPath)) {
-      const newDictString = fs.readFileSync(dictPath, 'utf8')
-      const dictionary = JSON.parse(newDictString)
-      return NextResponse.json(dictionary)
+      return NextResponse.json(JSON.parse(fs.readFileSync(dictPath, 'utf8')))
     }
 
-    // Fallback if file doesn't exist for some reason
-    const note = await prisma.ideaNote.findFirst({
-      where: { title: DICT_TITLE }
-    })
-    
-    const dictionary = note?.description ? JSON.parse(note.description) : [
+    const dictionary = [
       { id: '1', name: 'ผู้ติดตาม (Followers)', description: 'เพิ่มผู้ติดตามในช่องทางต่างๆ เพื่อสร้างฐานคนดูที่มั่นคง (เน้นที่ Facebook, TikTok' },
       { id: '2', name: 'บทความ (Articles)', description: 'ทำคอนเทนต์ให้ความรู้เรื่องฟิล์มกรองแสง เพื่อสร้างความน่าเชื่อถือในตัวแบรนด์' },
       { id: '3', name: 'คลิปวิดีโอ (Videos)', description: 'ทำคลิปวิดีโอสั้นหรือยาว เพื่อสร้างการรับรู้แบรนด์ (ไม่เน้นยอดขายโดยตรง)' },

@@ -1,5 +1,7 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { toast } from 'react-hot-toast';
+import { requireOk, saveErrorMessage } from '@/lib/save-result';
 
 import { matchesMemberSelection } from '@/lib/assignments';
 
@@ -85,17 +87,21 @@ export default function TeamPage() {
     e.preventDefault();
     try {
       if (editingId) {
-        await fetchWorkspace('/api/members', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, id: editingId })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/members', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...formData, id: editingId })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       } else {
-        await fetchWorkspace('/api/members', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       }
       setIsModalOpen(false);
       setFormData({ name: '', role: '' });
@@ -120,11 +126,13 @@ export default function TeamPage() {
   const confirmDelete = async () => {
     if (!memberToDelete) return;
     try {
-      await fetchWorkspace('/api/members', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: memberToDelete, status: 'inactive' })
-      });
+      try {
+        await requireOk(fetchWorkspace('/api/members', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: memberToDelete, status: 'inactive' })
+        }));
+      } catch (error) { toast.error(saveErrorMessage(error)); return; }
       setMemberToDelete(null);
       setIsConfirmOpen(false);
       fetchMembers();

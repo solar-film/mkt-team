@@ -1,5 +1,6 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import { toast } from 'react-hot-toast';
 
 import { useEffect, useState } from 'react';
@@ -321,7 +322,9 @@ export default function MeetingsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await fetchWorkspace(`/api/meetings?id=${deleteId}`, { method: 'DELETE' });
+      try {
+        await requireOk(fetchWorkspace(`/api/meetings?id=${deleteId}`, { method: 'DELETE' }));
+      } catch (error) { toast.error(saveErrorMessage(error)); return; }
       setDeleteId(null);
       fetchMeetings();
       setMeetingItems(prev => {
@@ -341,11 +344,13 @@ export default function MeetingsPage() {
       : (isContentDone(item.status) ? 'todo' : 'done');
       
     try {
-      await fetchWorkspace(isTask ? '/api/tasks' : '/api/content', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, status: newStatus }),
-      });
+      try {
+        await requireOk(fetchWorkspace(isTask ? '/api/tasks' : '/api/content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.id, status: newStatus }),
+        }));
+      } catch (error) { toast.error(saveErrorMessage(error)); return; }
       // Update locally
       setMeetingItems(prev => ({
         ...prev,

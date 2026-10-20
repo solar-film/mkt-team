@@ -1,5 +1,6 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { yearOptions } from '@/lib/year-options';
 
 import { useState, useEffect, type CSSProperties } from 'react';
 import { HiChartBar, HiDocumentText, HiEye, HiArrowTrendingUp, HiChatBubbleLeftRight, HiUsers, HiTrophy } from 'react-icons/hi2';
@@ -134,9 +135,7 @@ export default function SummaryTab() {
           <label className={styles.filterField}>
             <span>ปี ค.ศ.</span>
             <select className="form-input" value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
+              {yearOptions().map(year => <option key={year} value={year}>{year}</option>)}
             </select>
           </label>
         </div>

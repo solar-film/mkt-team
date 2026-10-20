@@ -1,5 +1,6 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { yearOptions } from '@/lib/year-options';
 import { metricInputValue } from '@/lib/metric-input';
 import { toast } from 'react-hot-toast';
 
@@ -146,9 +147,7 @@ export default function RecordStatsTab() {
             <label className="form-label" style={{ fontSize: '0.75rem' }}>ปี</label>
             <select className="form-input" value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
               <option value="all">ทุกปี</option>
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
+              {yearOptions().map(year => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
         </div>

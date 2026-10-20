@@ -1,5 +1,6 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { yearOptions } from '@/lib/year-options';
 import { toast } from 'react-hot-toast';
 
 import { useState, useEffect } from 'react';
@@ -201,9 +202,7 @@ export default function PageOverviewTab() {
           ))}
         </select>
         <select className="form-input" style={{ width: 'auto' }} value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
-          <option value="2024">2024</option>
-          <option value="2025">2025</option>
-          <option value="2026">2026</option>
+          {yearOptions().map(year => <option key={year} value={year}>{year}</option>)}
         </select>
 
         <button className="btn btn-secondary" style={{ marginLeft: 'auto' }} onClick={() => setIsManaging(true)}>

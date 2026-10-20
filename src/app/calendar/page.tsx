@@ -1,5 +1,7 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
+import { toast } from 'react-hot-toast';
+import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
@@ -232,17 +234,21 @@ export default function CalendarPage() {
       };
       
       if (isEditing && editingItemId) {
-        await fetchWorkspace('/api/tasks', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/tasks', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingItemId, ...body })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       } else {
-        await fetchWorkspace('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...body, notifyLine })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...body, notifyLine })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       }
       setIsModalOpen(false);
       setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' });
@@ -267,17 +273,21 @@ export default function CalendarPage() {
       };
       
       if (isEditing && editingItemId) {
-        await fetchWorkspace('/api/content', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/content', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingItemId, ...body })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       } else {
-        await fetchWorkspace('/api/content', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...body, notifyLine })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...body, notifyLine })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       }
       setIsModalOpen(false);
       setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' });
@@ -294,17 +304,21 @@ export default function CalendarPage() {
       const body = { ...eventForm };
       
       if (isEditing && editingItemId) {
-        await fetchWorkspace('/api/events', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItemId, ...body })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/events', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingItemId, ...body })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       } else {
-        await fetchWorkspace('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...body, notifyLine })
-        });
+        try {
+          await requireOk(fetchWorkspace('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...body, notifyLine })
+          }));
+        } catch (error) { toast.error(saveErrorMessage(error)); return; }
       }
       setIsModalOpen(false);
       setEventForm({ title: '', date: '', time: '', type: 'event' });
@@ -322,7 +336,9 @@ export default function CalendarPage() {
       message: 'ยืนยันการลบกิจกรรม/แจ้งเตือนนี้?',
       onConfirm: async () => {
         try {
-          await fetchWorkspace(`/api/events?id=${id}`, { method: 'DELETE' });
+          try {
+            await requireOk(fetchWorkspace(`/api/events?id=${id}`, { method: 'DELETE' }));
+          } catch (error) { toast.error(saveErrorMessage(error)); return; }
           setIsModalOpen(false);
           fetchData();
         } catch (err) {
@@ -1070,9 +1086,9 @@ export default function CalendarPage() {
                     title: 'ลบคอนเท้น',
                     message: 'ยืนยันการลบคอนเท้นนี้?',
                     onConfirm: () => {
-                      fetchWorkspace(`/api/content?id=${editingItemId}`, { method: 'DELETE' }).then(() => {
+                      requireOk(fetchWorkspace(`/api/content?id=${editingItemId}`, { method: 'DELETE' })).then(() => {
                         setIsModalOpen(false); fetchData();
-                      });
+                      }).catch(error => toast.error(saveErrorMessage(error)));
                     }
                   });
                 }}>ลบคอนเท้น</button>

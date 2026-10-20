@@ -3,6 +3,24 @@ import { test } from 'node:test';
 import { bangkokDateKey } from '../src/lib/bangkok-date';
 import { ideaBoardStatus, isContentDone } from '../src/lib/dashboard-items';
 import { requireOk, saveErrorMessage } from '../src/lib/save-result';
+import { yearOptions } from '../src/lib/year-options';
+import { readFileSync } from 'node:fs';
+import { loadSource } from './route-harness';
+
+test('year filters always include the current and next year', () => {
+  assert.deepEqual(yearOptions(new Date('2026-10-20')), [2024, 2025, 2026, 2027]);
+  assert.deepEqual(yearOptions(new Date('2027-01-02')), [2024, 2025, 2026, 2027, 2028]);
+});
+
+test('the saved KPI dictionary is returned before the bundled file', async () => {
+  const saved = [{ id: '1', name: 'แก้จากหน้าเว็บ', description: 'saved' }];
+  const load = (description: string | null) => loadSource('src/app/api/kpi-dict/route.ts', {
+    '@/lib/prisma': { prisma: { ideaNote: { findFirst: async () => (description === null ? null : { description }) } } },
+  }, { process: { env: {}, cwd: () => process.cwd() } });
+  assert.deepEqual(await (await load(JSON.stringify(saved)).GET()).json(), saved);
+  const bundled = JSON.parse(readFileSync('new_dict.json', 'utf8'));
+  assert.deepEqual(await (await load(null).GET()).json(), bundled);
+});
 
 test('calendar day follows Thai time instead of the UTC part of the timestamp', () => {
   // A deadline picked as 20 Oct 00:00 in Bangkok is stored as 19 Oct 17:00 UTC.

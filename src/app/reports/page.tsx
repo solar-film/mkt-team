@@ -3,6 +3,7 @@ import { fetchWorkspace } from '@/lib/workspace-fetch';
 
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 import { bangkokDateKey } from '@/lib/bangkok-date';
+import { yearOptions } from '@/lib/year-options';
 
 import { useEffect, useState } from 'react';
 import { HiChartPie, HiFunnel, HiCalendar, HiUser, HiTag, HiClipboardDocumentList, HiDocumentText, HiArrowTopRightOnSquare, HiFire, HiMinus, HiArrowDown } from 'react-icons/hi2';
@@ -261,9 +262,7 @@ export default function ReportsPage() {
                 ))}
               </select>
               <select className="form-input" value={dateYear} onChange={e => setDateYear(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem', flex: 1 }}>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
+                {yearOptions().map(year => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>
           )}
