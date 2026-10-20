@@ -5,6 +5,7 @@ import { requireOk, saveErrorMessage } from '@/lib/save-result';
 
 import { matchesMemberSelection, matchesCompanySelection } from '@/lib/assignments';
 import { isContentDone } from '@/lib/dashboard-items';
+import { taskHasKpi } from '@/lib/task-kpi';
 
 import { useEffect, useState } from 'react';
 import { HiPlus, HiPencilSquare, HiOutlineTrash } from 'react-icons/hi2';
@@ -320,7 +321,7 @@ export default function KPIsPage() {
             let avgKpi = 0;
             if (monthKpis.length > 0) {
               const totalPercent = monthKpis.reduce((sum, k) => {
-                const linkedTasksDone = member.tasks?.filter(t => t.kpiId === k.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+                const linkedTasksDone = member.tasks?.filter(t => taskHasKpi(t.kpiId, k.id) && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
                 const linkedContentsDone = member.contents?.filter(c => c.kpiId === k.id && isContentDone(c.status)).length || 0;
                 const autoCurrent = linkedTasksDone + linkedContentsDone;
                 const displayCurrent = Math.max(Number(k.current) || 0, autoCurrent);
@@ -394,7 +395,7 @@ export default function KPIsPage() {
                     )}
                     {monthKpis.length > 0 ? (
                       monthKpis.map(kpi => {
-                        const linkedTasksDone = member.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+                        const linkedTasksDone = member.tasks?.filter(t => taskHasKpi(t.kpiId, kpi.id) && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
                         const linkedContentsDone = member.contents?.filter(c => c.kpiId === kpi.id && isContentDone(c.status)).length || 0;
                         const autoCurrent = linkedTasksDone + linkedContentsDone;
                         const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);

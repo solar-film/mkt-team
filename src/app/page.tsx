@@ -4,6 +4,7 @@ import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel }
 import { isContentDone, uniqueById } from '@/lib/dashboard-items';
 import { THAI_MONTHS, currentBangkokMonth, dueByEndOf, inMonth, monthKey, monthLabel, type MonthRef } from '@/lib/month-filter';
 import { yearOptions } from '@/lib/year-options';
+import { taskHasKpi } from '@/lib/task-kpi';
 
 import { useState } from 'react';
 import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
@@ -139,7 +140,7 @@ export default function DashboardPage() {
     ? currentMonthKpis.reduce((sum, kpi) => {
         const target = Number(kpi.target) || 1;
         const member = filteredMembers.find(m => m.id === kpi.memberId);
-        const linkedTasksDone = member?.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+        const linkedTasksDone = member?.tasks?.filter(t => taskHasKpi(t.kpiId, kpi.id) && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
         const linkedContentsDone = member?.contents?.filter(c => c.kpiId === kpi.id && isContentDone(c.status)).length || 0;
         const autoCurrent = linkedTasksDone + linkedContentsDone;
         const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);
@@ -226,7 +227,7 @@ export default function DashboardPage() {
       if (mKpis.length > 0) {
         const totalPercent = mKpis.reduce((sum, kpi) => {
           const target = Number(kpi.target) || 1;
-          const linkedTasksDone = m.tasks?.filter(t => t.kpiId === kpi.id && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
+          const linkedTasksDone = m.tasks?.filter(t => taskHasKpi(t.kpiId, kpi.id) && (t.status === 'done' || t.status === 'เสร็จแล้ว')).length || 0;
           const linkedContentsDone = m.contents?.filter(c => c.kpiId === kpi.id && isContentDone(c.status)).length || 0;
           const autoCurrent = linkedTasksDone + linkedContentsDone;
           const displayCurrent = Math.max(Number(kpi.current) || 0, autoCurrent);

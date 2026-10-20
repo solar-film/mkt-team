@@ -18,7 +18,7 @@ import { getCompanyColor } from '@/lib/colors';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import TaskKpiSelect from '@/components/TaskKpiSelect';
-import { validTaskKpiId } from '@/lib/task-kpi';
+import { validTaskKpiIds } from '@/lib/task-kpi';
 
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -233,7 +233,7 @@ export default function CalendarPage() {
       const body = {
         ...taskForm,
         deadline: taskForm.deadline ? new Date(taskForm.deadline).toISOString() : null,
-        kpiId: kpis.length ? validTaskKpiId(kpis, taskForm.memberId, taskForm.deadline, taskForm.kpiId) : (taskForm.kpiId || null)
+        kpiId: kpis.length ? validTaskKpiIds(kpis, taskForm.memberId, taskForm.deadline, taskForm.kpiId) : (taskForm.kpiId || null)
       };
       
       if (isEditing && editingItemId) {

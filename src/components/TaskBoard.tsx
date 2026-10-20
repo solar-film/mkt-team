@@ -20,7 +20,7 @@ import { bangkokDateKey } from '@/lib/bangkok-date';
 import { toast } from 'react-hot-toast';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import TaskKpiSelect from '@/components/TaskKpiSelect';
-import { validTaskKpiId } from '@/lib/task-kpi';
+import { validTaskKpiIds } from '@/lib/task-kpi';
 
 interface UnifiedItem {
   itemType: 'task' | 'content';
@@ -269,7 +269,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       const body = {
         ...taskForm,
         deadline: taskForm.deadline ? new Date(taskForm.deadline).toISOString() : null,
-        kpiId: kpis.length ? validTaskKpiId(kpis, taskForm.memberId, taskForm.deadline, taskForm.kpiId) : (taskForm.kpiId || null)
+        kpiId: kpis.length ? validTaskKpiIds(kpis, taskForm.memberId, taskForm.deadline, taskForm.kpiId) : (taskForm.kpiId || null)
       };
       
       if (isEditing && editingItemId) {

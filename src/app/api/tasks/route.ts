@@ -6,6 +6,7 @@ import { sendLineNotify } from '@/lib/line-notify'
 import { assignmentData } from '@/lib/assignment-storage'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
+import { joinKpiIds } from '@/lib/task-kpi'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
         memberId: assignments.memberId!,
         meetingId: meetingId || null,
         link: link || null,
-        kpiId: kpiId || null
+        kpiId: joinKpiIds(kpiId)
       },
       include: {
         member: { select: { id: true, name: true } }
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
         ...assignments,
         meetingId: meetingId !== undefined ? meetingId : undefined,
         link: link !== undefined ? link : undefined,
-        kpiId: kpiId !== undefined ? kpiId : undefined
+        kpiId: kpiId !== undefined ? joinKpiIds(kpiId) : undefined
       },
       include: {
         member: { select: { id: true, name: true } }

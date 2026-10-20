@@ -26,7 +26,7 @@ const people = [{ id: 'non', name: 'NON' }, { id: 'taw', name: 'TAW' }];
 
 function membersFor(selectedTasks = tasks, selectedContents = contents) {
   return people.map(member => ({
-    ...member, status: 'active', role: 'Marketing', kpis: [],
+    ...member, status: 'active', role: 'Marketing', kpis: [] as Record<string, unknown>[],
     tasks: selectedTasks.filter(item => matchesMemberSelection(item.memberId, member.id)),
     contents: selectedContents.filter(item => matchesMemberSelection(item.memberId, member.id)),
   }));
@@ -53,6 +53,7 @@ function renderDashboard(filterMemberId = 'all', perfTab = 'tasks', members = me
       if (name === '@/lib/colors') return require('../src/lib/colors.ts');
       if (name === '@/lib/month-filter') return require('../src/lib/month-filter.ts');
       if (name === '@/lib/year-options') return require('../src/lib/year-options.ts');
+      if (name === '@/lib/task-kpi') return require('../src/lib/task-kpi.ts');
       if (name === 'next/link') return { default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement('a', { href }, children), __esModule: true };
       if (name.startsWith('@/components/')) return { default: childrenOnly, __esModule: true };
       if (name === 'recharts' || name === 'react-icons/hi2') return new Proxy({}, { get: () => childrenOnly });
@@ -108,6 +109,18 @@ test('monthly view counts only the selected month but keeps earlier unfinished w
   assert.equal(cardValue(html, 'คอนเทนต์ที่ผลิต'), 1);
   assert.match(html, /รวมค้างจากเดือนก่อน\/ไม่มีกำหนด 1 งาน/);
   assert.deepEqual(companyCounts(html, 'GFS'), [2, 1]);
+});
+
+test('one completed task linked to two people KPIs counts for both; single links still count', () => {
+  const kpiFor = (memberId: string, id: string) => ({ id, name: 'ออกถ่ายงานนอกสถานที่', target: 2, current: 0, unit: 'ครั้ง', month: 10, year: 2026, memberId });
+  const linkedTasks = [
+    { ...shared, id: 'shoot', title: 'Shared shoot', status: 'done', company: 'GFS', kpiId: 'non-kpi,taw-kpi' },
+    { ...shared, id: 'solo-shoot', title: 'NON shoot', status: 'done', company: 'GFS', memberId: 'non', kpiId: 'non-kpi' },
+  ];
+  const members = membersFor(linkedTasks, []).map(member => ({ ...member, kpis: [kpiFor(member.id, `${member.id}-kpi`)] }));
+  const html = renderDashboard('all', 'tasks', members);
+  // NON: 2 of 2 (shared + solo) = 100%, TAW: 1 of 2 (shared) = 50%, team average 75%.
+  assert.match(html, /ความคืบหน้า KPI<\/span><\/div><div[^>]*><span[^>]*>75%<\/span>/);
 });
 
 test('upcoming records appear once and retain every responsible person', () => {

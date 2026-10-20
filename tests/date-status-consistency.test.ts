@@ -5,7 +5,7 @@ import { ideaBoardStatus, isContentDone } from '../src/lib/dashboard-items';
 import { requireOk, saveErrorMessage } from '../src/lib/save-result';
 import { yearOptions } from '../src/lib/year-options';
 import { currentBangkokMonth, dueByEndOf, inMonth, monthLabel } from '../src/lib/month-filter';
-import { taskKpiOptions, validTaskKpiId } from '../src/lib/task-kpi';
+import { joinKpiIds, taskHasKpi, taskKpiOptions, validTaskKpiIds } from '../src/lib/task-kpi';
 import { readFileSync } from 'node:fs';
 import { loadSource } from './route-harness';
 
@@ -34,10 +34,24 @@ test('tasks offer only their assignees KPIs for the Thai month of the deadline',
   assert.deepEqual(taskKpiOptions(kpis, 'non,taw', '2026-10-20T03:00:00.000Z').map(kpi => kpi.id), ['non-oct', 'taw-oct']);
   assert.deepEqual(taskKpiOptions(kpis, 'all', '2026-10-20T03:00:00.000Z').map(kpi => kpi.id), ['non-oct', 'taw-oct']);
   assert.deepEqual(taskKpiOptions(kpis, 'non', ''), []);
-  assert.equal(validTaskKpiId(kpis, 'non', '2026-10-20T03:00:00.000Z', 'non-oct'), 'non-oct');
-  assert.equal(validTaskKpiId(kpis, 'taw', '2026-10-20T03:00:00.000Z', 'non-oct'), null);
-  assert.equal(validTaskKpiId(kpis, 'non', '2026-09-20T03:00:00.000Z', 'non-oct'), null);
-  assert.equal(validTaskKpiId(kpis, 'non', '2026-10-20T03:00:00.000Z', ''), null);
+  assert.equal(validTaskKpiIds(kpis, 'non', '2026-10-20T03:00:00.000Z', 'non-oct'), 'non-oct');
+  assert.equal(validTaskKpiIds(kpis, 'taw', '2026-10-20T03:00:00.000Z', 'non-oct'), null);
+  assert.equal(validTaskKpiIds(kpis, 'non', '2026-09-20T03:00:00.000Z', 'non-oct'), null);
+  assert.equal(validTaskKpiIds(kpis, 'non', '2026-10-20T03:00:00.000Z', ''), null);
+  // One task can count for several people: unrelated or out-of-month ids are dropped.
+  assert.equal(validTaskKpiIds(kpis, 'non,taw', '2026-10-20T03:00:00.000Z', 'non-oct,taw-oct,non-sep'), 'non-oct,taw-oct');
+  assert.equal(validTaskKpiIds(kpis, 'taw', '2026-10-20T03:00:00.000Z', 'non-oct,taw-oct'), 'taw-oct');
+});
+
+test('stored KPI links stay compatible: one id counts as before, several ids count for each KPI', () => {
+  assert.equal(taskHasKpi('non-oct', 'non-oct'), true);
+  assert.equal(taskHasKpi('non-oct,taw-oct', 'taw-oct'), true);
+  assert.equal(taskHasKpi('non-oct,taw-oct', 'non'), false);
+  assert.equal(taskHasKpi(null, 'non-oct'), false);
+  assert.equal(joinKpiIds(' b , a,b ,'), 'b,a');
+  assert.equal(joinKpiIds(['a', 'a']), 'a');
+  assert.equal(joinKpiIds(''), null);
+  assert.equal(joinKpiIds(undefined), null);
 });
 
 test('year filters always include the current and next year', () => {

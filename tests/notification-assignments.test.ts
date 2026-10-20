@@ -34,6 +34,7 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
       if (name === '@/lib/request-body') return require('../src/lib/request-body.ts');
       if (name === '@/lib/rich-text') return require('../src/lib/rich-text.ts');
       if (name === '@/lib/integration-security') return require('../src/lib/integration-security.ts');
+      if (name === '@/lib/task-kpi') return require('../src/lib/task-kpi.ts');
       if (name === 'next/server') return require(name);
       throw new Error(`Unexpected import ${name}`);
     },
