@@ -3,6 +3,7 @@ import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
+import { eventDates, eventDatesLabel, MAX_EVENT_DATES } from '@/lib/event-dates'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,13 +39,18 @@ async function readGET(request: Request) {
   export async function POST(request: NextRequest) {
     try {
       const body = await readJsonBody(request)
-      const { title, date, time, type, company, notifyLine } = body
-  
-      if (!title || !date) {
+      const { title, time, type, company, notifyLine } = body
+      const dates = eventDates(body)
+
+      if (!title || !dates) {
         return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
       }
-  
-      const newEvent = await prisma.event.create({
+      if (dates.length > MAX_EVENT_DATES) {
+        return NextResponse.json({ error: `At most ${MAX_EVENT_DATES} dates per event` }, { status: 400 })
+      }
+
+      // One row per selected day; the batch commits all days or none.
+      const newEvents = await prisma.$transaction(dates.map(date => prisma.event.create({
         data: {
           title,
           date: new Date(date),
@@ -52,18 +58,16 @@ async function readGET(request: Request) {
           type: type || 'event',
           company: company || 'GFS'
         }
-      })
-  
+      })))
+
       if (notifyLine) {
-        const dateObj = new Date(date)
-        const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('th-TH') : '-'
         const timeStr = time ? `เวลา ${time} น.` : ''
-        const message = `\n📢 แจ้งเตือนกิจกรรมใหม่: ${title}\nวันที่: ${dateStr} ${timeStr}`
+        const message = `\n📢 แจ้งเตือนกิจกรรมใหม่: ${title}\nวันที่: ${eventDatesLabel(dates)} ${timeStr}`
         await sendLineNotify(message)
       }
-  
+
       invalidateWorkspace();
-    return NextResponse.json({ success: true, event: newEvent })
+    return NextResponse.json({ success: true, event: newEvents[0], events: newEvents })
   } catch (error) {
     if (error instanceof RequestBodyError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('API Error:', error)
