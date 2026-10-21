@@ -3,7 +3,7 @@ import { readJsonBody, RequestBodyError } from '@/lib/request-body'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLineNotify } from '@/lib/line-notify'
-import { eventDates, eventDatesLabel, MAX_EVENT_DATES } from '@/lib/event-dates'
+import { eventSlots, eventSlotsLabel, MAX_EVENT_DATES } from '@/lib/event-dates'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,30 +39,29 @@ async function readGET(request: Request) {
   export async function POST(request: NextRequest) {
     try {
       const body = await readJsonBody(request)
-      const { title, time, type, company, notifyLine } = body
-      const dates = eventDates(body)
+      const { title, type, company, notifyLine } = body
+      const slots = eventSlots(body)
 
-      if (!title || !dates) {
+      if (!title || !slots) {
         return NextResponse.json({ error: 'Title and date are required' }, { status: 400 })
       }
-      if (dates.length > MAX_EVENT_DATES) {
+      if (slots.length > MAX_EVENT_DATES) {
         return NextResponse.json({ error: `At most ${MAX_EVENT_DATES} dates per event` }, { status: 400 })
       }
 
-      // One row per selected day; the batch commits all days or none.
-      const newEvents = await prisma.$transaction(dates.map(date => prisma.event.create({
+      // One row per selected day (with its own time); the batch commits all days or none.
+      const newEvents = await prisma.$transaction(slots.map(slot => prisma.event.create({
         data: {
           title,
-          date: new Date(date),
-          time: time || null,
+          date: new Date(slot.date),
+          time: slot.time,
           type: type || 'event',
           company: company || 'GFS'
         }
       })))
 
       if (notifyLine) {
-        const timeStr = time ? `เวลา ${time} น.` : ''
-        const message = `\n📢 แจ้งเตือนกิจกรรมใหม่: ${title}\nวันที่: ${eventDatesLabel(dates)} ${timeStr}`
+        const message = `\n📢 แจ้งเตือนกิจกรรมใหม่: ${title}\n${eventSlotsLabel(slots)}`
         await sendLineNotify(message)
       }
 

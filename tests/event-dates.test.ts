@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { eventDates, eventDatesLabel, MAX_EVENT_DATES } from '../src/lib/event-dates';
+import { eventSlots, eventSlotsLabel, MAX_EVENT_DATES } from '../src/lib/event-dates';
 
 const require = createRequire(import.meta.url);
 
@@ -46,56 +46,75 @@ function fixtureDb() {
 const post = (body: unknown) => new Request('http://localhost/api/events', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
+const json = (value: unknown) => JSON.stringify(value);
 
-test('selected days are unique, sorted and must be real yyyy-MM-dd dates', () => {
-  assert.equal(JSON.stringify(eventDates({ dates: ['2026-10-28', '2026-10-21', '2026-10-28'] })), JSON.stringify(['2026-10-21', '2026-10-28']));
-  assert.equal(JSON.stringify(eventDates({ date: '2026-10-21' })), JSON.stringify(['2026-10-21']));
-  for (const dates of [[], ['2026-02-30'], ['21/10/2026'], ['2026-10-21', 7], '2026-10-21']) {
-    assert.equal(eventDates({ dates }), null);
+test('each selected day keeps its own optional time; duplicates collapse and days sort', () => {
+  assert.equal(json(eventSlots({ dates: [
+    { date: '2026-10-28', time: '14:00' },
+    { date: '2026-10-21', time: '10:00' },
+    { date: '2026-10-23' },
+    { date: '2026-10-28', time: '14:00' },
+  ] })), json([
+    { date: '2026-10-21', time: '10:00' },
+    { date: '2026-10-23', time: null },
+    { date: '2026-10-28', time: '14:00' },
+  ]));
+  assert.equal(json(eventSlots({ date: '2026-10-21', time: '09:30' })), json([{ date: '2026-10-21', time: '09:30' }]));
+  assert.equal(json(eventSlots({ date: '2026-10-21', time: '' })), json([{ date: '2026-10-21', time: null }]));
+});
+
+test('invalid days or times are refused', () => {
+  for (const dates of [[], [{ date: '2026-02-30' }], [{ date: '21/10/2026' }], ['2026-10-21'], [{ date: '2026-10-21', time: '25:00' }], [{ date: '2026-10-21', time: 9 }], '2026-10-21']) {
+    assert.equal(eventSlots({ dates }), null, JSON.stringify(dates));
   }
-  assert.equal(eventDates({}), null);
-  assert.equal(eventDates({ date: 'not a date' }), null);
+  assert.equal(eventSlots({}), null);
+  assert.equal(eventSlots({ date: 'not a date' }), null);
 });
 
-test('LINE label lists every day in Thai calendar format', () => {
-  assert.equal(eventDatesLabel(['2026-10-21', '2026-10-23']), '21/10/2569, 23/10/2569');
+test('LINE wording keeps the single-day line and lists several days one per line', () => {
+  assert.equal(eventSlotsLabel([{ date: '2026-10-21', time: '10:00' }]), 'วันที่: 21/10/2569 เวลา 10:00 น.');
+  assert.equal(eventSlotsLabel([{ date: '2026-10-21', time: '10:00' }, { date: '2026-10-23', time: null }]),
+    'วันที่:\n- 21/10/2569 เวลา 10:00 น.\n- 23/10/2569');
 });
 
-test('POST with several days creates one record per day in one batch and sends one LINE message', async () => {
+test('POST with several days creates one record per day with its own time in one batch and sends one LINE message', async () => {
   const { prisma, created, transactions } = fixtureDb();
   const sent: string[] = [];
   const route = loadEventsRoute(prisma, sent);
-  const response = await route.POST(post({ title: 'อบรม AI', time: '10:00', type: 'event', dates: ['2026-10-23', '2026-10-21', '2026-10-23'], notifyLine: true }));
+  const response = await route.POST(post({ title: 'อบรม AI', type: 'event', notifyLine: true, dates: [
+    { date: '2026-10-23', time: '14:00' }, { date: '2026-10-21', time: '10:00' }, { date: '2026-10-22', time: '' },
+  ] }));
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.equal(body.events.length, 2);
+  assert.equal(body.events.length, 3);
   assert.equal(body.event.id, 'event-1');
   assert.equal(transactions(), 1);
-  assert.equal(JSON.stringify(created), JSON.stringify([
+  assert.equal(json(created), json([
     { title: 'อบรม AI', date: '2026-10-21', time: '10:00' },
-    { title: 'อบรม AI', date: '2026-10-23', time: '10:00' },
+    { title: 'อบรม AI', date: '2026-10-22', time: null },
+    { title: 'อบรม AI', date: '2026-10-23', time: '14:00' },
   ]));
   assert.equal(sent.length, 1);
-  assert.match(sent[0], /แจ้งเตือนกิจกรรมใหม่: อบรม AI/);
-  assert.match(sent[0], /วันที่: 21\/10\/2569, 23\/10\/2569 เวลา 10:00 น\./);
+  assert.equal(sent[0], '\n📢 แจ้งเตือนกิจกรรมใหม่: อบรม AI\nวันที่:\n- 21/10/2569 เวลา 10:00 น.\n- 22/10/2569\n- 23/10/2569 เวลา 14:00 น.');
 });
 
-test('legacy single-date POST still creates exactly one record', async () => {
+test('legacy single-date POST still creates exactly one record with the same LINE line', async () => {
   const { prisma, created } = fixtureDb();
   const sent: string[] = [];
   const route = loadEventsRoute(prisma, sent);
-  const response = await route.POST(post({ title: 'ประชุม', date: '2026-10-21', time: '' }));
+  const response = await route.POST(post({ title: 'ประชุม', date: '2026-10-21', time: '10:00', notifyLine: true }));
   assert.equal(response.status, 200);
-  assert.equal(JSON.stringify(created), JSON.stringify([{ title: 'ประชุม', date: '2026-10-21', time: null }]));
-  assert.equal(sent.length, 0);
+  assert.equal(json(created), json([{ title: 'ประชุม', date: '2026-10-21', time: '10:00' }]));
+  assert.equal(sent[0], '\n📢 แจ้งเตือนกิจกรรมใหม่: ประชุม\nวันที่: 21/10/2569 เวลา 10:00 น.');
 });
 
 test('invalid, missing or too many days are refused before anything is saved', async () => {
-  const tooMany = Array.from({ length: MAX_EVENT_DATES + 1 }, (_, i) => new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10));
+  const tooMany = Array.from({ length: MAX_EVENT_DATES + 1 }, (_, i) => ({ date: new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10) }));
   for (const body of [
     { title: 'x', dates: [] },
-    { title: 'x', dates: ['2026-13-01'] },
-    { dates: ['2026-10-21'] },
+    { title: 'x', dates: [{ date: '2026-13-01' }] },
+    { title: 'x', dates: [{ date: '2026-10-21', time: '7pm' }] },
+    { dates: [{ date: '2026-10-21' }] },
     { title: 'x', dates: tooMany },
   ]) {
     const { prisma, created, transactions } = fixtureDb();
