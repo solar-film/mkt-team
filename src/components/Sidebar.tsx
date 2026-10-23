@@ -26,7 +26,8 @@ import {
   HiChartPie,
   HiLightBulb,
   HiUserCircle,
-  HiEllipsisHorizontal
+  HiEllipsisHorizontal,
+  HiBuildingOffice2
 } from 'react-icons/hi2';
 
 interface Member {
@@ -43,6 +44,7 @@ const navLinks = [
   { path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
   { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
+  { path: '/company', label: 'โครงสร้างธุรกิจ', icon: <HiBuildingOffice2 /> },
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
   { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
