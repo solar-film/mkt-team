@@ -1237,3 +1237,20 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   }
 }
 
+
+/* Meeting form: compact layout */
+.meeting-form .form-group { margin-bottom: 0.75rem; }
+.meeting-form .form-label { margin-bottom: 0.3rem; font-size: 0.8rem; }
+.meeting-form .form-input, .meeting-form .form-select, .meeting-form .form-textarea {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+}
+.meeting-form .form-textarea { min-height: 0; }
+.meeting-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 0.75rem;
+}
+@media (max-width: 640px) {
+  .meeting-form-row { grid-template-columns: 1fr; gap: 0; }
+}

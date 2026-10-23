@@ -61,6 +61,7 @@ interface Meeting {
   agenda: string;
   notes: string;
   createdBy: string;
+  createdByName?: string;
   createdAt: string;
 }
 
@@ -169,7 +170,8 @@ export default function MeetingsPage() {
             // If this ID maps to a member, use their name; otherwise keep as-is (external attendee)
             return memberMap.get(trimmedId) || trimmedId;
           });
-          return { ...m, attendeeNames };
+          const createdByName = m.createdBy ? (memberMap.get(m.createdBy) || m.createdBy) : '';
+          return { ...m, attendeeNames, createdByName };
         });
 
         setMeetings(meetingsWithNames);
@@ -251,6 +253,9 @@ export default function MeetingsPage() {
 
   const openCreateModal = () => {
     resetForm();
+    if (currentUserId && members.some(m => m.id === currentUserId)) {
+      setForm(prev => ({ ...prev, createdBy: currentUserId }));
+    }
     setIsModalOpen(true);
   };
 
@@ -473,6 +478,12 @@ export default function MeetingsPage() {
                           <HiClock style={{ fontSize: '0.8rem' }} /> {formatTime(meeting.time)}
                         </span>
                       )}
+                      {meeting.createdByName && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                          <HiPencilSquare style={{ fontSize: '0.85rem' }} />
+                          ผู้บันทึก: {meeting.createdByName}
+                        </span>
+                      )}
                       {/* Attendee names - displayed after time */}
                       {meeting.attendeeNames && meeting.attendeeNames.length > 0 && (
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
@@ -527,6 +538,12 @@ export default function MeetingsPage() {
                 {/* Expanded Content */}
                 {isExpanded && (
                   <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--color-border)' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.5rem', marginTop: '1rem', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                          <span>✍️ ผู้บันทึก: <strong style={{ color: 'var(--color-text-primary)' }}>{meeting.createdByName || 'ไม่ระบุ'}</strong></span>
+                          {meeting.attendeeNames && meeting.attendeeNames.length > 0 && (
+                            <span>👥 ผู้เข้าร่วม: <strong style={{ color: 'var(--color-text-primary)' }}>{meeting.attendeeNames.join(', ')}</strong></span>
+                          )}
+                        </div>
                         {/* Agenda */}
                         {meeting.agenda && (
                           <div style={{ marginTop: '1rem' }}>
@@ -653,8 +670,8 @@ export default function MeetingsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'แก้ไขบันทึกประชุม' : 'สร้างบันทึกประชุมใหม่'} maxWidth="800px">
-        <form onSubmit={handleSubmit}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'แก้ไขบันทึกประชุม' : 'สร้างบันทึกประชุมใหม่'} maxWidth="1000px">
+        <form onSubmit={handleSubmit} className="meeting-form">
           <div className="form-group">
             <label className="form-label">หัวข้อการประชุม *</label>
             <input
@@ -667,7 +684,7 @@ export default function MeetingsPage() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div className="meeting-form-row">
             <div className="form-group">
               <label className="form-label">วันที่ *</label>
               <input
@@ -687,16 +704,33 @@ export default function MeetingsPage() {
                 onChange={e => setForm({ ...form, time: e.target.value })}
               />
             </div>
+            <div className="form-group">
+              <label className="form-label">ผู้บันทึก *</label>
+              <select
+                className="form-select"
+                required
+                value={form.createdBy}
+                onChange={e => setForm({ ...form, createdBy: e.target.value })}
+              >
+                <option value="">เลือกผู้บันทึก</option>
+                {members
+                  .filter(m => m.status !== 'inactive' || m.id === form.createdBy)
+                  .map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {form.createdBy && !members.some(m => m.id === form.createdBy) && (
+                  <option value={form.createdBy}>{form.createdBy}</option>
+                )}
+              </select>
+            </div>
           </div>
 
           {/* Attendees - multi select */}
-          <div className="form-group" style={{ marginTop: '1rem' }}>
+          <div className="form-group">
             <label className="form-label">ผู้เข้าร่วมประชุม</label>
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '0.5rem',
-              padding: '0.75rem',
+              gap: '0.4rem',
+              padding: '0.5rem 0.65rem',
               backgroundColor: 'var(--color-surface-hover)',
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--color-border)',
@@ -754,7 +788,7 @@ export default function MeetingsPage() {
                   <HiCheckCircle style={{ fontSize: '0.9rem' }} />
                 </button>
               ))}
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', width: '100%' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                 <input
                   type="text"
                   className="form-input"
@@ -774,18 +808,18 @@ export default function MeetingsPage() {
             </div>
           </div>
 
-          <div className="form-group" style={{ marginTop: '1rem' }}>
+          <div className="form-group">
             <label className="form-label">วาระการประชุม</label>
             <textarea
               className="form-textarea"
-              rows={3}
+              rows={2}
               placeholder="เขียนวาระการประชุม แต่ละหัวข้อขึ้นบรรทัดใหม่"
               value={form.agenda}
               onChange={e => setForm({ ...form, agenda: e.target.value })}
             ></textarea>
           </div>
 
-          <div className="form-group" style={{ marginTop: '1rem' }}>
+          <div className="form-group">
             <label className="form-label">สรุปการประชุม</label>
             <div style={{ backgroundColor: 'var(--color-surface)' }}>
               <ReactQuill
@@ -793,7 +827,7 @@ export default function MeetingsPage() {
                 value={form.notes}
                 onChange={value => setForm({ ...form, notes: value })}
                 placeholder="สรุปเนื้อหาที่ประชุม (พิมพ์ข้อความ, ตัวหนา, ตัวเอียง, หรือรายการได้เหมือน Word)"
-                style={{ height: '200px', marginBottom: '40px' }}
+                style={{ height: '150px', marginBottom: '42px' }}
                 modules={{
                   toolbar: [
                     [{ 'header': [1, 2, 3, false] }],
@@ -808,7 +842,7 @@ export default function MeetingsPage() {
           </div>
 
           {/* Action Items / Follow-ups */}
-          <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ marginTop: '0.5rem', padding: '0.75rem', backgroundColor: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <label className="form-label" style={{ margin: 0, color: 'var(--color-primary)', fontWeight: 600 }}>
                 ⚡ รายการที่ต้องทำ / ติดตาม
@@ -892,7 +926,7 @@ export default function MeetingsPage() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" disabled={isSaving} onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
             <button type="submit" className="btn btn-primary" disabled={isSaving}>{isSaving ? 'กำลังบันทึก...' : isEditing ? 'บันทึกการแก้ไข' : 'สร้างบันทึก'}</button>
           </div>
