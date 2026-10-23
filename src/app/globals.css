@@ -964,7 +964,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 /* Calendar Styles */
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   /* แถวหัววัน (อา.–ส.) ต้องเตี้ย ส่วนแถววันที่ขยายตามจำนวนรายการ ไม่ต้องเลื่อนในช่อง */
   grid-auto-rows: auto;
   gap: 1px;
@@ -987,6 +987,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .calendar-cell {
   background-color: var(--color-surface);
   min-height: 120px;
+  min-width: 0;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -1084,6 +1085,17 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   border-left: none;
   position: relative;
   z-index: 10;
+}
+
+.calendar-more {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.1rem 0.25rem;
+  cursor: pointer;
 }
 
 .calendar-controls {

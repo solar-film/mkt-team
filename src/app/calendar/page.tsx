@@ -384,8 +384,12 @@ export default function CalendarPage() {
   const todayStr = bangkokDateKey(new Date());
   const filteredItems = filterMemberId ? items.filter(i => matchesMemberSelection(i.memberId, filterMemberId)) : items;
 
-  // 1. Sort items globally
-  const sortedItems = [...filteredItems].sort((a, b) => {
+  // 1. Sort only items overlapping the shown month (items from other months must not push rows down)
+  const monthPrefix = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const monthStartStr = `${monthPrefix}-01`;
+  const monthEndStr = `${monthPrefix}-${String(daysInMonth).padStart(2, '0')}`;
+  const MAX_VISIBLE_ROWS = 4;
+  const sortedItems = filteredItems.filter(item => (item.startDate || item.date) <= monthEndStr && item.date >= monthStartStr).sort((a, b) => {
     if (a.type === 'event' && b.type !== 'event') return -1;
     if (a.type !== 'event' && b.type === 'event') return 1;
     
@@ -436,9 +440,11 @@ export default function CalendarPage() {
       return dateStr >= start && dateStr <= end;
     });
 
-    const maxRow = dayItemsRaw.reduce((max, item) => Math.max(max, itemRows.get(item.id) || 0), -1);
+    const visibleItems = dayItemsRaw.filter(item => (itemRows.get(item.id) || 0) < MAX_VISIBLE_ROWS);
+    const hiddenCount = dayItemsRaw.length - visibleItems.length;
+    const maxRow = visibleItems.reduce((max, item) => Math.max(max, itemRows.get(item.id) || 0), -1);
     const daySlots: (UnifiedItem | null)[] = Array(maxRow + 1).fill(null);
-    dayItemsRaw.forEach(item => {
+    visibleItems.forEach(item => {
       daySlots[itemRows.get(item.id) || 0] = item;
     });
     
@@ -498,6 +504,15 @@ export default function CalendarPage() {
               </span>
             </div>
           )})}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              className="calendar-more"
+              onClick={(e) => { e.stopPropagation(); setSelectedDate(new Date(`${dateStr}T00:00:00`)); setViewMode('week'); }}
+            >
+              +{hiddenCount} รายการ
+            </button>
+          )}
         </div>
       </div>
     );
