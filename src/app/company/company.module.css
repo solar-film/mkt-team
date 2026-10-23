@@ -155,13 +155,19 @@
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Two columns when the card is wide enough, otherwise one, so labels never break. */
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 0.25rem 0.6rem;
   font-size: 0.75rem;
 }
 
-/* The owner's name can be long; give it the full row. */
-.stats > span:last-child {
+.stats .statLabel,
+.stats strong {
+  white-space: nowrap;
+}
+
+/* Owner names and the spend line can be long; give them the full row. */
+.stats > span.statWide {
   grid-column: 1 / -1;
 }
 
@@ -437,36 +443,10 @@
   font-size: 1.05rem;
 }
 
-.gateRow {
-  display: flex;
-  gap: 0.5rem;
-  width: 100%;
-  flex-wrap: wrap;
-}
 
-.gateRow input {
-  flex: 1 1 200px;
-}
 
-.gateError {
-  color: var(--color-danger);
-  font-size: 0.875rem;
-}
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
 
-.linkButton {
-  color: var(--color-primary);
-  text-decoration: underline;
-  font-size: inherit;
-}
 
 .mcard,
 .scard {
@@ -697,4 +677,49 @@
   .bsub {
     grid-column: 1;
   }
+}
+
+/* ---------- year-on-year ---------- */
+.up {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.dn {
+  color: #1f7a52;
+  font-weight: 700;
+}
+
+.legend i.y25,
+.bfill.y25 {
+  background: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+/* ---------- figures on the tree ---------- */
+.figure {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.sec .tagWait {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px dashed #b7791f;
+  background: #fff6e0;
+  color: #92600e;
+}
+
+.accountNote {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0 0.45rem;
+  border-radius: var(--radius-full);
+  background: #e3f6ec;
+  color: #1f7a52;
 }

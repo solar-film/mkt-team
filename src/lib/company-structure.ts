@@ -1,6 +1,6 @@
-// Business-structure reference page (/company). Only information the team already shares
-// with customers lives here: this repository is public and the site has no password, so
-// sales figures, targets, ad budgets/spend and ad account ids are deliberately left out.
+// Business-structure reference page (/company): the static, customer-facing details.
+// Sales, targets, ad budgets/spend and ad account ids are read from the summary sheet at run
+// time (see lib/company-stats.ts) so they never enter this public repository.
 
 export const STRUCTURE_AS_OF = '23 ต.ค. 69';
 
@@ -92,7 +92,7 @@ export const BUSINESSES: Business[] = [
       ['เลขผู้เสียภาษี', '0105562143436'],
       ['เวลาทำการ', 'จ.–ส. 08:00–17:00 · ปิดอาทิตย์'],
     ],
-    websites: ['mhlcarfilm.com (MakeWebEasy)'],
+    websites: ['mhlcarfilm.com (MakeWebEasy)', 'ระบบคิว/CRM solar-film.github.io/car (ใช้ภายใน)'],
     channels: ['Call Center 02-055-6886 กด 2', '095-953-3949 · 099-456-2259', 'LINE @maholan · lin.ee/xPpPOQM', 'mhlcarfilm@gmail.com'],
     socials: ['Facebook: facebook.com/MHLcarfilm', 'Instagram: @mhlcarfilm', 'TikTok: @mhlcarfilm', 'YouTube: ยังไม่พบ'],
     people: ['นน (NON) · ผู้ดูแล', 'ภูมิ · ช่วยโพสต์ผลงานติดตั้ง'],

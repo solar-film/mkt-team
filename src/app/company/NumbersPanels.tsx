@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styles from './company.module.css';
-import { daysLeftInYear, type CompanyStats, type SalesRow } from '@/lib/company-stats';
+import { daysLeftInYear, type AdCompareRow, type CompanyStats, type SalesRow } from '@/lib/company-stats';
 
-const STATS_URL = '/api/admin/company-stats';
-const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const STATS_URL = '/api/company-stats';
+export const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 // Brand colours per business (fixed by entity, never by rank). Each mark also carries a text label.
 function businessColor(name: string): string {
@@ -16,46 +16,46 @@ function businessColor(name: string): string {
   return 'var(--color-primary)';
 }
 
-const baht = (value: number) => Math.round(value).toLocaleString('th-TH');
+export const baht = (value: number) => Math.round(value).toLocaleString('th-TH');
 const millions = (value: number) => (value / 1e6).toLocaleString('th-TH', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
+/** Millions without trailing zeros: 2.2 · 0.825 · 55 */
+export const millionsShort = (value: number) => (value / 1e6).toLocaleString('th-TH', { maximumFractionDigits: 3 });
+/** Millions with two decimals, as on the tree cards: 0.01 · 1.31 */
+export const millions2 = (value: number) => (value / 1e6).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
 /** "2026-10-22" → "22 ต.ค. 69"; any time after the date ("2026-10-23 07:25") is kept. */
-const thaiDate = (value: string) => {
+export const thaiDate = (value: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})(.*)$/.exec(value);
   return match ? `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${String(Number(match[1]) + 543).slice(2)}${match[4]}` : value;
 };
 
-type State =
-  | { status: 'idle' | 'loading' | 'locked' }
+export type StatsState =
+  | { status: 'loading' }
   | { status: 'ready'; stats: CompanyStats }
-  | { status: 'error'; code: string; serviceAccount?: string };
+  | { status: 'error'; code: string };
 
-/** Loads the confidential figures once; both number tabs share the result. */
+/** Loads the sheet figures once for the whole page (tree, detail, tables and number tabs). */
 export function useCompanyStats() {
-  const [state, setState] = useState<State>({ status: 'idle' });
+  const [state, setState] = useState<StatsState>({ status: 'loading' });
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
       const response = await fetch(STATS_URL, { cache: 'no-store' });
-      if (response.status === 401) return setState({ status: 'locked' });
       const body = await response.json();
-      if (!response.ok) return setState({ status: 'error', code: body.error || 'unavailable', serviceAccount: body.serviceAccount });
+      if (!response.ok) return setState({ status: 'error', code: body.error || 'unavailable' });
       setState({ status: 'ready', stats: body as CompanyStats });
     } catch {
       setState({ status: 'error', code: 'network' });
     }
   }, []);
-  const lock = useCallback(async () => {
-    await fetch('/api/admin/session', { method: 'DELETE' }).catch(() => undefined);
-    setState({ status: 'locked' });
-  }, []);
-  return { state, load, lock };
+  useEffect(() => { load(); }, [load]);
+  return { state, load };
 }
 
-function errorMessage(code: string, serviceAccount?: string) {
+function errorMessage(code: string) {
   switch (code) {
     case 'sheet_access':
-      return `เว็บยังเปิดชีตสรุปไม่ได้ ให้เจ้าของชีตแชร์ชีต "Good Group · ยอดใช้โฆษณา" ให้ ${serviceAccount || 'บัญชีบริการของเว็บ'} เป็นผู้มีสิทธิ์อ่าน`;
+      return 'เว็บเปิดชีตสรุปไม่ได้ ตรวจว่าชีต "Good Group · ยอดใช้โฆษณา" ยังแชร์ให้บัญชีบริการของเว็บเป็นผู้มีสิทธิ์อ่าน';
     case 'not_configured':
       return 'ยังไม่ได้ตั้งค่าการเชื่อมชีตบนเซิร์ฟเวอร์ (COMPANY_STATS_SHEET_ID หรือบัญชี Google)';
     case 'sheet_format':
@@ -65,52 +65,74 @@ function errorMessage(code: string, serviceAccount?: string) {
   }
 }
 
-function PasswordGate({ onUnlocked }: { onUnlocked: () => void }) {
-  const [password, setPassword] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState('');
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (checking) return;
-    setChecking(true);
-    try {
-      // Checked on the server against ADMIN_PASSWORD; the cookie it sets unlocks the figures for 1 hour.
-      const response = await fetch('/api/admin/session', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }),
-      });
-      if (response.ok) { setPassword(''); onUnlocked(); }
-      else setError(response.status === 503 ? 'ยังไม่ได้ตั้งรหัสผู้ดูแลระบบบนเซิร์ฟเวอร์' : 'รหัสผ่านไม่ถูกต้อง');
-    } catch {
-      setError('ตรวจรหัสผ่านไม่สำเร็จ กรุณาลองใหม่');
-    } finally {
-      setChecking(false);
-    }
-  };
-  return (
-    <form className={styles.gate} onSubmit={submit}>
-      <h3>ตัวเลขยอดขายและค่าโฆษณาเป็นข้อมูลลับ</h3>
-      <p className={styles.muted}>ใส่รหัส Admin เพื่อดู (เปิดค้างได้ 1 ชั่วโมง)</p>
-      <label className={styles.gateRow}>
-        <span className={styles.srOnly}>รหัส Admin</span>
-        <input type="password" className="form-input" autoComplete="current-password" required value={password}
-          onChange={event => { setPassword(event.target.value); setError(''); }} placeholder="รหัส Admin" />
-        <button type="submit" className="btn btn-primary" disabled={checking}>{checking ? 'กำลังตรวจ...' : 'ดูตัวเลข'}</button>
-      </label>
-      {error && <div className={styles.gateError} role="alert">{error}</div>}
-    </form>
-  );
-}
-
-function SourceNote({ stats, onLock }: { stats: CompanyStats; onLock: () => void }) {
+function SourceNote({ stats }: { stats: CompanyStats }) {
   return (
     <div className={styles.hint}>
       ข้อมูลถึง {thaiDate(stats.dataThrough)} · ชีตอัปเดตเมื่อ {thaiDate(stats.updatedAt)} น. · ที่มา: ชีต “Good Group · ยอดใช้โฆษณา {stats.year + 543}” (มะลิอัปเดตทุกเช้า) · เว็บดึงใหม่ทุก 30 นาที
-      {' '}<button type="button" className={styles.linkButton} onClick={onLock}>ล็อกตัวเลข</button>
+    </div>
+  );
+}
+
+const MONTH_RANGE = (through: number) => (through === 1 ? MONTHS[0] : `${MONTHS[0]}–${MONTHS[through - 1]}`);
+
+/** "+11.8% ใช้มากขึ้น" style change versus last year, with a text cue so colour is never the only signal. */
+function YearChange({ thisYear, lastYear }: { thisYear: number; lastYear: number }) {
+  if (!lastYear) return <span>{thisYear ? 'เริ่มใหม่ปีนี้' : '—'}</span>;
+  const change = (thisYear - lastYear) / lastYear;
+  return <span className={change > 0 ? styles.up : styles.dn}>{change > 0 ? '+' : '−'}{Math.abs(change * 100).toFixed(1)}%</span>;
+}
+
+/** Same completed months, this year vs last year, per budget group (GFS = B2B + B2C). */
+function YearCompareCard({ stats }: { stats: CompanyStats }) {
+  const through = stats.compareThroughMonth;
+  const groups = stats.budgets.map(budget => {
+    const prefix = budget.business.startsWith('GFS') ? 'GFS' : budget.business;
+    const rows: AdCompareRow[] = stats.adCompare.filter(row => (prefix === 'GFS' ? row.business.startsWith('GFS') : row.business === prefix));
+    return {
+      name: budget.business, lastYearTotal: budget.lastYear,
+      thisYear: rows.reduce((sum, row) => sum + row.thisYear, 0),
+      lastYear: rows.reduce((sum, row) => sum + row.lastYear, 0),
+    };
+  });
+  const max = Math.max(1, ...groups.flatMap(group => [group.thisYear, group.lastYear]));
+  return (
+    <div className={styles.mcard}>
+      <h3>ค่าโฆษณา · เทียบปีที่แล้ว (ช่วงเดียวกัน {MONTH_RANGE(through)})</h3>
+      <div className={styles.legend}>
+        <span><i className={styles.y25} />ค่าโฆษณาปี {stats.year + 542}</span>
+        <span><i style={{ background: 'var(--color-primary)' }} />ค่าโฆษณาปี {stats.year + 543}</span>
+      </div>
+      <div className={styles.bars}>
+        {groups.map(group => {
+          const change = group.lastYear ? (group.thisYear - group.lastYear) / group.lastYear : null;
+          return (
+            <div key={group.name} className={styles.brow}>
+              <span className={styles.browLabel}>{group.name}</span>
+              <div style={{ display: 'grid', gap: 4 }}>
+                <div className={styles.btrack} title={`ปี ${stats.year + 542} ${MONTH_RANGE(through)} ${baht(group.lastYear)} บาท`}>
+                  <div className={`${styles.bfill} ${styles.y25}`} style={{ width: `${(group.lastYear / max) * 100}%` }}>{baht(group.lastYear)}</div>
+                </div>
+                <div className={styles.btrack} title={`ปี ${stats.year + 543} ${MONTH_RANGE(through)} ${baht(group.thisYear)} บาท`}>
+                  <div className={styles.bfill} style={{ width: `${(group.thisYear / max) * 100}%`, background: businessColor(group.name) }}>{baht(group.thisYear)}</div>
+                </div>
+              </div>
+              <span className={styles.bsub}>
+                {change == null ? 'ปีที่แล้วไม่มียอด' : <><YearChange thisYear={group.thisYear} lastYear={group.lastYear} /> {change > 0 ? 'ใช้มากขึ้น' : 'ใช้น้อยลง'}</>}
+                {' '}· ปี {stats.year + 542} ทั้งปี {baht(group.lastYearTotal)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className={styles.hint}>
+        เทียบเฉพาะเดือนที่ครบแล้ว ({MONTH_RANGE(through)}) เพราะชีตเก็บค่าโฆษณาเป็นรายเดือน · MHL อาคาร ปี {stats.year + 542} รวมบัญชี Facebook เดิม “FB75-Filmmaholan” แล้ว · ปีที่แล้วบัญชี Facebook MHLCAR อาจมีแอดของ MHL อาคารปนอยู่ ควรตรวจก่อนสรุปผล
+      </div>
     </div>
   );
 }
 
 function AdsView({ stats }: { stats: CompanyStats }) {
+  const through = stats.compareThroughMonth;
   const used = stats.budgets.reduce((sum, row) => sum + row.used, 0);
   const budget = stats.budgets.reduce((sum, row) => sum + row.budget, 0);
   return (
@@ -152,21 +174,32 @@ function AdsView({ stats }: { stats: CompanyStats }) {
         <div className={styles.tableWrap} style={{ border: 0 }}>
           <table className={`${styles.table} ${styles.mini}`}>
             <thead>
-              <tr><th>ธุรกิจ</th><th>ช่องทาง</th><th>เดือนนี้</th><th>ทั้งปี {stats.year + 543} (ถึง {thaiDate(stats.dataThrough)})</th><th>ปี {stats.year + 542} ทั้งปี</th></tr>
+              <tr>
+                <th>ธุรกิจ</th><th>ช่องทาง</th><th>เดือนนี้</th><th>ปี {stats.year + 543} ถึง {thaiDate(stats.dataThrough)}</th>
+                {through > 0 && <><th>{MONTH_RANGE(through)} {String(stats.year + 543).slice(2)}</th><th>{MONTH_RANGE(through)} {String(stats.year + 542).slice(2)}</th><th>เทียบปีที่แล้ว</th></>}
+                <th>ปี {stats.year + 542} ทั้งปี</th>
+              </tr>
             </thead>
             <tbody>
-              {stats.adSpend.map(row => (
-                <tr key={`${row.business}-${row.channel}`}>
-                  <th scope="row"><span className={styles.dot} style={{ background: businessColor(row.business), display: 'inline-block', marginRight: 6 }} />{row.business}</th>
-                  <th scope="row">{row.channel}</th>
-                  <td>{baht(row.month)}</td><td>{baht(row.ytd)}</td><td>{baht(row.lastYear)}</td>
-                </tr>
-              ))}
+              {stats.adSpend.map(row => {
+                const compare = stats.adCompare.find(c => c.business === row.business && c.channel === row.channel);
+                return (
+                  <tr key={`${row.business}-${row.channel}`}>
+                    <th scope="row"><span className={styles.dot} style={{ background: businessColor(row.business), display: 'inline-block', marginRight: 6 }} />{row.business}</th>
+                    <th scope="row">{row.channel}</th>
+                    <td>{baht(row.month)}</td><td>{baht(row.ytd)}</td>
+                    {through > 0 && <><td>{compare ? baht(compare.thisYear) : '—'}</td><td>{compare ? baht(compare.lastYear) : '—'}</td><td>{compare ? <YearChange thisYear={compare.thisYear} lastYear={compare.lastYear} /> : '—'}</td></>}
+                    <td>{baht(row.lastYear)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <small className={styles.muted}>หน่วยบาท · เดือนนี้ = 1 ถึง {thaiDate(stats.dataThrough)} · TikTok / LINE Ads ยังไม่เชื่อม</small>
+        <small className={styles.muted}>หน่วยบาท · เดือนนี้ = 1 ถึง {thaiDate(stats.dataThrough)}{through > 0 ? ` · เทียบปีที่แล้วใช้ ${MONTH_RANGE(through)} ของทั้งสองปี (+ = ใช้มากขึ้น)` : ''} · TikTok / LINE Ads ยังไม่เชื่อม</small>
       </div>
+
+      {through > 0 && <YearCompareCard stats={stats} />}
     </>
   );
 }
@@ -260,22 +293,22 @@ function SalesView({ stats }: { stats: CompanyStats }) {
   );
 }
 
-export default function NumbersPanel({ view, stats: { state, load, lock } }: { view: 'ads' | 'sales'; stats: ReturnType<typeof useCompanyStats> }) {
-  if (state.status === 'idle' || state.status === 'loading') return <div className={styles.hint}>กำลังโหลดตัวเลข...</div>;
-  if (state.status === 'locked') return <PasswordGate onUnlocked={load} />;
-  if (state.status === 'error') {
-    return (
-      <div className={styles.gate} role="alert">
-        <p>{errorMessage(state.code, state.serviceAccount)}</p>
-        <button type="button" className="btn btn-secondary" onClick={load}>ลองใหม่</button>
-      </div>
-    );
-  }
-  if (state.status !== 'ready') return null;
+export function StatsError({ code, onRetry }: { code: string; onRetry: () => void }) {
+  return (
+    <div className={styles.gate} role="alert">
+      <p>{errorMessage(code)}</p>
+      <button type="button" className="btn btn-secondary" onClick={onRetry}>ลองใหม่</button>
+    </div>
+  );
+}
+
+export default function NumbersPanel({ view, stats: { state, load } }: { view: 'ads' | 'sales'; stats: ReturnType<typeof useCompanyStats> }) {
+  if (state.status === 'loading') return <div className={styles.hint}>กำลังโหลดตัวเลข...</div>;
+  if (state.status === 'error') return <StatsError code={state.code} onRetry={load} />;
   return (
     <>
       {view === 'ads' ? <AdsView stats={state.stats} /> : <SalesView stats={state.stats} />}
-      <SourceNote stats={state.stats} onLock={lock} />
+      <SourceNote stats={state.stats} />
     </>
   );
 }
