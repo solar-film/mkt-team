@@ -57,6 +57,20 @@ export async function POST(request: NextRequest) {
     }
 
     const assignments = await assignmentData(body, prisma, true)
+    // A double click or retry sends the same save twice within seconds: return the first record instead of creating a copy.
+    // The same post is also entered once per platform (each with its own KPI), so platform and KPI must match too.
+    const repeated = await prisma.content.findFirst({
+      where: {
+        title,
+        platform: platform || '',
+        kpiId: kpiId || null,
+        memberId: assignments.memberId!,
+        publishDate: publishDate ? new Date(publishDate) : null,
+        createdAt: { gte: new Date(Date.now() - 10_000) }
+      },
+      include: { member: { select: { id: true, name: true } } }
+    })
+    if (repeated) return NextResponse.json({ success: true, duplicate: true, content: serializeAssignments(repeated) })
     const newContent = await prisma.content.create({
       data: {
         title,
