@@ -730,3 +730,8 @@
   display: grid;
   gap: 0.2rem;
 }
+
+.peopleHeading {
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}

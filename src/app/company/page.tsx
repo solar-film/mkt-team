@@ -5,7 +5,7 @@ import styles from './company.module.css';
 import NumbersPanel, { baht, millions2, millionsShort, percent, SourceNote, StatsError, useCompanyStats, type StatsState } from './NumbersPanels';
 import { businessFigures, type CompanyStats } from '@/lib/company-stats';
 import {
-  BUSINESSES, CHANNEL_ROWS, COMPANIES, LOGOS, OPENING_HOURS, PEOPLE, SHARED_ROLES, STRUCTURE_AS_OF,
+  AI_TEAM, BUSINESSES, CHANNEL_ROWS, COMPANIES, LOGOS, OPENING_HOURS, PEOPLE, SHARED_ROLES, STRUCTURE_AS_OF,
   type Business, type BusinessKey, type LogoKey,
 } from '@/lib/company-structure';
 
@@ -314,6 +314,18 @@ export default function CompanyStructurePage() {
                 <div><b>{person.name}</b><small className={styles.muted}>{person.role}</small></div>
               </div>
               {person.name.startsWith('คุณมิ้น') ? agencyDuty(state, person.duty) : person.duty}
+            </div>
+          ))}
+        </div>
+        <h3 className={styles.peopleHeading}>มะลิ + ทีม AI {AI_TEAM.length - 1} คน <small className={styles.muted}>ใช้ร่วมกันทั้ง 2 บริษัท</small></h3>
+        <div className={styles.people}>
+          {AI_TEAM.map(member => (
+            <div key={member.name} className={styles.person}>
+              <div className={styles.ph}>
+                <div className={styles.av} style={{ background: 'var(--color-primary)' }} aria-hidden="true">{member.initial}</div>
+                <div><b>{member.name}</b><small className={styles.muted}>AI · {member.role}</small></div>
+              </div>
+              {member.duty}
             </div>
           ))}
         </div>

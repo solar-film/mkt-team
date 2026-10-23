@@ -136,3 +136,15 @@ export const PEOPLE: { initial: string; name: string; role: string; duty: string
   { initial: 'ม', name: 'คุณมิ้น / ReadyPlanet', role: 'เอเจนซี Google Ads', duty: 'ดูแลบัญชี Google Ads ของ GFS B2C และ MHL อาคาร', color: '#034aad' },
   { initial: 'ส', name: 'อ.แสน', role: 'ที่ปรึกษา', duty: 'มีสิทธิ์เข้าบัญชีโฆษณา', color: '#10b981' },
 ];
+
+/** มะลิ and her AI specialists, shared by both companies. */
+export const AI_TEAM: { initial: string; name: string; role: string; duty: string }[] = [
+  { initial: 'ม', name: 'มะลิ', role: 'ผู้ประสานงานทีม AI', duty: 'รับงาน แยกธุรกิจ (GFS B2B, GFS B2C, MHL, MHL CAR) ทำ brief จ่ายงานให้ทีม ตรวจ และสรุปขออนุมัติ' },
+  { initial: 'ท', name: 'ทิศา', role: 'วิจัย', duty: 'ผู้เชี่ยวชาญ AI ด้านวิจัย' },
+  { initial: 'ว', name: 'วลี', role: 'คอนเทนต์', duty: 'ผู้เชี่ยวชาญ AI ด้านคอนเทนต์' },
+  { initial: 'พ', name: 'พิกเซล', role: 'ภาพ', duty: 'ผู้เชี่ยวชาญ AI ด้านภาพ' },
+  { initial: 'ข', name: 'ข้าวหอม', role: 'แอด', duty: 'ผู้เชี่ยวชาญ AI ด้านโฆษณา' },
+  { initial: 'บ', name: 'ใบบัว', role: 'ตรวจงาน', duty: 'ผู้เชี่ยวชาญ AI ด้านตรวจงาน' },
+  { initial: 'อ', name: 'อุ่นใจ', role: 'LINE OA', duty: 'ผู้เชี่ยวชาญ AI ด้าน LINE OA' },
+  { initial: 'ย', name: 'ใยไหม', role: 'เว็บ', duty: 'ผู้เชี่ยวชาญ AI ด้านเว็บ' },
+];
