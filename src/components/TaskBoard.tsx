@@ -5,6 +5,7 @@ import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -82,6 +83,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const [kpis, setKpis] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const { saving, guard } = useSubmitGuard();
   const [loading, setLoading] = useState(true);
   const [filterMemberId, setFilterMemberId] = useState(currentUserId === 'GUEST' ? '' : (currentUserId || ''));
   const [filterType, setFilterType] = useState('all');
@@ -849,7 +851,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
           </div>
         )}
         {newItemType === 'task' ? (
-          <form onSubmit={handleTaskSubmit}>
+          <form onSubmit={guard(handleTaskSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่องาน *</label>
               <input type="text" className="form-input" required value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
@@ -939,11 +941,11 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-              <button type="submit" className="btn btn-primary">บันทึกงาน</button>
+              <button type="submit" disabled={saving} className="btn btn-primary">บันทึกงาน</button>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleContentSubmit}>
+          <form onSubmit={guard(handleContentSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
@@ -1049,7 +1051,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-              <button type="submit" className="btn btn-primary">บันทึกคอนเท้น</button>
+              <button type="submit" disabled={saving} className="btn btn-primary">บันทึกคอนเท้น</button>
             </div>
           </form>
         )}

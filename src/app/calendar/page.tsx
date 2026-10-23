@@ -7,6 +7,7 @@ import { useVisibleRefresh } from '@/lib/useVisibleRefresh';
 import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel } from '@/lib/assignments';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { HiChevronLeft, HiChevronRight, HiPlus, HiOutlineCalendar, HiClipboardDocumentList, HiDocumentText } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -45,6 +46,7 @@ const isKpiMatchPlatform = (kpiName: string, platform: string) => {
 };
 
 export default function CalendarPage() {
+  const { saving, guard } = useSubmitGuard();
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -909,7 +911,7 @@ export default function CalendarPage() {
         )}
         
         {newItemType === 'task' ? (
-          <form onSubmit={handleTaskSubmit}>
+          <form onSubmit={guard(handleTaskSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่องาน *</label>
               <input type="text" className="form-input" required value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
@@ -996,11 +998,11 @@ export default function CalendarPage() {
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-              <button type="submit" className="btn btn-primary">บันทึกงาน</button>
+              <button type="submit" disabled={saving} className="btn btn-primary">บันทึกงาน</button>
             </div>
           </form>
         ) : newItemType === 'content' ? (
-          <form onSubmit={handleContentSubmit}>
+          <form onSubmit={guard(handleContentSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
@@ -1124,12 +1126,12 @@ export default function CalendarPage() {
               ) : <div></div>}
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-                <button type="submit" className="btn btn-primary">บันทึก</button>
+                <button type="submit" disabled={saving} className="btn btn-primary">บันทึก</button>
               </div>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleEventSubmit}>
+          <form onSubmit={guard(handleEventSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่อกิจกรรม / เรื่องที่แจ้งให้ทราบ *</label>
               <input type="text" className="form-input" required placeholder="เช่น วันนี้ประชุม 10 โมง" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
@@ -1200,7 +1202,7 @@ export default function CalendarPage() {
               ) : <div></div>}
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>ยกเลิก</button>
-                <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#f59e0b' }}>บันทึกกิจกรรม</button>
+                <button type="submit" disabled={saving} className="btn btn-primary" style={{ backgroundColor: '#f59e0b' }}>บันทึกกิจกรรม</button>
               </div>
             </div>
           </form>
