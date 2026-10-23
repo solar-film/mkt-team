@@ -453,13 +453,15 @@ export default function CalendarPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {daySlots.map((item, index) => {
             if (!item) {
-              return <div key={`empty-${dateStr}-${index}`} style={{ height: '28px' }}></div>;
+              return <div key={`empty-${dateStr}-${index}`} style={{ height: '30px' }}></div>;
             }
-            
+
             const start = item.startDate || item.date;
             const end = item.date;
             const isStart = dateStr === start;
             const isEnd = dateStr === end;
+            // งานหลายวัน: แสดงชื่อที่วันแรก และซ้ำที่วันอาทิตย์ (ต้นแถวสัปดาห์) เพื่อไม่ให้แถบว่างเปล่า
+            const showLabel = start === end || isStart || new Date(`${dateStr}T00:00:00`).getDay() === 0;
             let spanClass = '';
             if (start !== end) {
               if (isStart) spanClass = 'task-span-start';
@@ -483,16 +485,16 @@ export default function CalendarPage() {
               title={item.type === 'event' ? `${item.fullItem?.time ? item.fullItem.time + ' - ' : ''}${item.title}` : `${item.fullItem?.company ? `[${item.fullItem.company}] ` : ''}${item.title} (${memberSelectionLabel(item.memberId, membersList)})`}
               onClick={(e) => handleItemClick(e, item)}
               style={item.type === 'event' 
-                ? { backgroundColor: '#fce7f3', borderColor: '#ec4899', color: '#be185d', fontWeight: 600, height: '28px' } 
-                : { backgroundColor: bgColor, borderColor: borderColor, color: textColor, fontWeight: 600, height: '28px' }}
+                ? { backgroundColor: '#fce7f3', borderColor: '#ec4899', color: '#be185d', fontWeight: 600, height: '30px' } 
+                : { backgroundColor: bgColor, borderColor: borderColor, color: textColor, fontWeight: 600, height: '30px' }}
               >
               {item.type === 'event' && <span style={{ marginRight: '4px' }}>📢</span>}
-              {item.type !== 'event' && item.member && (spanClass === '' || spanClass === 'task-span-start') && (
+              {item.type !== 'event' && item.member && showLabel && (
                 <MemberAvatar name={item.member.name} size="sm" />
               )}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, display: 'block' }}>
                 {item.type === 'event' && item.fullItem?.time ? <span style={{ marginRight: '4px', opacity: 0.8 }}>{item.fullItem.time}</span> : null}
-                {(spanClass === '' || spanClass === 'task-span-start') ? item.title : '\u00A0'}
+                {showLabel ? item.title : '\u00A0'}
               </span>
             </div>
           )})}
@@ -731,19 +733,19 @@ export default function CalendarPage() {
             </div>
           )}
           
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)' }}></div>
-              <span>เสร็จแล้ว</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-warning)' }}></div>
-              <span>กำลังทำ</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-border)' }}></div>
-              <span>รอดำเนินการ</span>
-            </div>
+          {/* สีต้องตรงกับสีแถบงานในปฏิทิน (ดู bgColor/borderColor ด้านบน) */}
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+            {[
+              { color: '#f97316', label: 'รอดำเนินการ' },
+              { color: '#3b82f6', label: 'กำลังทำ' },
+              { color: '#10b981', label: 'เสร็จแล้ว' },
+              { color: '#ec4899', label: 'แจ้งเตือน/กิจกรรม' },
+            ].map(l => (
+              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: l.color }}></div>
+                <span>{l.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
