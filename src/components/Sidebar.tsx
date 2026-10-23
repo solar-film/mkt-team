@@ -38,11 +38,11 @@ interface Member {
 
 const navLinks = [
   { path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
+  { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
   { path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
   { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
-  { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
   { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
   { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
