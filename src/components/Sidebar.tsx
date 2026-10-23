@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { externalLinkProps } from '@/lib/external-link';
 import {
   HiChartBarSquare,
   HiClipboardDocumentList,
@@ -51,10 +52,6 @@ const navLinks = [
   { path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
   { path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
 ];
-
-// Links to other sites (feedback, BB Meeting) open in a new tab so the team keeps this page.
-const externalLinkProps = (path: string) =>
-  /^https?:///.test(path) ? { target: '_blank', rel: 'noopener noreferrer' } : {};
 
 export default function Sidebar() {
   const pathname = usePathname();

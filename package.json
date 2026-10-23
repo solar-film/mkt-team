@@ -17,7 +17,8 @@
     "test:stats-due": "tsx --test tests/stats-due.test.ts",
     "test:event-dates": "tsx --test tests/event-dates.test.ts",
     "test:company-stats": "tsx --test tests/company-stats.test.ts",
-    "test:release": "npm run test:shared-assignments && npm run test:performance-security && npm run test:avatars && npm run test:consistency && npm run test:completion-link && npm run test:stats-due && npm run test:event-dates && npm run test:company-stats && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs"
+    "test:external-link": "tsx --test tests/external-link.test.ts",
+    "test:release": "npm run test:shared-assignments && npm run test:performance-security && npm run test:avatars && npm run test:consistency && npm run test:completion-link && npm run test:stats-due && npm run test:event-dates && npm run test:company-stats && npm run test:external-link && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
