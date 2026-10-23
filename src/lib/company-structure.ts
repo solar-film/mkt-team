@@ -61,7 +61,7 @@ export const BUSINESSES: Business[] = [
     key: 'b2c', name: 'GFS B2C', short: 'ฟิล์มบ้าน/อาคาร', summary: 'ฟิล์มบ้านและอาคาร GOODFILM',
     aim: 'ขายและติดตั้งฟิล์มอาคาร 3M ในฐานะตัวแทนอย่างเป็นทางการ ให้บ้าน คอนโด สำนักงาน ทั่วประเทศ',
     logo: 'gfs', color: '#034aad', soft: '#e3eeff', company: 'บริษัท กู๊ดฟิล์ม จำกัด (สำนักงานใหญ่)',
-    owner: 'จ๋าย', websiteCount: 1, channelCount: 8, info: GFS_INFO,
+    owner: 'แต้ว + จ๋าย', websiteCount: 1, channelCount: 8, info: GFS_INFO,
     websites: ['goodfilmshop.com'],
     channels: ['Call Center 02-096-3424', 'มือถือ 097-097-2103', '062-747-1234 · 090-979-3760', 'LINE @goodfilm · lin.ee/Xwo0pdm', ...GFS_EMAILS],
     socials: ['Facebook: facebook.com/goodfilm3M', 'Instagram: @goodfilm.shop', 'TikTok: @goodfilm3m', 'YouTube: youtube.com/@goodfilm3M'],
