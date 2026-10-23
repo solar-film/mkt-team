@@ -48,8 +48,8 @@ function loadRoute(path: string, prisma: unknown, sent: string[], pushed: string
 function fixtureDb(record = shared) {
   const lookups: string[][] = [];
   const prisma = {
-    task: { create: async () => record, update: async () => record, findUnique: async () => record },
-    content: { create: async () => record, update: async () => record, findUnique: async () => record, findMany: async () => [] as any[] },
+    task: { create: async () => record, update: async () => record, findUnique: async () => record, findFirst: async () => null },
+    content: { create: async () => record, update: async () => record, findUnique: async () => record, findFirst: async () => null, findMany: async () => [] as any[] },
     teamMember: { findMany: async ({ where }: { where: { id: { in: string[] } } }) => {
       lookups.push(where.id.in);
       return members.filter(member => where.id.in.includes(member.id));
