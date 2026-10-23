@@ -420,3 +420,281 @@
     display: none;
   }
 }
+
+/* ---------- confidential number tabs ---------- */
+.gate {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  max-width: 520px;
+}
+
+.gate h3 {
+  font-size: 1.05rem;
+}
+
+.gateRow {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.gateRow input {
+  flex: 1 1 200px;
+}
+
+.gateError {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.linkButton {
+  color: var(--color-primary);
+  text-decoration: underline;
+  font-size: inherit;
+}
+
+.mcard,
+.scard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.mcard h3,
+.scard h3 {
+  font-size: 1rem;
+}
+
+.bigline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  align-items: baseline;
+}
+
+.bigline strong {
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+}
+
+.legend i.legendMark {
+  width: 2px;
+  background: var(--color-text-primary);
+}
+
+.bars {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.brow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 0.25rem 0.6rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.browLabel {
+  font-weight: 600;
+}
+
+.btrack {
+  background: var(--color-surface-hover);
+  border-radius: 6px;
+  height: 26px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bfill {
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.5rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--color-text-primary);
+  opacity: 0.6;
+}
+
+.bsub {
+  grid-column: 2;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.stOk,
+.stWarn {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 0.45rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.stOk {
+  background: #e3f6ec;
+  color: #1f7a52;
+}
+
+.stWarn {
+  background: #fff6e0;
+  color: #92600e;
+}
+
+.table.mini {
+  min-width: 560px;
+}
+
+.table.mini td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table.mini thead th:nth-child(n + 3) {
+  text-align: right;
+}
+
+.sgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.85rem;
+}
+
+.shead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.ptrack {
+  position: relative;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--color-surface-hover);
+  margin-top: 1rem;
+}
+
+.pfill {
+  height: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.6rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.pmark {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 0;
+  border-left: 2px dashed var(--color-text-primary);
+}
+
+.pmark span {
+  position: absolute;
+  top: -20px;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.facts {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-bottom: 1px dashed var(--color-border);
+  padding: 0.2rem 0;
+}
+
+.facts b {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.dataTable summary {
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+}
+
+.dataTable .table.mini {
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  .brow {
+    grid-template-columns: 1fr;
+  }
+
+  .bsub {
+    grid-column: 1;
+  }
+}

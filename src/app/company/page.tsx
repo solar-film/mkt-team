@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import styles from './company.module.css';
+import NumbersPanel, { useCompanyStats } from './NumbersPanels';
 import {
   BUSINESSES, CHANNEL_ROWS, COMPANIES, LOGOS, OPENING_HOURS, PEOPLE, SHARED_ROLES, STRUCTURE_AS_OF,
   type Business, type BusinessKey, type LogoKey,
@@ -10,6 +11,8 @@ import {
 const TABS = [
   { id: 'tree', label: 'ผังบริษัท' },
   { id: 'channels', label: 'ช่องทาง & เว็บ' },
+  { id: 'ads', label: 'ค่าโฆษณา 🔒' },
+  { id: 'sales', label: 'ยอดขาย 🔒' },
   { id: 'people', label: 'ใครดูแล' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
@@ -63,6 +66,13 @@ function BusinessDetail({ business }: { business: Business }) {
 export default function CompanyStructurePage() {
   const [tab, setTab] = useState<TabId>('tree');
   const [selected, setSelected] = useState<BusinessKey>('b2c');
+  const numbers = useCompanyStats();
+  const { state: numbersState, load: loadNumbers } = numbers;
+
+  // Confidential figures are requested only when someone opens a number tab.
+  useEffect(() => {
+    if ((tab === 'ads' || tab === 'sales') && numbersState.status === 'idle') loadNumbers();
+  }, [tab, numbersState.status, loadNumbers]);
 
   // Arrow keys move between tabs, as expected of a tab list.
   const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -194,6 +204,12 @@ export default function CompanyStructurePage() {
         </div>
         <div className={styles.hint}>ตัวเลข “ช่องทาง” บนผัง = โทรศัพท์ + LINE OA + อีเมล ที่พี่ออยยืนยันแล้ว (ยังไม่นับโซเชียล เพราะยังไม่มีลิงก์ครบ)</div>
       </div>
+
+      {(['ads', 'sales'] as const).map(view => (
+        <div key={view} role="tabpanel" id={`company-panel-${view}`} aria-labelledby={`company-tab-${view}`} hidden={tab !== view} className={styles.panel}>
+          {tab === view && <NumbersPanel view={view} stats={numbers} />}
+        </div>
+      ))}
 
       <div role="tabpanel" id="company-panel-people" aria-labelledby="company-tab-people" hidden={tab !== 'people'} className={styles.panel}>
         <div className={styles.people}>
