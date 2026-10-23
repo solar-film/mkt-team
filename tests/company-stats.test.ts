@@ -71,6 +71,20 @@ test('summary sections are found by their headers and monthly sales land in thei
   assert.equal(stats.compareThroughMonth, 0);
 });
 
+test('sources come from the sheet: the summary ที่มา line and runs of months per business', () => {
+  const summary = [...SUMMARY, [], ['ที่มา: งบจากชีต A · ยอดใช้จากระบบ B']];
+  const sales = [
+    ['เดือน', 'ธุรกิจ', 'ยอดขาย', 'ที่มา'],
+    ['2026-01', 'MHL CAR', '1', 'สถิติเดิม'], ['2026-02', 'MHL CAR', '1', 'สถิติเดิม'],
+    ['2026-03', 'MHL CAR', '1', 'ระบบจอง'], ['2026-04', 'MHL CAR', '1', 'ระบบจอง'],
+  ];
+  const stats = parseCompanyStats(summary, sales);
+  assert.equal(stats.sourceNote, 'ที่มา: งบจากชีต A · ยอดใช้จากระบบ B');
+  const car = stats.sales.find(row => row.business === 'MHL CAR')!;
+  assert.equal(json(car.sources), json([{ from: 1, to: 2, text: 'สถิติเดิม' }, { from: 3, to: 4, text: 'ระบบจอง' }]));
+  assert.equal(parseCompanyStats(SUMMARY, SALES).sourceNote, null);
+});
+
 test('ad accounts come from ตั้งค่า and uncounted accounts are left out', () => {
   const stats = parseCompanyStats(SUMMARY, SALES, SETTINGS, MONTHLY);
   assert.equal(json(stats.accounts.map(a => a.id)), json(['111', '222-333', '444']));

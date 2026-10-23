@@ -723,3 +723,10 @@
   background: #e3f6ec;
   color: #1f7a52;
 }
+
+.sourceList {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.2rem;
+}

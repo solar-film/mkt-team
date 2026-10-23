@@ -2,7 +2,7 @@
 
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './company.module.css';
-import NumbersPanel, { baht, millions2, millionsShort, percent, StatsError, useCompanyStats, type StatsState } from './NumbersPanels';
+import NumbersPanel, { baht, millions2, millionsShort, percent, SourceNote, StatsError, useCompanyStats, type StatsState } from './NumbersPanels';
 import { businessFigures, type CompanyStats } from '@/lib/company-stats';
 import {
   BUSINESSES, CHANNEL_ROWS, COMPANIES, LOGOS, OPENING_HOURS, PEOPLE, SHARED_ROLES, STRUCTURE_AS_OF,
@@ -242,6 +242,7 @@ export default function CompanyStructurePage() {
         <article id="company-detail" className={styles.detail} aria-live="polite">
           <BusinessDetail business={BY_KEY[selected]} state={state} />
         </article>
+        {state.status === 'ready' && <SourceNote stats={state.stats} />}
       </div>
 
       <div role="tabpanel" id="company-panel-channels" aria-labelledby="company-tab-channels" hidden={tab !== 'channels'} className={styles.panel}>
@@ -296,7 +297,6 @@ export default function CompanyStructurePage() {
             </tbody>
           </table>
         </div>
-        <div className={styles.hint}>ตัวเลข “ช่องทาง” บนผัง = โทรศัพท์ + LINE OA + อีเมล ที่พี่ออยยืนยันแล้ว (ยังไม่นับโซเชียล เพราะยังไม่มีลิงก์ครบ) · บัญชีโฆษณาอ่านจากแท็บ “ตั้งค่า” ในชีตสรุป</div>
       </div>
 
       {(['ads', 'sales'] as const).map(view => (

@@ -65,10 +65,23 @@ function errorMessage(code: string) {
   }
 }
 
-function SourceNote({ stats }: { stats: CompanyStats }) {
+const monthSpan = ({ from, to }: { from: number; to: number }) => (from === to ? MONTHS[from - 1] : `${MONTHS[from - 1]}–${MONTHS[to - 1]}`);
+/** "ม.ค.–เม.ย. -สถิติ- · พ.ค.–ต.ค. Bookings …" from the sheet's per-month ที่มา column. */
+const salesSourceText = (row: SalesRow) => row.sources.map(source => `${monthSpan(source)} ${source.text}`).join(' · ');
+
+/** Where every figure on the page comes from; texts are taken from the sheet itself where it states them. */
+export function SourceNote({ stats }: { stats: CompanyStats }) {
   return (
     <div className={styles.hint}>
-      ข้อมูลถึง {thaiDate(stats.dataThrough)} · ชีตอัปเดตเมื่อ {thaiDate(stats.updatedAt)} น. · ที่มา: ชีต “Good Group · ยอดใช้โฆษณา {stats.year + 543}” (มะลิอัปเดตทุกเช้า) · เว็บดึงใหม่ทุก 30 นาที
+      <b>ที่มาของตัวเลข</b>
+      <ul className={styles.sourceList}>
+        <li>รวบรวมในชีต “Good Group · ยอดใช้โฆษณา {stats.year + 543} (อัปเดตอัตโนมัติ)” ที่มะลิอัปเดตทุกเช้า · ข้อมูลถึง {thaiDate(stats.dataThrough)} · ชีตอัปเดตเมื่อ {thaiDate(stats.updatedAt)} น. · เว็บดึงใหม่ทุก 30 นาที</li>
+        {stats.sourceNote && <li>เป้าขาย งบ Ads และค่าโฆษณา — {stats.sourceNote.replace(/^ที่มา:\s*/, '')}</li>}
+        {stats.sales.filter(row => row.sources.length).map(row => (
+          <li key={row.business}>ยอดขาย {row.business} — {salesSourceText(row)}</li>
+        ))}
+        <li>ยอดขายไม่รวม VAT · TikTok Ads / LINE Ads ยังไม่เชื่อม</li>
+      </ul>
     </div>
   );
 }
@@ -286,6 +299,7 @@ function SalesView({ stats }: { stats: CompanyStats }) {
                 </table>
               </details>
             </div>
+            {row.sources.length > 0 && <small className={styles.muted}>ที่มา: {salesSourceText(row)}</small>}
           </div>
         );
       })}

@@ -15,6 +15,8 @@ export interface SalesRow {
   business: string; target: number; sold: number; adPctOfSales: number | null; soldThisMonth: number;
   /** Jan..Dec of the data year; null where the sheet has no figure yet. */
   monthly: (number | null)[];
+  /** Where each run of months comes from, per the sheet's ที่มา column (months are 1..12). */
+  sources: { from: number; to: number; text: string }[];
 }
 export interface CompanyStats {
   month: string; dataThrough: string; updatedAt: string; year: number;
@@ -22,6 +24,8 @@ export interface CompanyStats {
   yearPct: number;
   adSpend: AdSpendRow[]; budgets: BudgetRow[]; sales: SalesRow[];
   accounts: AdAccount[];
+  /** The summary tab's own "ที่มา: …" line, if present. */
+  sourceNote: string | null;
   /** Last fully finished month (1..12) used for the year-on-year comparison; 0 when none. */
   compareThroughMonth: number;
   adCompare: AdCompareRow[];
@@ -127,6 +131,7 @@ export function parseCompanyStats(summary: Rows, salesByMonth: Rows, settings: R
   const yearPct = required(sheetNumber(budgetRows[0][4]), 'year elapsed %');
 
   const monthly = new Map<string, (number | null)[]>();
+  const sources = new Map<string, { from: number; to: number; text: string }[]>();
   for (const row of salesByMonth.slice(1)) {
     const match = /^(\d{4})-(\d{2})$/.exec(text(row[0]));
     const amount = sheetNumber(row[2]);
@@ -134,6 +139,15 @@ export function parseCompanyStats(summary: Rows, salesByMonth: Rows, settings: R
     const business = text(row[1]);
     const months = monthly.get(business) ?? Array<number | null>(12).fill(null);
     months[Number(match[2]) - 1] = amount;
+    const source = text(row[3]);
+    if (source) {
+      const runs = sources.get(business) ?? [];
+      const month = Number(match[2]);
+      const last = runs[runs.length - 1];
+      if (last && last.text === source && last.to === month - 1) last.to = month;
+      else runs.push({ from: month, to: month, text: source });
+      sources.set(business, runs);
+    }
     monthly.set(business, months);
   }
 
@@ -147,6 +161,7 @@ export function parseCompanyStats(summary: Rows, salesByMonth: Rows, settings: R
       adPctOfSales: Number.isFinite(adPct) ? adPct : null,
       soldThisMonth: required(sheetNumber(row[6]), 'sales this month'),
       monthly: monthly.get(business) ?? Array<number | null>(12).fill(null),
+      sources: sources.get(business) ?? [],
     };
   });
 
@@ -155,6 +170,7 @@ export function parseCompanyStats(summary: Rows, salesByMonth: Rows, settings: R
     month: labelled(summary, 'เดือนนี้'), dataThrough, updatedAt: labelled(summary, 'อัปเดตเมื่อ'),
     year, yearPct, adSpend, budgets, sales,
     accounts: parseAccounts(settings),
+    sourceNote: summary.map(row => text(row[0])).find(cell => cell.startsWith('ที่มา')) ?? null,
     compareThroughMonth,
     adCompare: compareThroughMonth ? compareAdSpend(monthlyAds, adSpend, year, compareThroughMonth) : [],
   };
