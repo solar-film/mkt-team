@@ -163,12 +163,6 @@ export default function CalendarPage() {
     }
   };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
-      setViewMode('week');
-    }
-  }, []);
-
   useVisibleRefresh(fetchData, []);
 
   const handleCellClick = (dateStr: string) => {
