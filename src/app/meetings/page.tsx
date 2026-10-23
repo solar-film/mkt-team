@@ -479,7 +479,7 @@ export default function MeetingsPage() {
                         </span>
                       )}
                       {meeting.createdByName && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6d28d9', backgroundColor: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: '999px', padding: '0.1rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
                           <HiPencilSquare style={{ fontSize: '0.85rem' }} />
                           ผู้บันทึก: {meeting.createdByName}
                         </span>
@@ -539,7 +539,7 @@ export default function MeetingsPage() {
                 {isExpanded && (
                   <div style={{ padding: '0 1.5rem 1.5rem', borderTop: '1px solid var(--color-border)' }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1.5rem', marginTop: '1rem', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                          <span>✍️ ผู้บันทึก: <strong style={{ color: 'var(--color-text-primary)' }}>{meeting.createdByName || 'ไม่ระบุ'}</strong></span>
+                          <span style={{ color: '#6d28d9', backgroundColor: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: '999px', padding: '0.1rem 0.7rem' }}>✍️ ผู้บันทึก: <strong>{meeting.createdByName || 'ไม่ระบุ'}</strong></span>
                           {meeting.attendeeNames && meeting.attendeeNames.length > 0 && (
                             <span>👥 ผู้เข้าร่วม: <strong style={{ color: 'var(--color-text-primary)' }}>{meeting.attendeeNames.join(', ')}</strong></span>
                           )}
