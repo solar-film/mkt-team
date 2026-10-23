@@ -54,6 +54,7 @@ export default function CalendarPage() {
   const [membersList, setMembersList] = useState<TeamMember[]>([]);
   const [kpis, setKpis] = useState<any[]>([]);
   const [filterMemberId, setFilterMemberId] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'content' | 'task' | 'event'>('all');
   const [loading, setLoading] = useState(true);
   const hasLoadedRef = useRef(false);
   const latestRequestRef = useRef(0);
@@ -378,7 +379,30 @@ export default function CalendarPage() {
   }
 
   const todayStr = bangkokDateKey(new Date());
-  const filteredItems = filterMemberId ? items.filter(i => matchesMemberSelection(i.memberId, filterMemberId)) : items;
+  const memberFilteredItems = filterMemberId ? items.filter(i => matchesMemberSelection(i.memberId, filterMemberId)) : items;
+  const filteredItems = filterType === 'all' ? memberFilteredItems : memberFilteredItems.filter(i => i.type === filterType);
+
+  const typeFilterOptions: { value: typeof filterType; label: string }[] = [
+    { value: 'all', label: 'ทั้งหมด' },
+    { value: 'content', label: 'คอนเท้น' },
+    { value: 'task', label: 'งานทั่วไป' },
+    { value: 'event', label: 'แจ้งเตือน' },
+  ];
+  const typeFilterChips = (
+    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+      {typeFilterOptions.map(o => (
+        <button
+          key={o.value}
+          type="button"
+          className={`btn ${filterType === o.value ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}
+          onClick={() => setFilterType(o.value)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
 
   // 1. Sort only items overlapping the shown month (items from other months must not push rows down)
   const monthPrefix = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
@@ -633,6 +657,8 @@ export default function CalendarPage() {
             </div>
           </div>
 
+          <div style={{ marginBottom: '1rem' }}>{typeFilterChips}</div>
+
           {loading ? (
             <div className="loading-container" style={{ minHeight: '400px' }}><div className="loading-spinner"></div></div>
           ) : viewMode === 'week' ? (
@@ -772,6 +798,8 @@ export default function CalendarPage() {
             <HiPlus /> เพิ่มกิจกรรม
           </button>
         </div>
+
+        <div style={{ marginBottom: '1rem' }}>{typeFilterChips}</div>
 
         {/* Calendar Slider */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '1rem', marginBottom: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
