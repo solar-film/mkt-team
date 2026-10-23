@@ -9,7 +9,7 @@ import {
 } from '@/lib/company-structure';
 
 const TABS = [
-  { id: 'tree', label: 'ผังบริษัท' },
+  { id: 'tree', label: 'ผังธุรกิจ' },
   { id: 'channels', label: 'ช่องทาง & เว็บ' },
   { id: 'ads', label: 'ค่าโฆษณา 🔒' },
   { id: 'sales', label: 'ยอดขาย 🔒' },
