@@ -45,6 +45,8 @@ function adapter(sql: Sql) {
     update: ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => write(table, data, where.id),
     findFirst: async ({ where }: { where: { id: string; meetingId: string } }) =>
       (await sql.query(`SELECT * FROM "${table}" WHERE id = $1 AND "meetingId" = $2`, [where.id, where.meetingId])).rows[0] || null,
+    findMany: async ({ where }: { where: { meetingId: string } }) =>
+      (await sql.query(`SELECT id FROM "${table}" WHERE "meetingId" = $1`, [where.meetingId])).rows,
     updateMany: async ({ where, data }: { where: { meetingId: string; id: { notIn: string[] } }; data: { meetingId: null } }) => {
       assert.deepEqual(data, { meetingId: null });
       const result = await sql.query(

@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       })
       await saveMeetingActions(tx, meeting.id, body.items)
       return meeting
-    })
+    }, { maxWait: 10000, timeout: 30000 })
 
     invalidateWorkspace();
     return NextResponse.json({ success: true, meeting: newMeeting })
@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
       })
       await saveMeetingActions(tx, meeting.id, body.items)
       return meeting
-    })
+    }, { maxWait: 10000, timeout: 30000 })
 
     invalidateWorkspace();
     return NextResponse.json({ success: true, meeting: updatedMeeting })
