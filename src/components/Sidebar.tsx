@@ -50,6 +50,10 @@ const navLinks = [
   { path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
 ];
 
+// Links to other sites (feedback, BB Meeting) open in a new tab so the team keeps this page.
+const externalLinkProps = (path: string) =>
+  /^https?:///.test(path) ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+
 export default function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -122,6 +126,7 @@ export default function Sidebar() {
           <Link
             key={link.path}
             href={link.path}
+            {...externalLinkProps(link.path)}
             className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
           >
             {link.icon}
@@ -165,6 +170,7 @@ export default function Sidebar() {
                     <Link
                       key={link.path}
                       href={link.path}
+                      {...externalLinkProps(link.path)}
                       onClick={() => setShowMobileMore(false)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.75rem',
