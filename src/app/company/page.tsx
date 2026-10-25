@@ -9,14 +9,17 @@ import {
   type Business, type BusinessKey, type LogoKey,
 } from '@/lib/company-structure';
 
-const TABS = [
+const ALL_TABS = [
   { id: 'tree', label: 'ผังธุรกิจ' },
   { id: 'channels', label: 'ช่องทาง & เว็บ' },
   { id: 'ads', label: 'ค่าโฆษณา' },
   { id: 'sales', label: 'ยอดขาย' },
   { id: 'people', label: 'ใครดูแล' },
 ] as const;
-type TabId = (typeof TABS)[number]['id'];
+type TabId = (typeof ALL_TABS)[number]['id'];
+// Hidden at the owner's request (25 Oct 2026); remove an id here to show its tab again.
+const HIDDEN_TABS: readonly TabId[] = ['ads', 'sales'];
+const TABS = ALL_TABS.filter(t => !HIDDEN_TABS.includes(t.id));
 
 const BY_KEY = Object.fromEntries(BUSINESSES.map(b => [b.key, b])) as Record<BusinessKey, Business>;
 const CHANNEL_SHORT: Record<string, string> = { 'Facebook Ads': 'FB', 'Google Ads': 'Google' };
@@ -299,7 +302,7 @@ export default function CompanyStructurePage() {
         </div>
       </div>
 
-      {(['ads', 'sales'] as const).map(view => (
+      {(['ads', 'sales'] as const).filter(view => !HIDDEN_TABS.includes(view)).map(view => (
         <div key={view} role="tabpanel" id={`company-panel-${view}`} aria-labelledby={`company-tab-${view}`} hidden={tab !== view} className={styles.panel}>
           {tab === view && <NumbersPanel view={view} stats={numbers} />}
         </div>
