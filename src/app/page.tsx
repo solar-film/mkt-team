@@ -427,7 +427,7 @@ export default function DashboardPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <HiOutlineChartBarSquare size={24} color="#6366f1" />
+              <HiOutlineChartBarSquare size={24} color="#034aad" />
               <div>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Executive Summary</h2>
                 <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>แนวโน้มงานและคอนเทนต์ 7 วันล่าสุด</p>
@@ -465,12 +465,12 @@ export default function DashboardPage() {
             {/* Insight Text box */}
             <div style={{ width: '180px', backgroundColor: '#f8fafc', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <span style={{ color: '#6366f1' }}>✨</span> สรุปภาพรวม
+                <span style={{ color: '#034aad' }}>✨</span> สรุปภาพรวม
               </div>
               <p style={{ fontSize: '0.75rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
                 สถิติ 7 วันล่าสุด: งานเสร็จแล้ว <strong style={{ color: taskTrendColor }}>{taskTrendText}</strong> และคอนเทนต์ที่ผลิต <strong style={{ color: contentTrendColor }}>{contentTrendText}</strong> เมื่อเทียบกับสัปดาห์ก่อนหน้า
               </p>
-              <Link href="/kpis" style={{ marginTop: 'auto', backgroundColor: 'white', border: '1px solid #c7d2fe', color: '#6366f1', padding: '0.5rem', borderRadius: '24px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', textDecoration: 'none', textAlign: 'center' }}>
+              <Link href="/kpis" style={{ marginTop: 'auto', backgroundColor: 'white', border: '1px solid #c9dbf4', color: '#034aad', padding: '0.5rem', borderRadius: '24px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', textDecoration: 'none', textAlign: 'center' }}>
                 ดูรายงานเต็มรูปแบบ →
               </Link>
             </div>
@@ -481,26 +481,26 @@ export default function DashboardPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <HiOutlineUserGroup size={24} color="#6366f1" />
+              <HiOutlineUserGroup size={24} color="#034aad" />
               <div>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Team Performance <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>· {periodName}</span></h2>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                   <button 
                     onClick={() => setPerfTab('tasks')}
-                    style={{ background: perfTab === 'tasks' ? '#e0e7ff' : 'transparent', color: perfTab === 'tasks' ? '#4f46e5' : '#64748b', border: 'none', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                    style={{ background: perfTab === 'tasks' ? '#dbe6f5' : 'transparent', color: perfTab === 'tasks' ? '#023a8a' : '#64748b', border: 'none', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
                   >
                     งานทั่วไป
                   </button>
                   <button 
                     onClick={() => setPerfTab('contents')}
-                    style={{ background: perfTab === 'contents' ? '#e0e7ff' : 'transparent', color: perfTab === 'contents' ? '#4f46e5' : '#64748b', border: 'none', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                    style={{ background: perfTab === 'contents' ? '#dbe6f5' : 'transparent', color: perfTab === 'contents' ? '#023a8a' : '#64748b', border: 'none', borderRadius: '12px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
                   >
                     คอนเท้น
                   </button>
                 </div>
               </div>
             </div>
-            <Link href="/team" style={{ textDecoration: 'none', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>ดูทั้งหมด &gt;</Link>
+            <Link href="/team" style={{ textDecoration: 'none', color: '#034aad', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>ดูทั้งหมด &gt;</Link>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -576,7 +576,7 @@ export default function DashboardPage() {
             </tbody>
             </table>
           </div>
-          <Link href="/tasks" style={{ marginTop: 'auto', alignSelf: 'flex-start', color: '#6366f1', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '1rem 0 0 0', textDecoration: 'none' }}>ดูทั้งหมด &gt;</Link>
+          <Link href="/tasks" style={{ marginTop: 'auto', alignSelf: 'flex-start', color: '#034aad', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '1rem 0 0 0', textDecoration: 'none' }}>ดูทั้งหมด &gt;</Link>
         </div>
 
         {/* Company Breakdown */}

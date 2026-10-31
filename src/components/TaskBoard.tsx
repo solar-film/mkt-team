@@ -513,7 +513,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
               
               <div className="task-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
                 <div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: item.itemType === 'task' ? 'var(--color-text-secondary)' : 'var(--color-primary)', backgroundColor: item.itemType === 'task' ? '#f1f5f9' : '#e0e7ff', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: item.itemType === 'task' ? 'var(--color-text-secondary)' : 'var(--color-primary)', backgroundColor: item.itemType === 'task' ? '#f1f5f9' : '#dbe6f5', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
                     {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                   </span>
                 </div>
@@ -796,7 +796,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isTask ? 'var(--color-text-secondary)' : 'var(--color-primary)', backgroundColor: isTask ? '#f1f5f9' : '#e0e7ff', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isTask ? 'var(--color-text-secondary)' : 'var(--color-primary)', backgroundColor: isTask ? '#f1f5f9' : '#dbe6f5', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
                         {isTask ? 'งาน' : 'คอนเทนต์'}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8rem', color: '#94a3b8' }}>

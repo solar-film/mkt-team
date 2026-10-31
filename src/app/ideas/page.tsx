@@ -227,9 +227,9 @@ export default function IdeasPage() {
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '24px',
-                border: filterStatus === status ? '1px solid #818cf8' : '1px solid #e2e8f0',
-                backgroundColor: filterStatus === status ? '#eef2ff' : 'white',
-                color: filterStatus === status ? '#4f46e5' : '#64748b',
+                border: filterStatus === status ? '1px solid #5b8fd6' : '1px solid #e2e8f0',
+                backgroundColor: filterStatus === status ? '#e6edf7' : 'white',
+                color: filterStatus === status ? '#023a8a' : '#64748b',
                 fontWeight: filterStatus === status ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
@@ -255,7 +255,7 @@ export default function IdeasPage() {
           </select>
           <button 
             onClick={() => setIsModalOpen(true)}
-            style={{ backgroundColor: '#4f46e5', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
+            style={{ backgroundColor: '#023a8a', color: 'white', padding: '0.5rem 1rem', borderRadius: '24px', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
           >
             <HiPlus size={18} /> เพิ่มโน๊ตใหม่
           </button>
@@ -378,7 +378,7 @@ export default function IdeasPage() {
                 type="checkbox" 
                 checked={formData.notifyLine}
                 onChange={e => setFormData({...formData, notifyLine: e.target.checked})}
-                style={{ width: '1rem', height: '1rem', cursor: 'pointer', accentColor: '#4f46e5' }}
+                style={{ width: '1rem', height: '1rem', cursor: 'pointer', accentColor: '#023a8a' }}
               />
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="#00B900"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 3.935 8.956 9.61 9.61 1.05.101 1.769.458 2.054 1.488.19.684.09 1.616-.062 2.387-.047.238-.344 1.589 1.408.847 1.752-.741 8.844-5.21 10.601-9.288.257-.594.389-1.157.389-1.744zm-14.733.916H7.135V8.049h2.132c.287 0 .521.234.521.521 0 .287-.234.521-.521.521H7.656v2.129h1.611c.287 0 .521.234.521.521 0 .287-.234.521-.521.521zm2.748 0h-1.043c-.287 0-.521-.234-.521-.521V8.57c0-.287.234-.521.521-.521h1.043c.287 0 .521.234.521.521v2.651c0 .287-.234.521-.521.521zm4.49 0h-1.043c-.287 0-.521-.234-.521-.521V8.57c0-.287.234-.521.521-.521h1.043c.287 0 .521.234.521.521v2.651c0 .287-.234.521-.521.521zm4.186 0H18.56c-.287 0-.521-.234-.521-.521V8.57c0-.287.234-.521.521-.521h2.132c.287 0 .521.234.521.521 0 .287-.234.521-.521.521h-1.611v2.129h1.611c.287 0 .521.234.521.521 0 .287-.234.521-.521.521z"/></svg>
@@ -405,7 +405,7 @@ export default function IdeasPage() {
           width: '56px',
           height: '56px',
           borderRadius: '50%',
-          backgroundColor: '#4f46e5',
+          backgroundColor: '#023a8a',
           color: 'white',
           display: 'flex',
           alignItems: 'center',

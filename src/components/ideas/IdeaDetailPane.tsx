@@ -292,7 +292,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
     switch (status) {
       case 'เสร็จสิ้น': return { bg: '#dcfce7', text: '#22c55e' };
       case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316' };
-      case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5' };
+      case 'กำลังดำเนินการ': return { bg: '#dbe6f5', text: '#023a8a' };
       case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b' };
       default: return { bg: '#f1f5f9', text: '#64748b' };
     }
@@ -321,7 +321,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                   type="checkbox" 
                   checked={editForm.notifyLine}
                   onChange={e => setEditForm({...editForm, notifyLine: e.target.checked})}
-                  style={{ cursor: 'pointer', accentColor: '#4f46e5' }}
+                  style={{ cursor: 'pointer', accentColor: '#023a8a' }}
                 />
                 แจ้งเตือนไลน์
               </label>
@@ -374,8 +374,8 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' }}>{idea.company || 'บริษัท'}</span>
               <span style={{ 
-                backgroundColor: idea.category === 'task' ? '#eef2ff' : idea.category === 'content' ? '#f3e8ff' : '#fffbeb', 
-                color: idea.category === 'task' ? '#4f46e5' : idea.category === 'content' ? '#7e22ce' : '#d97706', 
+                backgroundColor: idea.category === 'task' ? '#e6edf7' : idea.category === 'content' ? '#f3e8ff' : '#fffbeb', 
+                color: idea.category === 'task' ? '#023a8a' : idea.category === 'content' ? '#7e22ce' : '#d97706', 
                 padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem' 
               }}>
                 {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}
@@ -522,7 +522,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                     disabled={!canEdit}
                     style={{ 
                       width: 20, height: 20, borderRadius: '4px', 
-                      backgroundColor: item.isDone ? '#4f46e5' : (canEdit ? 'white' : '#f1f5f9'),
+                      backgroundColor: item.isDone ? '#023a8a' : (canEdit ? 'white' : '#f1f5f9'),
                       border: item.isDone ? 'none' : '1px solid #cbd5e1',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: canEdit ? 'pointer' : 'default'
                     }}
@@ -533,7 +533,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
                     {item.title}
                   </span>
                   {item.assigneeId && (
-                    <span style={{ fontSize: '0.7rem', padding: '2px 6px', backgroundColor: item.isDone ? '#f1f5f9' : '#e0e7ff', borderRadius: '12px', color: item.isDone ? '#94a3b8' : '#4f46e5', marginLeft: '0.5rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.7rem', padding: '2px 6px', backgroundColor: item.isDone ? '#f1f5f9' : '#dbe6f5', borderRadius: '12px', color: item.isDone ? '#94a3b8' : '#023a8a', marginLeft: '0.5rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
                       @{members.find(m => m.id === item.assigneeId)?.name || 'Unknown'}
                     </span>
                   )}
@@ -645,7 +645,7 @@ export default function IdeaDetailPane({ idea, members, onClose, onUpdate, curre
             placeholder="เขียนความคิดเห็น..." 
             style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '24px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
           />
-          <button type="submit" disabled={!newComment.trim()} style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: newComment.trim() ? '#4f46e5' : '#cbd5e1', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: newComment.trim() ? 'pointer' : 'not-allowed', transition: 'background-color 0.2s' }}>
+          <button type="submit" disabled={!newComment.trim()} style={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: newComment.trim() ? '#023a8a' : '#cbd5e1', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: newComment.trim() ? 'pointer' : 'not-allowed', transition: 'background-color 0.2s' }}>
             <HiPaperAirplane size={18} style={{ transform: 'rotate(45deg)', marginLeft: '-2px' }} />
           </button>
         </form>

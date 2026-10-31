@@ -1,7 +1,16 @@
 import type { Metadata } from 'next'
+import { Prompt } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import { AuthProvider } from '@/contexts/AuthContext'
+
+// Self-hosted at build time by next/font, so pages make no request to Google.
+const prompt = Prompt({
+  subsets: ['thai', 'latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-prompt',
+})
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -9,7 +18,7 @@ export const revalidate = 0
 import { Viewport } from 'next'
 
 export const viewport: Viewport = {
-  themeColor: '#6366f1',
+  themeColor: '#034aad',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -37,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="th">
+    <html lang="th" className={prompt.variable}>
       <body>
         <AuthProvider>
           <div className="app-layout">

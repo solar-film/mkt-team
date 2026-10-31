@@ -153,7 +153,7 @@ export default function LoginPage() {
           border-radius: 12px;
           outline: none;
         }
-        .pin-input:focus { border-color: #6366f1; }
+        .pin-input:focus { border-color: #034aad; }
         @media (max-width: 480px) {
           .login-container { padding: 1rem; }
           .login-box { padding: 2rem 1rem; }
@@ -195,7 +195,7 @@ export default function LoginPage() {
               disabled={submitting || pin.length !== 6}
               style={{
                 width: '100%', maxWidth: '240px', padding: '0.8rem', borderRadius: '10px', border: 'none',
-                backgroundColor: '#4f46e5', color: 'white', fontSize: '1rem', fontWeight: 600,
+                backgroundColor: '#023a8a', color: 'white', fontSize: '1rem', fontWeight: 600,
                 cursor: submitting || pin.length !== 6 ? 'not-allowed' : 'pointer', opacity: submitting || pin.length !== 6 ? 0.6 : 1,
               }}
             >

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { HiArrowDownTray, HiBanknotes, HiPresentationChartLine } from 'react-icons/hi2';
+import { SiFacebook, SiGoogleads, SiOpenai } from 'react-icons/si';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import {
   BRANDS, change, costPerResult, cpc, ctr, daysInMonth, isMonthKey, monthLabel, PLATFORM_INFO, PLATFORMS, results, shiftMonth, thaiMonthShort,
@@ -21,6 +23,11 @@ const SUBNAV: { href: string; label: string; mode: MarketMode }[] = [
   { href: '/market/chatgpt', label: 'ChatGPT Ads', mode: 'openai_ads' },
   { href: '/market/analysis', label: 'วิเคราะห์', mode: 'analysis' },
 ];
+
+const MODE_ICON: Record<MarketMode, ReactNode> = {
+  overview: <HiBanknotes />, analysis: <HiPresentationChartLine />,
+  google_ads: <SiGoogleads />, facebook: <SiFacebook />, openai_ads: <SiOpenai />,
+};
 
 const SERIES_COLOR: Record<Platform, string> = {
   google_ads: 'var(--series-google)', facebook: 'var(--series-facebook)', openai_ads: 'var(--series-chatgpt)',
@@ -355,9 +362,12 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
   return (
     <div className={styles.page}>
       <div className={styles.head}>
-        <div>
+        <div className={styles.titleRow}>
+          <span className={styles.titleIcon} aria-hidden="true">{MODE_ICON[mode]}</span>
+          <div>
           <h1>{title}</h1>
           <p>ข้อมูลตลาด · ดึงจาก Windsor.ai วันละครั้ง · {brand === 'all' ? 'ทุกแบรนด์' : brand}</p>
+          </div>
         </div>
         <div className={styles.filters}>
           <label>
@@ -421,8 +431,8 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
 
           <section className={`${styles.card} ${styles.foot}`}>
             <div className={styles.actions}>
-              <a className="btn btn-secondary btn-sm" href={`/api/market/export?platform=${platform ?? 'all'}&from=${exportFrom}&to=${month}`} download>
-                ดาวน์โหลด CSV (รายวันรายแคมเปญ {monthLabel(exportFrom)} – {monthLabel(month)})
+              <a className="btn btn-primary btn-sm" href={`/api/market/export?platform=${platform ?? 'all'}&from=${exportFrom}&to=${month}`} download>
+                <HiArrowDownTray aria-hidden="true" /> ดาวน์โหลด CSV (รายวันรายแคมเปญ {monthLabel(exportFrom)} – {monthLabel(month)})
               </a>
             </div>
             <ul>

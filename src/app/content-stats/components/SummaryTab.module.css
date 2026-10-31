@@ -17,7 +17,7 @@
 .eyebrow {
   display: block;
   margin-bottom: 4px;
-  color: #6366f1;
+  color: #034aad;
   font-size: 0.69rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -81,22 +81,22 @@
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.filterField select:hover { border-color: #a5b4fc; }
+.filterField select:hover { border-color: #9db9e3; }
 .filterField select:focus-visible {
-  outline: 2px solid #818cf8;
+  outline: 2px solid #5b8fd6;
   outline-offset: 2px;
-  border-color: #818cf8;
-  box-shadow: 0 0 0 3px #eef2ff;
+  border-color: #5b8fd6;
+  box-shadow: 0 0 0 3px #e6edf7;
 }
 
 .snapshotBadge {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid #dbe6f5;
   border-radius: 6px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #e6edf7;
+  color: #023a8a;
   font-size: 0.69rem;
   font-weight: 700;
   line-height: 1.4;
@@ -133,8 +133,8 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #eef2ff;
-  color: #6366f1;
+  background: #e6edf7;
+  color: #034aad;
   font-size: 1.1rem;
 }
 
@@ -206,8 +206,8 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  color: #6366f1;
-  background: #eef2ff;
+  color: #034aad;
+  background: #e6edf7;
   font-size: 0.95rem;
 }
 
@@ -241,7 +241,7 @@
   scrollbar-width: thin;
 }
 
-.tableScroll:focus-visible { outline: 2px solid #818cf8; outline-offset: -2px; }
+.tableScroll:focus-visible { outline: 2px solid #5b8fd6; outline-offset: -2px; }
 
 .table {
   width: 100%;
@@ -288,7 +288,7 @@
 }
 
 .table .muted { color: #7c899c; }
-.table .primaryNumber { color: #4f46e5; font-weight: 650; }
+.table .primaryNumber { color: #023a8a; font-weight: 650; }
 
 .person {
   display: flex;
@@ -385,9 +385,9 @@
   padding: 1px 5px;
   border-radius: 4px;
   background: #f3f4f6;
-  background: color-mix(in srgb, var(--company-color, #6366f1) 9%, white);
-  color: var(--company-color, #6366f1);
-  color: color-mix(in srgb, var(--company-color, #6366f1) 70%, #1e293b);
+  background: color-mix(in srgb, var(--company-color, #034aad) 9%, white);
+  color: var(--company-color, #034aad);
+  color: color-mix(in srgb, var(--company-color, #034aad) 70%, #1e293b);
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1.5;

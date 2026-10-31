@@ -227,8 +227,8 @@ export default function Sidebar() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.75rem',
                         padding: '0.75rem 1rem', borderRadius: '10px',
-                        textDecoration: 'none', color: pathname === link.path ? '#4f46e5' : '#475569',
-                        backgroundColor: pathname === link.path ? '#eef2ff' : 'transparent',
+                        textDecoration: 'none', color: pathname === link.path ? '#023a8a' : '#475569',
+                        backgroundColor: pathname === link.path ? '#e6edf7' : 'transparent',
                         fontWeight: pathname === link.path ? 600 : 500,
                         fontSize: '0.95rem'
                       }}
@@ -257,23 +257,23 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', position: 'relative' }}>
+      <div className={`sidebar-footer ${isCollapsed ? 'collapsed' : ''}`} style={{ padding: '1rem', position: 'relative' }}>
         {currentUser ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', cursor: 'pointer' }} onClick={() => setShowUserMenu(!showUserMenu)}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+            <div className="sidebar-avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
               {currentUser.avatar ? (
                 <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <HiUserCircle size={36} color="#94a3b8" />
+                <HiUserCircle size={36} color="rgba(255, 255, 255, 0.85)" />
               )}
             </div>
             {!isCollapsed && (
               <>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{currentUser.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{currentUser.role}</div>
+                  <div className="sidebar-user-name" style={{ fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{currentUser.name}</div>
+                  <div className="sidebar-user-role" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{currentUser.role}</div>
                 </div>
-                <HiEllipsisVertical size={20} color="#64748b" />
+                <HiEllipsisVertical size={20} color="rgba(255, 255, 255, 0.72)" />
               </>
             )}
           </div>

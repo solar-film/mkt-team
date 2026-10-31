@@ -44,7 +44,7 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
     switch (status) {
       case 'เสร็จสิ้น': return { bg: '#dcfce7', text: '#22c55e', cardBg: '#f0fdf4' };
       case 'รอตรวจ': return { bg: '#ffedd5', text: '#f97316', cardBg: '#fff7ed' };
-      case 'กำลังดำเนินการ': return { bg: '#e0e7ff', text: '#4f46e5', cardBg: '#f5f7ff' };
+      case 'กำลังดำเนินการ': return { bg: '#dbe6f5', text: '#023a8a', cardBg: '#f5f7ff' };
       case 'รอดำเนินการ': return { bg: '#f1f5f9', text: '#64748b', cardBg: '#ffffff' };
       default: return { bg: '#f1f5f9', text: '#64748b', cardBg: '#ffffff' };
     }
@@ -108,8 +108,8 @@ export default function IdeaCard({ idea, members, onClick, isSelected, currentUs
         )}
         {idea.category && (
           <span style={{ 
-            backgroundColor: idea.category === 'task' ? '#eef2ff' : idea.category === 'content' ? '#f3e8ff' : '#fffbeb', 
-            color: idea.category === 'task' ? '#4f46e5' : idea.category === 'content' ? '#7e22ce' : '#d97706', 
+            backgroundColor: idea.category === 'task' ? '#e6edf7' : idea.category === 'content' ? '#f3e8ff' : '#fffbeb', 
+            color: idea.category === 'task' ? '#023a8a' : idea.category === 'content' ? '#7e22ce' : '#d97706', 
             padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 
           }}>
             {idea.category === 'task' ? '📝 งานทั่วไป' : idea.category === 'content' ? '🎬 คอนเท้น' : '💡 โน๊ตไอเดีย'}

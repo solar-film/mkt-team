@@ -3,14 +3,22 @@
 @tailwind utilities;
 
 :root {
-  /* Color Palette - Light/Minimal Theme */
-  --color-background: #f8fafc;
+  /* Color Palette - GOODFILM navy theme (chosen 31 Oct 2026) */
+  --color-background: #f4f7fb;
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f5f9;
-  
-  /* Primary & Accent Colors (Modern & Clean) */
-  --color-primary: #6366f1; /* Indigo */
-  --color-primary-hover: #4f46e5;
+  --color-surface-hover: #eef3f9;
+
+  /* Navy panels (sidebar, mobile bar): text on them is always white */
+  --color-navy: #1b437c;
+  --color-navy-deep: #143461;
+  --color-on-navy: #ffffff;
+  --color-on-navy-muted: rgba(255, 255, 255, 0.72);
+  --color-navy-hover: rgba(255, 255, 255, 0.1);
+  --color-navy-line: rgba(255, 255, 255, 0.14);
+
+  /* Primary & Accent Colors */
+  --color-primary: #034aad; /* GOODFILM blue */
+  --color-primary-hover: #023a8a;
   --color-secondary: #0ea5e9; /* Light Blue */
   --color-secondary-hover: #0284c7;
   
@@ -20,11 +28,11 @@
   --color-danger: #ef4444;
   
   /* Text Colors */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #64748b;
-  
+  --color-text-primary: #0f2a4d;
+  --color-text-secondary: #5b6b82;
+
   /* Borders */
-  --color-border: #e2e8f0;
+  --color-border: #dfe6ef;
 
   /* Geometry & Shadows */
   --radius-sm: 6px;
@@ -37,7 +45,7 @@
   --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
   --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
-  --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.15);
+  --shadow-glow: 0 0 15px rgba(3, 74, 173, 0.15);
   
   /* Transitions */
   --transition-fast: 0.15s ease-in-out;
@@ -52,10 +60,16 @@
   padding: 0;
 }
 
+/* Prompt runs wide, so the root is 15px: every rem-based size shrinks by the same step and stays in proportion. */
+html {
+  font-size: 15px;
+}
+
 html, body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-prompt), 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -78,12 +92,14 @@ button {
 }
 
 /* Typography */
-h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; color: var(--color-text-primary); }
-h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text-primary); }
-h3 { font-size: 1.125rem; font-weight: 600; }
+/* Type scale (root 15px): h1 27px · h2 19px · h3 17px · h4 15px · body 15px · small 13px. Prompt reads heavy, so 600 is the boldest weight. */
+h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 0.25rem; color: var(--color-text-primary); }
+h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; color: var(--color-text-primary); }
+h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
 h4 { font-size: 1rem; font-weight: 500; }
 p { color: var(--color-text-secondary); margin-bottom: 1rem; }
 small { font-size: 0.875rem; color: var(--color-text-secondary); }
+b, strong { font-weight: 600; }
 
 /* Custom Scrollbar (Minimal) */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -118,8 +134,9 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background-color: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  background-color: var(--color-navy);
+  color: var(--color-on-navy);
+  border-right: 1px solid var(--color-navy-deep);
   display: flex;
   flex-direction: column;
   padding: 2rem 0;
@@ -140,7 +157,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 }
 
 .sidebar-logo svg {
-  color: var(--color-primary);
+  color: var(--color-on-navy);
   font-size: 2rem;
 }
 
@@ -155,15 +172,15 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 }
 
 .sidebar-logo h2 {
-  font-size: 1.25rem;
-  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  color: var(--color-on-navy);
   margin: 0;
 }
 
 .sidebar-logo p {
   font-size: 0.75rem;
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-on-navy-muted);
 }
 
 .sidebar-nav {
@@ -180,30 +197,44 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   gap: 0.75rem;
   padding: 0.55rem 1rem;
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-weight: 500;
+  color: var(--color-on-navy-muted);
+  font-weight: 400;
   font-size: 0.95rem;
-  transition: all var(--transition-normal);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .sidebar-link svg {
-  font-size: 1.25rem;
-  transition: all var(--transition-normal);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
 }
 
 .sidebar-link:hover {
-  background-color: var(--color-surface-hover);
-  color: var(--color-text-primary);
+  background-color: var(--color-navy-hover);
+  color: var(--color-on-navy);
+}
+
+/* The one small flourish: the icon nudges right on hover. */
+.sidebar-link:hover svg {
+  transform: translateX(2px);
 }
 
 .sidebar-link.active {
-  background-color: rgba(99, 102, 241, 0.08);
-  color: var(--color-primary);
-  font-weight: 600;
+  background-color: var(--color-on-navy);
+  color: var(--color-navy);
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(5, 20, 45, 0.25);
 }
 
 .sidebar-link.active svg {
   color: var(--color-primary);
+}
+
+.sidebar-link:focus-visible,
+.sidebar-group-label:focus-visible,
+.toggle-sidebar-btn:focus-visible {
+  outline: 2px solid var(--color-on-navy);
+  outline-offset: 2px;
 }
 
 .sidebar-group-label {
@@ -217,15 +248,16 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   background: transparent;
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-on-navy-muted);
   cursor: pointer;
   text-align: left;
 }
 
 .sidebar-group-label:hover {
-  background-color: var(--color-surface-hover);
-  color: var(--color-text-primary);
+  background-color: var(--color-navy-hover);
+  color: var(--color-on-navy);
 }
 
 .sidebar-group-label.first {
@@ -258,6 +290,21 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-top: 1px solid var(--color-navy-line);
+}
+
+.sidebar-footer small,
+.sidebar-user-name {
+  color: var(--color-on-navy);
+}
+
+.sidebar-user-role {
+  color: var(--color-on-navy-muted);
+}
+
+.sidebar-avatar {
+  background-color: var(--color-navy-hover);
+  box-shadow: 0 0 0 2px var(--color-navy-line);
 }
 
 .sidebar-footer.collapsed {
@@ -282,7 +329,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   padding: 0;
   margin: 0.5rem 0.75rem;
   border-radius: 0;
-  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--color-navy-line);
   pointer-events: none;
 }
 
@@ -307,21 +354,21 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 }
 
 .toggle-sidebar-btn {
-  background-color: var(--color-background);
-  color: var(--color-text-secondary);
+  background-color: var(--color-navy-hover);
+  color: var(--color-on-navy);
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-navy-line);
   transition: all var(--transition-fast);
 }
 
 .toggle-sidebar-btn:hover {
-  background-color: var(--color-surface-hover);
-  color: var(--color-primary);
+  background-color: var(--color-on-navy);
+  color: var(--color-navy);
 }
 
 /* Cards (Clean & Minimal) */
@@ -387,7 +434,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   font-size: 1.75rem;
 }
 
-.stats-card--primary .stats-card-icon { background-color: rgba(99, 102, 241, 0.1); color: var(--color-primary); }
+.stats-card--primary .stats-card-icon { background-color: rgba(3, 74, 173, 0.1); color: var(--color-primary); }
 .stats-card--success .stats-card-icon { background-color: rgba(16, 185, 129, 0.1); color: var(--color-success); }
 .stats-card--secondary .stats-card-icon { background-color: rgba(14, 165, 233, 0.1); color: var(--color-secondary); }
 .stats-card--warning .stats-card-icon { background-color: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
@@ -398,7 +445,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 
 .stats-card-value {
   font-size: 1.875rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-primary);
   line-height: 1.1;
   margin-bottom: 0.25rem;
@@ -523,7 +570,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .badge-draft { background-color: #f1f5f9; color: #475569; }
 .badge-published { background-color: #d1fae5; color: #047857; }
 
-.badge-article { background-color: #e0e7ff; color: #4338ca; }
+.badge-article { background-color: #dbe6f5; color: #1b437c; }
 .badge-post { background-color: #e0f2fe; color: #0369a1; }
 .badge-video { background-color: #fee2e2; color: #b91c1c; }
 .badge-graphic { background-color: #d1fae5; color: #047857; }
@@ -536,21 +583,25 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   gap: 0.5rem;
   padding: 0.6rem 1.25rem;
   border-radius: var(--radius-md);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.875rem;
   transition: all var(--transition-fast);
 }
 
+/* Filled navy/blue buttons always carry white text, including their icons. */
+.btn-primary, .btn-primary:hover, .btn-primary svg {
+  color: #ffffff;
+}
+
 .btn-primary {
   background-color: var(--color-primary);
-  color: white;
-  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 6px rgba(3, 74, 173, 0.2);
 }
 
 .btn-primary:hover {
   background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 6px 8px rgba(3, 74, 173, 0.3);
 }
 
 .btn-secondary {
@@ -743,7 +794,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(3, 74, 173, 0.15);
 }
 
 .form-textarea {
@@ -843,7 +894,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(99, 102, 241, 0.1);
+  border: 3px solid rgba(3, 74, 173, 0.1);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -934,15 +985,15 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
     flex-direction: row; 
     padding: 0.5rem 0.25rem; 
     justify-content: space-around; 
-    border-right: none; 
-    border-top: 1px solid var(--color-border); 
+    border-right: none;
+    border-top: 1px solid var(--color-navy-deep);
     border-bottom: none;
-    height: auto; 
+    height: auto;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--color-surface);
+    background: var(--color-navy);
     z-index: 100;
   }
   .sidebar.collapsed { width: 100%; }
@@ -973,8 +1024,14 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
     font-weight: 500;
   }
   .sidebar-link svg { font-size: 1.5rem; margin: 0; }
-  .sidebar-link.active { color: var(--color-primary); }
+  .sidebar-link { box-shadow: none !important; position: relative; }
+  .sidebar-link.active, .sidebar-link.active svg { color: var(--color-on-navy); }
   .sidebar-link.active::before { display: none; }
+  /* Mobile active tab: a short white bar above the icon instead of a pill. */
+  .sidebar-link.active::after {
+    content: ''; position: absolute; top: -0.5rem; left: 30%; right: 30%;
+    height: 3px; border-radius: 0 0 3px 3px; background: var(--color-on-navy);
+  }
   
   .sidebar-footer { display: none !important; }
   
@@ -1297,7 +1354,7 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   color: white;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px rgba(3, 74, 173, 0.4);
   z-index: 999;
   border: none;
   cursor: pointer;

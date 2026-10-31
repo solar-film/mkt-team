@@ -447,7 +447,7 @@ export default function KPIsPage() {
           {isAdminMode && (
             <button 
               onClick={() => setIsDictModalOpen(true)}
-              style={{ backgroundColor: 'white', color: '#4f46e5', border: '1px solid #e2e8f0', padding: '0.4rem 0.75rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 500 }}
+              style={{ backgroundColor: 'white', color: '#023a8a', border: '1px solid #e2e8f0', padding: '0.4rem 0.75rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: 500 }}
             >
               <HiPencilSquare size={16} /> แก้ไขคำอธิบาย
             </button>
