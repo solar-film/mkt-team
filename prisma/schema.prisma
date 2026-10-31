@@ -266,3 +266,43 @@ model LoginAttempt {
   @@index([ip, createdAt])
   @@index([createdAt])
 }
+
+// Daily ad results per campaign, copied from Windsor.ai once a day (see src/lib/windsor.ts).
+// One row per platform + account + campaign + day; a sync replaces its whole date window.
+model AdDaily {
+  id           String   @id @default(cuid())
+  platform     String
+  accountId    String
+  accountName  String
+  campaignId   String
+  campaignName String
+  date         DateTime @db.Date
+  month        String
+  currency     String   @default("THB")
+  spend        Float    @default(0)
+  impressions  Float    @default(0)
+  clicks       Float    @default(0)
+  leads        Float    @default(0)
+  messages     Float    @default(0)
+  syncedAt     DateTime @default(now())
+
+  @@unique([platform, accountId, campaignId, date])
+  @@index([platform, month])
+  @@index([month])
+}
+
+// One row per Windsor pull, so the pages can say how fresh the numbers are and why a pull failed.
+model AdSyncRun {
+  id         String    @id @default(cuid())
+  platform   String
+  trigger    String
+  dateFrom   DateTime  @db.Date
+  dateTo     DateTime  @db.Date
+  ok         Boolean   @default(false)
+  rows       Int       @default(0)
+  message    String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([platform, startedAt])
+}

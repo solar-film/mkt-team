@@ -31,8 +31,11 @@ import {
   HiLightBulb,
   HiUserCircle,
   HiEllipsisHorizontal,
-  HiBuildingOffice2
+  HiBuildingOffice2,
+  HiBanknotes,
+  HiPresentationChartLine
 } from 'react-icons/hi2';
+import { SiFacebook, SiGoogleads, SiOpenai } from 'react-icons/si';
 
 interface Member {
   id: string;
@@ -43,10 +46,15 @@ interface Member {
 
 // Grouped in menu order; the desktop sidebar shows a foldable heading where the group changes.
 // Groups start folded except the one holding the current page.
-// The mobile bottom bar shows the first six visible links and puts the rest under "เพิ่มเติม".
+// The mobile bottom bar shows the MOBILE_BAR links and puts the rest under "เพิ่มเติม".
 const navLinks = [
   { group: 'ภาพรวม', path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
   { group: 'ภาพรวม', path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
+  { group: 'ข้อมูลตลาด', path: '/market', label: 'ภาพรวมค่าโฆษณา', icon: <HiBanknotes /> },
+  { group: 'ข้อมูลตลาด', path: '/market/google', label: 'Google Ads', icon: <SiGoogleads /> },
+  { group: 'ข้อมูลตลาด', path: '/market/facebook', label: 'Facebook Ads', icon: <SiFacebook /> },
+  { group: 'ข้อมูลตลาด', path: '/market/chatgpt', label: 'ChatGPT Ads', icon: <SiOpenai /> },
+  { group: 'ข้อมูลตลาด', path: '/market/analysis', label: 'วิเคราะห์โฆษณา', icon: <HiPresentationChartLine /> },
   { group: 'งาน', path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { group: 'งาน', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { group: 'งาน', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
@@ -58,6 +66,7 @@ const navLinks = [
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
 ];
+const MOBILE_BAR = new Set(['/', '/reports', '/calendar', '/tasks', '/ideas', '/kpis']);
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -163,7 +172,7 @@ export default function Sidebar() {
               <Link
                 href={link.path}
                 {...externalLinkProps(link.path)}
-                className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}${openGroups.has(link.group) ? '' : ' group-closed'}`}
+                className={`sidebar-link${pathname === link.path ? ' active' : ''} ${MOBILE_BAR.has(link.path) ? '' : 'desktop-only-flex'}${openGroups.has(link.group) ? '' : ' group-closed'}`}
                 title={isCollapsed ? link.label : undefined}
               >
                 {link.icon}
@@ -175,7 +184,7 @@ export default function Sidebar() {
             </Fragment>
         ))}
         {/* Mobile More Button */}
-        {visibleLinks.length > 6 && (
+        {visibleLinks.some(link => !MOBILE_BAR.has(link.path)) && (
           <div className="mobile-only" style={{ position: 'relative' }}>
             <button 
               className={`sidebar-link ${showMobileMore ? 'active' : ''}`} 
@@ -204,10 +213,12 @@ export default function Sidebar() {
                   flexDirection: 'column',
                   gap: '0.25rem',
                   minWidth: '200px',
+                  maxHeight: 'calc(100vh - 100px)',
+                  overflowY: 'auto',
                   zIndex: 100,
                   border: '1px solid #e2e8f0'
                 }}>
-                  {visibleLinks.slice(6).map((link) => (
+                  {visibleLinks.filter(link => !MOBILE_BAR.has(link.path)).map((link) => (
                     <Link
                       key={link.path}
                       href={link.path}

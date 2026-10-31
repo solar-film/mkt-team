@@ -5,10 +5,11 @@ import { toast } from 'react-hot-toast';
 import { useState, useEffect } from "react";
 import { HiTrash, HiOutlineDatabase, HiLogout, HiRefresh } from "react-icons/hi";
 import { LoginLogPanel, PinPanel } from "./SecurityPanels";
+import { AdsSyncPanel } from "./AdsSyncPanel";
 
 type TableName = "events" | "tasks" | "kpis" | "contents" | "ideas" | "meetings" | "members";
-type AdminTab = TableName | "pins" | "logins";
-const SECURITY_TABS: AdminTab[] = ["pins", "logins"];
+type AdminTab = TableName | "pins" | "logins" | "ads";
+const SECURITY_TABS: AdminTab[] = ["pins", "logins", "ads"];
 
 export default function AdminPanel() {
   const [password, setPassword] = useState("");
@@ -120,6 +121,7 @@ export default function AdminPanel() {
   const tabs: { key: AdminTab; label: string }[] = [
     { key: "pins", label: "PIN สมาชิก" },
     { key: "logins", label: "ประวัติเข้าระบบ" },
+    { key: "ads", label: "ข้อมูลโฆษณา" },
     { key: "events", label: "แจ้งเตือน (Events)" },
     { key: "tasks", label: "งาน (Tasks)" },
     { key: "contents", label: "คอนเทนต์ (Contents)" },
@@ -152,7 +154,7 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      {activeTab === "pins" ? <PinPanel /> : activeTab === "logins" ? <LoginLogPanel /> : (
+      {activeTab === "pins" ? <PinPanel /> : activeTab === "logins" ? <LoginLogPanel /> : activeTab === "ads" ? <AdsSyncPanel /> : (
       <div className="card" style={{ overflowX: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h3 style={{ margin: 0 }}>ตาราง: {activeTab}</h3>
