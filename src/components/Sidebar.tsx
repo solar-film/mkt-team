@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { externalLinkProps } from '@/lib/external-link';
+import { CONTENT_STATS_ENABLED } from '@/lib/stats-due';
 import {
   HiChartBarSquare,
   HiClipboardDocumentList,
@@ -89,6 +90,9 @@ export default function Sidebar() {
 
   const visibleLinks = navLinks.filter(link => {
     if (link.path === '/team' && !isAdmin) {
+      return false;
+    }
+    if (link.path === '/content-stats' && !CONTENT_STATS_ENABLED) {
       return false;
     }
     return true;

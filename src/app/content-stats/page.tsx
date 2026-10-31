@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { HiChartPie, HiPencilSquare } from 'react-icons/hi2';
+import { CONTENT_STATS_ENABLED } from '@/lib/stats-due';
 
 // We can put sub-components here for the tabs
 import RecordStatsTab from './components/RecordStatsTab';
@@ -9,6 +11,18 @@ import SummaryTab from './components/SummaryTab';
 import PageOverviewTab from './components/PageOverviewTab';
 
 export default function ContentStatsPage() {
+  if (!CONTENT_STATS_ENABLED) return <HiddenPageRedirect />;
+  return <ContentStats />;
+}
+
+// The page is hidden (see CONTENT_STATS_ENABLED); old links and bookmarks go back to the dashboard.
+function HiddenPageRedirect() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/'); }, [router]);
+  return null;
+}
+
+function ContentStats() {
   const [activeTab, setActiveTab] = useState('page_overview'); // 'page_overview', 'record', 'summary'
 
   // Reminder links open a tab directly, e.g. /content-stats?tab=record.

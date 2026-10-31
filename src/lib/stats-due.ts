@@ -2,6 +2,12 @@ import { bangkokDateKey } from './bangkok-date';
 import { isContentDone } from './dashboard-items';
 import { parseSelection } from './assignments';
 
+/**
+ * The content-stats page, its menu entry and its reminders (dashboard banner + daily LINE section)
+ * are hidden at the user's request (2026-10-30). Set to true to bring them all back; no data is removed.
+ */
+export const CONTENT_STATS_ENABLED = false;
+
 /** Statistics are expected for content published from this Thai calendar day onwards. */
 export const STATS_TRACKING_START = '2026-10-01';
 /** The same moment as a UTC timestamp, for database filters (00:00 in Bangkok = 17:00 UTC the day before). */

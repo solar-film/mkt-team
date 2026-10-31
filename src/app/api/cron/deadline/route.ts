@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { secretMatches } from '@/lib/integration-security'
-import { STATS_TRACKING_START_UTC, pendingStats, statsReminderText } from '@/lib/stats-due'
+import { CONTENT_STATS_ENABLED, STATS_TRACKING_START_UTC, pendingStats, statsReminderText } from '@/lib/stats-due'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,13 +44,14 @@ export async function GET(request: Request) {
     })
 
     // Content statistics that are due but not recorded (content published from 1 Oct 2026).
-    const statsContents = await prisma.content.findMany({
+    // Skipped while the content-stats page is hidden.
+    const statsContents = CONTENT_STATS_ENABLED ? await prisma.content.findMany({
       where: { publishDate: { gte: STATS_TRACKING_START_UTC } },
       select: {
         id: true, title: true, status: true, platform: true, company: true, publishDate: true,
         memberId: true, memberIds: true, metrics: { select: { snapshot: true } },
       },
-    })
+    }) : []
     const statsDue = pendingStats(statsContents)
 
     if (tasksDueSoon.length === 0 && statsDue.length === 0) {

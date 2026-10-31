@@ -5,6 +5,7 @@ import { isContentDone, uniqueById } from '@/lib/dashboard-items';
 import { THAI_MONTHS, currentBangkokMonth, dueByEndOf, inMonth, monthKey, monthLabel, type MonthRef } from '@/lib/month-filter';
 import { yearOptions } from '@/lib/year-options';
 import { taskHasKpi } from '@/lib/task-kpi';
+import { CONTENT_STATS_ENABLED } from '@/lib/stats-due';
 
 import { useEffect, useState } from 'react';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
@@ -62,7 +63,7 @@ export default function DashboardPage() {
   const [statsDue, setStatsDue] = useState<{ total: number; overdue: number } | null>(null);
 
   useEffect(() => {
-    if (!currentUserId || currentUserId === 'GUEST') return;
+    if (!CONTENT_STATS_ENABLED || !currentUserId || currentUserId === 'GUEST') return;
     fetchWorkspace(`/api/content-metrics/due?memberId=${currentUserId}`)
       .then(res => res.json())
       .then(data => setStatsDue(typeof data.total === 'number' ? { total: data.total, overdue: data.overdue || 0 } : null))
