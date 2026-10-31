@@ -623,6 +623,7 @@ export default function CalendarPage() {
             <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setEventForm({ title: '', date: '', time: '', type: 'event' }); setEventDays([]); setIsModalOpen(true); }}>
               <HiPlus /> เพิ่มรายการใหม่
             </button>
+            {typeFilterChips}
           </div>
         </div>
 
@@ -656,8 +657,6 @@ export default function CalendarPage() {
               </button>
             </div>
           </div>
-
-          <div style={{ marginBottom: '1rem' }}>{typeFilterChips}</div>
 
           {loading ? (
             <div className="loading-container" style={{ minHeight: '400px' }}><div className="loading-spinner"></div></div>
