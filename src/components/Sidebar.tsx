@@ -1,7 +1,7 @@
 'use client';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -39,19 +39,21 @@ interface Member {
   avatar: string | null;
 }
 
+// Grouped in menu order; the desktop sidebar shows a heading where the group changes.
+// The mobile bottom bar shows the first six visible links and puts the rest under "เพิ่มเติม".
 const navLinks = [
-  { path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
-  { path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
-  { path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
-  { path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
-  { path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
-  { path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
-  { path: '/company', label: 'โครงสร้างธุรกิจ', icon: <HiBuildingOffice2 /> },
-  { path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
-  { path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
-  { path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
-  { path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
-  { path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
+  { group: 'ภาพรวม', path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
+  { group: 'ภาพรวม', path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
+  { group: 'งาน', path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
+  { group: 'งาน', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
+  { group: 'งาน', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
+  { group: 'งาน', path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
+  { group: 'งาน', path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
+  { group: 'ทีม & ธุรกิจ', path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
+  { group: 'ทีม & ธุรกิจ', path: '/company', label: 'โครงสร้างธุรกิจ', icon: <HiBuildingOffice2 /> },
+  { group: 'ทีม & ธุรกิจ', path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
+  { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
+  { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
 ];
 
 export default function Sidebar() {
@@ -126,15 +128,25 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         {visibleLinks.map((link, index) => (
-          <Link
-            key={link.path}
-            href={link.path}
-            {...externalLinkProps(link.path)}
-            className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
-          >
-            {link.icon}
-            <span>{link.label}</span>
-          </Link>
+            <Fragment key={link.path}>
+              {link.group !== visibleLinks[index - 1]?.group && (
+                <div className={`sidebar-group-label desktop-only${index === 0 ? ' first' : ''}`}>
+                  <span>{link.group}</span>
+                </div>
+              )}
+              <Link
+                href={link.path}
+                {...externalLinkProps(link.path)}
+                className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
+                title={isCollapsed ? link.label : undefined}
+              >
+                {link.icon}
+                <span>
+                  {link.label}
+                  {externalLinkProps(link.path).target && <small className="sidebar-external-mark" aria-label="เปิดในแท็บใหม่"> ↗</small>}
+                </span>
+              </Link>
+            </Fragment>
         ))}
         {/* Mobile More Button */}
         {visibleLinks.length > 6 && (

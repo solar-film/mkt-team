@@ -206,6 +206,23 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
   color: var(--color-primary);
 }
 
+.sidebar-group-label {
+  padding: 0.75rem 1rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  opacity: 0.75;
+}
+
+.sidebar-group-label.first {
+  padding-top: 0;
+}
+
+.sidebar-external-mark {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
 .sidebar-footer {
   padding: 1.5rem 1.5rem 0;
   display: flex;
@@ -222,6 +239,21 @@ small { font-size: 0.875rem; color: var(--color-text-secondary); }
 .sidebar.collapsed .sidebar-logo div,
 .sidebar.collapsed .sidebar-link span {
   display: none;
+}
+
+/* Collapsed: the group heading becomes a thin divider between icon groups. */
+.sidebar.collapsed .sidebar-group-label span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-group-label {
+  padding: 0;
+  margin: 0.5rem 0.75rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}
+
+.sidebar.collapsed .sidebar-group-label.first {
+  display: none !important;
 }
 
 .sidebar.collapsed .sidebar-logo {
