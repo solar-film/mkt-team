@@ -4,13 +4,16 @@ import { toast } from 'react-hot-toast';
 
 import { useState, useEffect } from "react";
 import { HiTrash, HiOutlineDatabase, HiLogout, HiRefresh } from "react-icons/hi";
+import { LoginLogPanel, PinPanel } from "./SecurityPanels";
 
 type TableName = "events" | "tasks" | "kpis" | "contents" | "ideas" | "meetings" | "members";
+type AdminTab = TableName | "pins" | "logins";
+const SECURITY_TABS: AdminTab[] = ["pins", "logins"];
 
 export default function AdminPanel() {
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<TableName>("events");
+  const [activeTab, setActiveTab] = useState<AdminTab>("events");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +26,8 @@ export default function AdminPanel() {
         setIsAuthenticated(true);
         setPassword('');
       } else {
-        toast.error(response.status === 503 ? 'ยังไม่ได้ตั้งค่ารหัสผู้ดูแลบนเซิร์ฟเวอร์' : 'รหัสผ่านไม่ถูกต้อง');
+        const data = await response.json().catch(() => ({}));
+        toast.error(response.status === 503 ? 'ยังไม่ได้ตั้งค่ารหัสผู้ดูแลบนเซิร์ฟเวอร์' : response.status === 429 ? data.error : 'รหัสผ่านไม่ถูกต้อง');
       }
     } catch { toast.error('เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง'); }
   };
@@ -55,7 +59,7 @@ export default function AdminPanel() {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !SECURITY_TABS.includes(activeTab)) {
       fetchData();
     }
   }, [isAuthenticated, activeTab]);
@@ -113,7 +117,9 @@ export default function AdminPanel() {
     }
   };
 
-  const tabs: { key: TableName; label: string }[] = [
+  const tabs: { key: AdminTab; label: string }[] = [
+    { key: "pins", label: "PIN สมาชิก" },
+    { key: "logins", label: "ประวัติเข้าระบบ" },
     { key: "events", label: "แจ้งเตือน (Events)" },
     { key: "tasks", label: "งาน (Tasks)" },
     { key: "contents", label: "คอนเทนต์ (Contents)" },
@@ -146,6 +152,7 @@ export default function AdminPanel() {
         ))}
       </div>
 
+      {activeTab === "pins" ? <PinPanel /> : activeTab === "logins" ? <LoginLogPanel /> : (
       <div className="card" style={{ overflowX: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h3 style={{ margin: 0 }}>ตาราง: {activeTab}</h3>
@@ -200,6 +207,7 @@ export default function AdminPanel() {
           </table>
         )}
       </div>
+      )}
     </div>
   );
 }

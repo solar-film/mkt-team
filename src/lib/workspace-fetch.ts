@@ -12,6 +12,11 @@ export async function fetchWorkspace(input: string, init?: RequestInit): Promise
     url += `${url.includes('?') ? '&' : '?'}fresh=1`;
   }
   const response = await fetch(url, init);
+  // An expired or revoked session sends the browser back to sign in.
+  if (ownApi && response.status === 401 && !/^\/api\/(auth|admin)\//.test(input) && typeof window !== 'undefined'
+      && window.location.pathname !== '/login') {
+    window.location.assign('/login');
+  }
   if (ownApi && !['GET', 'HEAD', 'OPTIONS'].includes(method) && response.ok) {
     revision++;
     freshUntil = Date.now() + 5_000;

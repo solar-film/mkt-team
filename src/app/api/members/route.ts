@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { matchesMemberSelection, serializeAssignments } from '@/lib/assignments'
 import { MEMBER_LIST_SELECT, validAvatar, withAvatarUrls } from '@/lib/member-avatar'
 import { ideaBoardStatus } from '@/lib/dashboard-items'
+import { MEMBER_HEADER } from '@/lib/member-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -140,6 +141,9 @@ export async function PUT(request: NextRequest) {
     const { id, name, role, company, avatar, status } = body
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    if (avatar !== undefined && request.headers.get(MEMBER_HEADER) !== id) {
+      return NextResponse.json({ error: 'เปลี่ยนรูปโปรไฟล์ได้เฉพาะของตัวเอง' }, { status: 403 })
+    }
     if (avatar !== undefined && !validAvatar(avatar)) {
       return NextResponse.json({ error: 'Avatar must be an image of 100KB or less' }, { status: 400 })
     }

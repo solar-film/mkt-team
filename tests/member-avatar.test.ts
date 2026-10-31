@@ -94,10 +94,20 @@ test('avatar URL serves image bytes once with a long private cache and 404s with
 test('profile photo uploads over the limit are refused before saving; accepted saves return a URL', async () => {
   const calls: any[] = [];
   const route = loadSource('src/app/api/members/route.ts', { '@/lib/prisma': { prisma: fakePrisma(calls) } });
-  const refused = await route.PUT(jsonRequest('/api/members', 'PUT', { id: 'oil', avatar: jpeg(MAX_AVATAR_BYTES + 1) }));
+  // The proxy sets this header from the verified session.
+  const as = (memberId: string, body: unknown) => {
+    const request = jsonRequest('/api/members', 'PUT', body);
+    request.headers.set('x-mkt-member-id', memberId);
+    return request;
+  };
+  const someoneElse = await route.PUT(as('taw', { id: 'oil', avatar: jpeg(6_000) }));
+  assert.equal(someoneElse.status, 403);
+  const anonymous = await route.PUT(jsonRequest('/api/members', 'PUT', { id: 'oil', avatar: jpeg(6_000) }));
+  assert.equal(anonymous.status, 403);
+  const refused = await route.PUT(as('oil', { id: 'oil', avatar: jpeg(MAX_AVATAR_BYTES + 1) }));
   assert.equal(refused.status, 400);
   assert.equal(calls.length, 0);
-  const saved = await route.PUT(jsonRequest('/api/members', 'PUT', { id: 'oil', avatar: jpeg(6_000) }));
+  const saved = await route.PUT(as('oil', { id: 'oil', avatar: jpeg(6_000) }));
   const body = await saved.json();
   assert.equal(saved.status, 200);
   assert.equal(calls[0].select.avatar, undefined);

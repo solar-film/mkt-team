@@ -314,9 +314,16 @@ test('the client bypasses cached reads after a successful save but preserves nor
 test('admin login uses a server secret and signed HttpOnly cookie instead of a browser-stored flag', async () => {
   const globals = { process: { env: { ADMIN_PASSWORD: 'test-only-admin-secret', NODE_ENV: 'production' } } };
   const admin = loadSource('src/lib/admin-session.ts', {}, globals);
-  const route = loadSource('src/app/api/admin/session/route.ts', { '@/lib/admin-session': admin }, globals);
+  const attempts: any[] = [];
+  const prisma = { loginAttempt: {
+    create: async ({ data }: any) => { attempts.push({ ...data, createdAt: new Date() }); return data; },
+    findMany: async ({ where }: any) => attempts.filter(row => row.ip === where.ip && (where.kind === undefined || row.kind === where.kind)
+      && (where.success === undefined || row.success === where.success)).reverse(),
+  } };
+  const route = loadSource('src/app/api/admin/session/route.ts', { '@/lib/admin-session': admin, '@/lib/prisma': { prisma } }, globals);
   const wrong = await route.POST(jsonRequest('/api/admin/session', 'POST', { password: 'wrong' }));
   assert.equal(wrong.status, 401);
+  assert.equal(attempts[0].reason, 'wrong password');
   const response = await route.POST(jsonRequest('/api/admin/session', 'POST', { password: 'test-only-admin-secret' }));
   assert.equal(response.status, 200);
   const cookie = response.headers.get('Set-Cookie');
@@ -330,6 +337,12 @@ test('admin login uses a server secret and signed HttpOnly cookie instead of a b
   const disabled = loadSource('src/lib/admin-session.ts');
   assert.equal(disabled.hasAdminSession(authenticated), false);
   assert.equal((await route.DELETE()).headers.get('Set-Cookie')?.includes('Max-Age=0'), true);
+
+  // Five wrong passwords lock the admin page, even for the right password.
+  for (let i = 0; i < 5; i++) await route.POST(jsonRequest('/api/admin/session', 'POST', { password: 'wrong' }));
+  const locked = await route.POST(jsonRequest('/api/admin/session', 'POST', { password: 'test-only-admin-secret' }));
+  assert.equal(locked.status, 429);
+  assert.equal(locked.headers.get('Set-Cookie'), null);
 });
 
 test('admin data requires the signed server session before reading or deleting any table', async () => {

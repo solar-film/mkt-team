@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { browserWriteRejection } from '@/lib/browser-request';
+import { MEMBER_COOKIE, MEMBER_HEADER, PUBLIC_PAGES, publicApi, readCookie, sessionMemberId } from '@/lib/member-auth';
+import { prisma } from '@/lib/prisma';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ยกเว้น (Bypass) API บางตัวที่ต้องให้เซิร์ฟเวอร์ต่างประเทศเรียกเข้ามาได้
@@ -29,7 +31,28 @@ export function proxy(request: NextRequest) {
     const rejected = browserWriteRejection(request);
     if (rejected) return NextResponse.json({ error: 'Request rejected' }, { status: rejected });
   }
-  const response = NextResponse.next();
+
+  // A browser must never be able to claim an identity through this header.
+  const headers = new Headers(request.headers);
+  headers.delete(MEMBER_HEADER);
+  const token = readCookie(request, MEMBER_COOKIE);
+
+  if (pathname.startsWith('/api/') && !publicApi(pathname, request.method)) {
+    let memberId: string | null = null;
+    try {
+      memberId = await sessionMemberId(prisma, token);
+    } catch (error) {
+      console.error('Session check failed:', error instanceof Error ? error.message : 'unknown error');
+      return NextResponse.json({ error: 'Session check failed' }, { status: 503, headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    if (!memberId) return NextResponse.json({ error: 'Login required' }, { status: 401, headers: { 'Cache-Control': 'private, no-store' } });
+    headers.set(MEMBER_HEADER, memberId);
+  } else if (!pathname.startsWith('/api/') && !PUBLIC_PAGES.has(pathname) && !token) {
+    // Pages only check that a cookie exists; every data request above is verified against the database.
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  const response = NextResponse.next({ request: { headers } });
   if (pathname.startsWith('/api/') && !/^\/api\/(ideas\/[^/]+\/attachments|members\/[^/]+\/avatar)$/.test(pathname)) {
     response.headers.set('Cache-Control', 'private, no-store');
   }

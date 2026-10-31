@@ -20,6 +20,8 @@ model TeamMember {
   contents  Content[]
   metrics   ContentMetric[]
   channelMetrics ChannelMetric[]
+  credential MemberCredential?
+  sessions  MemberSession[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -225,6 +227,42 @@ model ChannelMetric {
   recordedById String?
   recordedBy   TeamMember? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
   recordedDate DateTime?
-  
+
   @@unique([channelId, month, year])
+}
+
+// PIN hashes are kept out of TeamMember so member queries never return them.
+model MemberCredential {
+  memberId  String     @id
+  member    TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pinHash   String
+  updatedAt DateTime   @default(now()) @updatedAt
+}
+
+model MemberSession {
+  id        String     @id @default(cuid())
+  tokenHash String     @unique
+  memberId  String
+  member    TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+
+  @@index([memberId])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  kind      String
+  memberId  String?
+  success   Boolean
+  reason    String
+  ip        String   @default("")
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([kind, memberId, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
 }

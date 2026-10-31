@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { externalLinkProps } from '@/lib/external-link';
 import { CONTENT_STATS_ENABLED } from '@/lib/stats-due';
+import AccountMenuItems from '@/components/AccountMenuItems';
 import {
   HiChartBarSquare,
   HiClipboardDocumentList,
@@ -104,8 +105,10 @@ export default function Sidebar() {
   }, [currentUserId]);
 
   const handleLogout = () => {
-    logout();
+    void logout();
   };
+
+  const updateAvatar = (avatar: string | null) => setCurrentUser(prev => (prev ? { ...prev, avatar } : prev));
 
   const visibleLinks = navLinks.filter(link => {
     if (link.path === '/team' && !isAdmin) {
@@ -224,7 +227,8 @@ export default function Sidebar() {
                     </Link>
                   ))}
                   <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '0.25rem 0' }} />
-                  <button 
+                  {currentUser && <AccountMenuItems memberId={currentUser.id} onAvatarChanged={updateAvatar} onDone={() => setShowMobileMore(false)} />}
+                  <button
                     onClick={() => { setShowMobileMore(false); handleLogout(); }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -280,7 +284,8 @@ export default function Sidebar() {
             overflow: 'hidden',
             zIndex: 50
           }}>
-            <button 
+            {currentUser && <AccountMenuItems memberId={currentUser.id} onAvatarChanged={updateAvatar} onDone={() => setShowUserMenu(false)} />}
+            <button
               onClick={handleLogout}
               style={{
                 display: 'flex',
