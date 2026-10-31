@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import {
-  brandOf, isMonthKey, isPlatform, PLATFORMS, shiftMonth,
-  type CampaignRow, type DayRow, type MarketData, type MonthRow, type SyncStatus,
+  brandOf, isMonthKey, isPlatform, KEYWORD_KINDS, PLATFORMS, shiftMonth,
+  type CampaignRow, type DayRow, type KeywordRow, type MarketData, type MonthRow, type SyncStatus,
 } from '@/lib/ads-data';
 import { windsorConfigured } from '@/lib/windsor';
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const compared = [month, shiftMonth(month, -1), shiftMonth(month, -12)];
 
   try {
-    const [monthGroups, campaignGroups, dayGroups, first, runs, okRuns, latest] = await Promise.all([
+    const [monthGroups, campaignGroups, dayGroups, first, runs, okRuns, latest, keywordRows] = await Promise.all([
       prisma.adDaily.groupBy({
         by: ['platform', 'accountName', 'month'],
         where: { month: { gte: `${year - 1}-01`, lte: `${year}-12` } },
@@ -45,6 +45,11 @@ export async function GET(request: Request) {
       prisma.adSyncRun.findMany({ distinct: ['platform'], orderBy: { startedAt: 'desc' } }),
       prisma.adSyncRun.findMany({ where: { ok: true }, distinct: ['platform'], orderBy: { startedAt: 'desc' } }),
       prisma.adDaily.groupBy({ by: ['platform'], _max: { date: true } }),
+      // Keywords are an extra: if their table is missing or unreadable the rest of the page still loads.
+      prisma.adKeyword.findMany({ where: { month: { in: compared.slice(0, 2) } }, orderBy: { spend: 'desc' } }).catch(error => {
+        console.error('Keyword read failed:', error instanceof Error ? error.message : 'unknown error');
+        return [];
+      }),
     ]);
 
     const metrics = (sum: Partial<Record<keyof typeof METRICS, number | null>>) => ({
@@ -76,7 +81,15 @@ export async function GET(request: Request) {
       };
     });
 
-    const data: MarketData = { configured: windsorConfigured(), month, today, firstMonth: first?.month ?? null, months, campaigns, days, sync };
+    const keywords: KeywordRow[] = keywordRows
+      .filter(k => (KEYWORD_KINDS as readonly string[]).includes(k.kind))
+      .map(k => ({
+        kind: k.kind as KeywordRow['kind'], month: k.month, accountId: k.accountId, accountName: k.accountName,
+        brand: brandOf(k.accountName), text: k.text, matchType: k.matchType,
+        spend: k.spend, impressions: k.impressions, clicks: k.clicks, conversions: k.conversions,
+      }));
+
+    const data: MarketData = { configured: windsorConfigured(), month, today, firstMonth: first?.month ?? null, months, campaigns, days, keywords, sync };
     return NextResponse.json(data, { headers });
   } catch (error) {
     console.error('Market data failed:', error instanceof Error ? error.message : 'unknown error');

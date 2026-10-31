@@ -9,9 +9,9 @@ import { SiFacebook, SiGoogleads, SiOpenai } from 'react-icons/si';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import {
   BRANDS, change, costPerResult, cpc, ctr, daysInMonth, isMonthKey, monthLabel, PLATFORM_INFO, PLATFORMS, results, shiftMonth, thaiMonthShort,
-  type Brand, type MarketData, type Metrics, type Platform,
+  type Brand, type KeywordKind, type MarketData, type Metrics, type Platform,
 } from '@/lib/ads-data';
-import { breakdown, campaignLines, compare, dailySeries, findings, spendByMonth, type Breakdown, type Filter } from '@/lib/market-analysis';
+import { breakdown, campaignLines, compare, dailySeries, findings, keywordLines, spendByMonth, type Breakdown, type Filter } from '@/lib/market-analysis';
 import styles from './market.module.css';
 
 export type MarketMode = 'overview' | 'analysis' | Platform;
@@ -223,6 +223,64 @@ function CampaignTable({ data, filter, platform }: { data: MarketData; filter: F
   );
 }
 
+const KEYWORD_TOP = 30;
+type KeywordSort = 'spend' | 'conversions' | 'cpa';
+
+function KeywordTable({ data, filter, kind }: { data: MarketData; filter: Filter; kind: KeywordKind }) {
+  const [sort, setSort] = useState<KeywordSort>('spend');
+  const cpa = (k: { spend: number; conversions: number }) => (k.conversions > 0 ? k.spend / k.conversions : null);
+  const lines = keywordLines(data, filter, kind)
+    .sort((a, b) => sort === 'conversions' ? b.conversions - a.conversions
+      : sort === 'cpa' ? (cpa(a) ?? Infinity) - (cpa(b) ?? Infinity) : b.spend - a.spend)
+    .slice(0, KEYWORD_TOP);
+  const title = kind === 'keyword' ? 'คีย์เวิร์ดที่ตั้งไว้' : 'คำที่ลูกค้าค้นจริง (Search terms)';
+  const SortButton = ({ id, children }: { id: KeywordSort; children: ReactNode }) => (
+    <button type="button" className={styles.sortBtn} aria-pressed={sort === id} onClick={() => setSort(id)}>{children}{sort === id ? ' ↓' : ''}</button>
+  );
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <h2>{title} · {KEYWORD_TOP} อันดับแรก · {monthLabel(data.month)}</h2>
+        <small>กดหัวคอลัมน์เพื่อเรียง</small>
+      </div>
+      {lines.length === 0 ? <p className={styles.foot}>ยังไม่มีข้อมูลคีย์เวิร์ดเดือนนี้ (ดึงพร้อมข้อมูล Google Ads)</p> : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>{kind === 'keyword' ? 'คีย์เวิร์ด' : 'คำค้น'}</th>
+                <th><SortButton id="spend">ค่าใช้จ่าย</SortButton></th>
+                <th>เดือนก่อน</th>
+                <th>การแสดงผล</th>
+                <th>คลิก</th>
+                <th>CTR</th>
+                <th>CPC</th>
+                <th><SortButton id="conversions">Conversions</SortButton></th>
+                <th><SortButton id="cpa">ต้นทุน/Conv.</SortButton></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((k, i) => (
+                <tr key={`${k.accountId}|${k.text}|${k.matchType}`}>
+                  <td>{i + 1}. {k.text}<small>{k.matchType && `${k.matchType} · `}{k.accountName} · {k.brand}</small></td>
+                  <td>{baht(k.spend)}</td>
+                  <td>{k.prevSpend === null ? '—' : baht(k.prevSpend)}</td>
+                  <td>{count(k.impressions)}</td>
+                  <td>{count(k.clicks)}</td>
+                  <td>{percent(k.impressions > 0 ? k.clicks / k.impressions : null)}</td>
+                  <td>{baht2(k.clicks > 0 ? k.spend / k.clicks : null)}</td>
+                  <td>{k.conversions.toLocaleString('th-TH', { maximumFractionDigits: 1 })}</td>
+                  <td>{baht(cpa(k))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Tiles({ data, filter }: { data: MarketData; filter: Filter }) {
   const c = compare(data, filter);
   const span = c.partialDay ? `1–${c.partialDay} ${monthLabel(data.month)}` : monthLabel(data.month);
@@ -419,6 +477,12 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
                 <>
                   <DailyChart data={ready} filter={filter} platform={platform} />
                   <CampaignTable data={ready} filter={filter} platform={platform} />
+                  {platform === 'google_ads' && (
+                    <>
+                      <KeywordTable data={ready} filter={filter} kind="keyword" />
+                      <KeywordTable data={ready} filter={filter} kind="search_term" />
+                    </>
+                  )}
                 </>
               ) : (
                 <div className={styles.grid2}>

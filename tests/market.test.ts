@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { brandOf, costPerResult, daysInMonth, emptyMetrics, monthLabel, normalizeWindsorRows, shiftMonth, type DayRow, type MarketData, type MonthRow, type CampaignRow } from '../src/lib/ads-data';
-import { campaignLines, compare, cutoffDay, findings, spendByMonth } from '../src/lib/market-analysis';
+import { brandOf, costPerResult, daysInMonth, emptyMetrics, KEYWORDS_KEPT_PER_ACCOUNT, monthLabel, normalizeKeywordRows, normalizeWindsorRows, shiftMonth, type DayRow, type KeywordRow, type MarketData, type MonthRow, type CampaignRow } from '../src/lib/ads-data';
+import { campaignLines, compare, cutoffDay, findings, keywordLines, spendByMonth } from '../src/lib/market-analysis';
 
 // Made-up accounts and figures; real numbers never enter this public repository.
 
@@ -54,7 +54,13 @@ function sample(today: string): MarketData {
     { platform: 'facebook', brand: 'GFS', accountName: 'Goodfilm X', campaignId: 'c2', campaignName: 'Awareness', month: '2026-10', ...emptyMetrics(), spend: 1500 },
     { platform: 'facebook', brand: 'GFS', accountName: 'Goodfilm X', campaignId: 'c1', campaignName: 'Leads', month: '2026-09', ...emptyMetrics(), spend: 900, leads: 3 },
   ];
-  return { configured: true, month: '2026-10', today, firstMonth: '2025-01', months, campaigns, days, sync: [] };
+  const keywords: KeywordRow[] = [
+    { kind: 'keyword', month: '2026-10', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS', text: 'ฟิล์มอาคาร', matchType: 'EXACT', spend: 500, impressions: 100, clicks: 10, conversions: 5 },
+    { kind: 'keyword', month: '2026-10', accountId: 'g2', accountName: 'Maholan G', brand: 'MHL', text: 'ติดฟิล์มบ้าน', matchType: 'BROAD', spend: 900, impressions: 300, clicks: 20, conversions: 2 },
+    { kind: 'keyword', month: '2026-09', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS', text: 'ฟิล์มอาคาร', matchType: 'EXACT', spend: 400, impressions: 80, clicks: 8, conversions: 4 },
+    { kind: 'search_term', month: '2026-10', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS', text: 'ฟิล์ม 3m', matchType: '', spend: 50, impressions: 10, clicks: 1, conversions: 0 },
+  ];
+  return { configured: true, month: '2026-10', today, firstMonth: '2025-01', months, campaigns, days, keywords, sync: [] };
 }
 
 test('a running month is compared over the same days of the month before and last year', () => {
@@ -97,4 +103,28 @@ test('campaign lines carry last month and findings flag spend without results', 
   const titles = findings(data, { brand: 'all' }).map(f => f.title);
   assert.ok(titles.some(t => t.includes('ยังไม่มีผลลัพธ์') && t.includes('Awareness')));
   assert.ok(titles.some(t => t.startsWith('ค่าโฆษณาเพิ่มขึ้น +100%')));
+});
+
+test('keyword rows merge per account, text and match type, and keep the biggest spenders per account', () => {
+  const many = Array.from({ length: KEYWORDS_KEPT_PER_ACCOUNT + 5 }, (_, i) => ({ account_id: 'a', account_name: 'Goodfilm G', keyword_text: `k${i}`, keyword_match_type: 'BROAD', spend: i + 1, impressions: 1, clicks: 0, conversions: 0 }));
+  const rows = normalizeKeywordRows('keyword', [
+    ...many,
+    { account_id: 'a', account_name: 'Goodfilm G', keyword_text: 'k0', keyword_match_type: 'BROAD', spend: 1000, impressions: 5, clicks: 2, conversions: '1.5' },
+    { account_id: 'b', account_name: 'Maholan G', keyword_text: '', spend: 99, impressions: 9 },
+    { account_id: 'b', account_name: 'Maholan G', keyword_text: 'idle', spend: 0, impressions: 0 },
+  ]);
+  assert.equal(rows.length, KEYWORDS_KEPT_PER_ACCOUNT);
+  assert.deepEqual(rows[0], { kind: 'keyword', accountId: 'a', accountName: 'Goodfilm G', text: 'k0', matchType: 'BROAD', spend: 1001, impressions: 6, clicks: 2, conversions: 1.5 });
+  const terms = normalizeKeywordRows('search_term', [{ account_id: 'a', search_term: 'ฟิล์ม', spend: 5, impressions: 1 }]);
+  assert.equal(terms[0].matchType, '');
+});
+
+test('keyword lines follow the brand filter and carry last month spend', () => {
+  const data = sample('2026-10-15');
+  const all = keywordLines(data, { brand: 'all' }, 'keyword');
+  assert.deepEqual(all.map(k => k.text), ['ติดฟิล์มบ้าน', 'ฟิล์มอาคาร']);
+  assert.equal(all[1].prevSpend, 400);
+  assert.equal(all[0].prevSpend, null);
+  assert.deepEqual(keywordLines(data, { brand: 'GFS' }, 'keyword').map(k => k.text), ['ฟิล์มอาคาร']);
+  assert.equal(keywordLines(data, { brand: 'all' }, 'search_term').length, 1);
 });

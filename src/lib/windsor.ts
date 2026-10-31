@@ -1,5 +1,8 @@
 import { prisma } from './prisma';
-import { normalizeWindsorRows, PLATFORMS, WINDSOR_FIELDS, type Platform } from './ads-data';
+import {
+  daysInMonth, KEYWORD_FIELDS, KEYWORD_KINDS, normalizeKeywordRows, normalizeWindsorRows, PLATFORMS, shiftMonth, WINDSOR_FIELDS,
+  type Platform,
+} from './ads-data';
 
 // Windsor.ai REST API: https://connectors.windsor.ai/{connector}?api_key=…&date_from=…&date_to=…&fields=…
 // The key travels in the query string (Windsor accepts no header), so URLs are never logged or stored.
@@ -18,12 +21,12 @@ function safeMessage(error: unknown): string {
   return message.replace(/\s+/g, ' ').slice(0, 300);
 }
 
-async function fetchWindsor(platform: Platform, from: string, to: string): Promise<unknown> {
+async function fetchWindsor(platform: Platform, from: string, to: string, fields = WINDSOR_FIELDS[platform].fields): Promise<unknown> {
   const params = new URLSearchParams({
     api_key: process.env.WINDSOR_API_KEY!.trim(),
     date_from: from,
     date_to: to,
-    fields: WINDSOR_FIELDS[platform].fields.join(','),
+    fields: fields.join(','),
   });
   const response = await fetch(`${WINDSOR_URL}/${platform}?${params}`, {
     cache: 'no-store',
@@ -43,8 +46,42 @@ export interface SyncResult { platform: Platform; ok: boolean; rows: number; mes
  * Pulls one platform for from..to (YYYY-MM-DD) and replaces that window in AdDaily.
  * Nothing is deleted unless Windsor answered with a data array, so a failed pull keeps old numbers.
  */
+/** Months touched by from..to, each as the whole month up to `to` (keyword totals are per month). */
+function keywordMonths(from: string, to: string): { month: string; from: string; to: string }[] {
+  const out: { month: string; from: string; to: string }[] = [];
+  for (let month = from.slice(0, 7); month <= to.slice(0, 7); month = shiftMonth(month, 1)) {
+    const end = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`;
+    out.push({ month, from: `${month}-01`, to: end < to ? end : to });
+  }
+  return out;
+}
+
+/**
+ * Google Ads keywords and search terms for every month in from..to, replacing those months.
+ * Returns an error text instead of throwing, so the daily figures still count when this part fails.
+ */
+async function syncKeywords(from: string, to: string): Promise<string | null> {
+  try {
+    for (const window of keywordMonths(from, to)) {
+      const rows = (await Promise.all(KEYWORD_KINDS.map(async kind =>
+        normalizeKeywordRows(kind, await fetchWindsor('google_ads', window.from, window.to, KEYWORD_FIELDS[kind].fields))))).flat();
+      await prisma.$transaction([
+        prisma.adKeyword.deleteMany({ where: { month: window.month } }),
+        prisma.adKeyword.createMany({ data: rows.map(row => ({ ...row, month: window.month })) }),
+      ]);
+    }
+    return null;
+  } catch (error) {
+    const message = safeMessage(error);
+    console.error('Keyword sync failed:', message);
+    return `keywords: ${message}`;
+  }
+}
+
 export async function syncPlatform(platform: Platform, from: string, to: string, trigger: 'cron' | 'admin'): Promise<SyncResult> {
   const run = await prisma.adSyncRun.create({ data: { platform, trigger, dateFrom: isoDay(from), dateTo: isoDay(to) } });
+  // Keywords run beside the daily pull so both fit in one request's time limit.
+  const keywordsDone = platform === 'google_ads' ? syncKeywords(from, to) : Promise.resolve(null);
   try {
     const rows = normalizeWindsorRows(platform, await fetchWindsor(platform, from, to));
     await prisma.$transaction([
@@ -53,11 +90,13 @@ export async function syncPlatform(platform: Platform, from: string, to: string,
         data: rows.map(({ date, ...row }) => ({ ...row, date: isoDay(date), month: date.slice(0, 7) })),
       }),
     ]);
-    await prisma.adSyncRun.update({ where: { id: run.id }, data: { ok: true, rows: rows.length, finishedAt: new Date() } });
-    return { platform, ok: true, rows: rows.length, message: null };
+    const keywordError = await keywordsDone;
+    await prisma.adSyncRun.update({ where: { id: run.id }, data: { ok: true, rows: rows.length, message: keywordError, finishedAt: new Date() } });
+    return { platform, ok: true, rows: rows.length, message: keywordError };
   } catch (error) {
     const message = safeMessage(error);
     console.error(`Ads sync failed (${platform}):`, message);
+    await keywordsDone;
     await prisma.adSyncRun.update({ where: { id: run.id }, data: { ok: false, message, finishedAt: new Date() } }).catch(() => {});
     return { platform, ok: false, rows: 0, message };
   }

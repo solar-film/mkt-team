@@ -160,7 +160,71 @@ export function normalizeWindsorRows(platform: Platform, data: unknown): AdRow[]
   return [...merged.values()];
 }
 
+// ---------- Google Ads keywords ----------
+
+export const KEYWORD_KINDS = ['keyword', 'search_term'] as const;
+export type KeywordKind = (typeof KEYWORD_KINDS)[number];
+
+/** Windsor google_ads fields per kind (checked against Windsor's field list on 1 Nov 2026). */
+export const KEYWORD_FIELDS: Record<KeywordKind, { text: string; match?: string; fields: string[] }> = {
+  keyword: {
+    text: 'keyword_text', match: 'keyword_match_type',
+    fields: ['account_id', 'account_name', 'keyword_text', 'keyword_match_type', 'spend', 'impressions', 'clicks', 'conversions'],
+  },
+  search_term: {
+    text: 'search_term',
+    fields: ['account_id', 'account_name', 'search_term', 'spend', 'impressions', 'clicks', 'conversions'],
+  },
+};
+
+// Rows kept per account, kind and month: enough that the overall top 30 is always exact.
+export const KEYWORDS_KEPT_PER_ACCOUNT = 200;
+
+export interface KeywordStat {
+  kind: KeywordKind;
+  accountId: string;
+  accountName: string;
+  text: string;
+  matchType: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+}
+
+/** One row per account + text + match type for a month, biggest spend first, capped per account. */
+export function normalizeKeywordRows(kind: KeywordKind, data: unknown): KeywordStat[] {
+  if (!Array.isArray(data)) throw new Error('Windsor response has no data array');
+  const spec = KEYWORD_FIELDS[kind];
+  const merged = new Map<string, KeywordStat>();
+  for (const item of data) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const keywordText = text(row[spec.text]);
+    const spend = num(row.spend);
+    const impressions = num(row.impressions);
+    if (!keywordText || (spend === 0 && impressions === 0)) continue;
+    const accountId = text(row.account_id) || text(row.account_name) || 'unknown';
+    const matchType = spec.match ? text(row[spec.match]) : '';
+    const key = `${accountId}\u0000${keywordText}\u0000${matchType}`;
+    const stat = merged.get(key) ?? {
+      kind, accountId, accountName: text(row.account_name) || accountId, text: keywordText, matchType,
+      spend: 0, impressions: 0, clicks: 0, conversions: 0,
+    };
+    stat.spend += spend;
+    stat.impressions += impressions;
+    stat.clicks += num(row.clicks);
+    stat.conversions += num(row.conversions);
+    merged.set(key, stat);
+  }
+  const byAccount = new Map<string, KeywordStat[]>();
+  for (const stat of merged.values()) byAccount.set(stat.accountId, [...(byAccount.get(stat.accountId) ?? []), stat]);
+  return [...byAccount.values()].flatMap(rows => rows.sort((a, b) => b.spend - a.spend).slice(0, KEYWORDS_KEPT_PER_ACCOUNT));
+}
+
 // ---------- what /api/market returns ----------
+
+export interface KeywordRow extends KeywordStat { brand: Brand; month: string }
 
 export interface MonthRow extends Metrics { platform: Platform; brand: Brand; month: string }
 export interface CampaignRow extends Metrics {
@@ -183,5 +247,7 @@ export interface MarketData {
   months: MonthRow[];
   campaigns: CampaignRow[];
   days: DayRow[];
+  /** Google Ads keywords and search terms for the month and the month before. */
+  keywords: KeywordRow[];
   sync: SyncStatus[];
 }

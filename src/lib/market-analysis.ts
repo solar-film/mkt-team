@@ -1,7 +1,8 @@
 // Comparisons and plain rule-based findings for the ข้อมูลตลาด pages. Pure functions so tests can pin them.
 import {
   change, costPerResult, daysInMonth, emptyMetrics, addMetrics, monthLabel, PLATFORM_INFO, results, shiftMonth, sumMetrics,
-  type Brand, type CampaignRow, type DayRow, type MarketData, type Metrics, type MonthRow, type Platform,
+  type Brand, type CampaignRow, type DayRow, type KeywordKind, type KeywordRow, type KeywordStat, type MarketData, type Metrics,
+  type MonthRow, type Platform,
 } from './ads-data';
 
 export interface Filter { platform?: Platform; brand: Brand | 'all' }
@@ -103,6 +104,20 @@ export function campaignLines(data: MarketData, f: Filter): CampaignLine[] {
     if (line) { line.prevSpend += c.spend; line.prevResults += results(c); }
   }
   return [...lines.values()].sort((a, b) => b.spend - a.spend);
+}
+
+export interface KeywordLine extends KeywordStat { brand: Brand; prevSpend: number | null }
+
+/** Selected month's keywords (or search terms) for the brand filter, with last month's spend; biggest spend first. */
+export function keywordLines(data: MarketData, f: Filter, kind: KeywordKind): KeywordLine[] {
+  const prev = shiftMonth(data.month, -1);
+  const keyOf = (k: KeywordRow) => `${k.accountId}|${k.text}|${k.matchType}`;
+  const inBrand = (k: KeywordRow) => k.kind === kind && (f.brand === 'all' || k.brand === f.brand);
+  const before = new Map(data.keywords.filter(k => inBrand(k) && k.month === prev).map(k => [keyOf(k), k.spend]));
+  return data.keywords
+    .filter(k => inBrand(k) && k.month === data.month)
+    .map(k => ({ ...k, prevSpend: before.get(keyOf(k)) ?? null }))
+    .sort((a, b) => b.spend - a.spend);
 }
 
 export interface Breakdown extends Metrics { label: string; prevSpend: number }

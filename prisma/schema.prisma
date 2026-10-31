@@ -306,3 +306,23 @@ model AdSyncRun {
 
   @@index([platform, startedAt])
 }
+
+// Google Ads keywords and search terms, one row per month + account + text, kept to the
+// biggest spenders per account so a busy month stays small. A sync replaces whole months.
+model AdKeyword {
+  id          String   @id @default(cuid())
+  kind        String
+  month       String
+  accountId   String
+  accountName String
+  text        String
+  matchType   String   @default("")
+  spend       Float    @default(0)
+  impressions Float    @default(0)
+  clicks      Float    @default(0)
+  conversions Float    @default(0)
+  syncedAt    DateTime @default(now())
+
+  @@unique([kind, month, accountId, text, matchType])
+  @@index([month, kind])
+}
