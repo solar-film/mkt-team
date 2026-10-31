@@ -20,6 +20,7 @@ import {
   HiGlobeAlt,
   HiChevronLeft,
   HiChevronRight,
+  HiChevronDown,
   HiCalendarDays,
   HiArrowRightOnRectangle,
   HiEllipsisVertical,
@@ -39,7 +40,8 @@ interface Member {
   avatar: string | null;
 }
 
-// Grouped in menu order; the desktop sidebar shows a heading where the group changes.
+// Grouped in menu order; the desktop sidebar shows a foldable heading where the group changes.
+// Groups start folded except the one holding the current page.
 // The mobile bottom bar shows the first six visible links and puts the rest under "เพิ่มเติม".
 const navLinks = [
   { group: 'ภาพรวม', path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
@@ -65,6 +67,21 @@ export default function Sidebar() {
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMore, setShowMobileMore] = useState(false);
+  const activeGroup = navLinks.find(link => link.path === pathname)?.group;
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroup ? [activeGroup] : []));
+
+  // Opening another page unfolds its group so the highlighted link stays visible.
+  useEffect(() => {
+    if (activeGroup) setOpenGroups(prev => (prev.has(activeGroup) ? prev : new Set(prev).add(activeGroup)));
+  }, [activeGroup]);
+
+  const toggleGroup = (group: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group); else next.add(group);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (currentUserId) {
@@ -130,14 +147,20 @@ export default function Sidebar() {
         {visibleLinks.map((link, index) => (
             <Fragment key={link.path}>
               {link.group !== visibleLinks[index - 1]?.group && (
-                <div className={`sidebar-group-label desktop-only${index === 0 ? ' first' : ''}`}>
+                <button
+                  type="button"
+                  className={`sidebar-group-label desktop-only${index === 0 ? ' first' : ''}`}
+                  onClick={() => toggleGroup(link.group)}
+                  aria-expanded={openGroups.has(link.group)}
+                >
                   <span>{link.group}</span>
-                </div>
+                  {openGroups.has(link.group) ? <HiChevronDown /> : <HiChevronRight />}
+                </button>
               )}
               <Link
                 href={link.path}
                 {...externalLinkProps(link.path)}
-                className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}`}
+                className={`sidebar-link${pathname === link.path ? ' active' : ''} ${index >= 6 ? 'desktop-only-flex' : ''}${openGroups.has(link.group) ? '' : ' group-closed'}`}
                 title={isCollapsed ? link.label : undefined}
               >
                 {link.icon}
