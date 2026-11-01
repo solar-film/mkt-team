@@ -78,7 +78,9 @@ export const sessionCookieOptions = (maxAge = SESSION_SECONDS) => ({
   httpOnly: true, sameSite: 'lax' as const, secure: process.env.NODE_ENV === 'production', path: '/', maxAge,
 });
 
-export type LockScope = { kind: 'member' | 'admin'; memberId?: string | null; ip: string };
+/** member = sign-in PIN, admin = admin password (per IP), kpi-hub = the KPI กลาง page password (per member). */
+export type AttemptKind = 'member' | 'admin' | 'kpi-hub';
+export type LockScope = { kind: AttemptKind; memberId?: string | null; ip: string };
 
 /** Returns when the lock lifts, or null. Failures before the last success do not count. */
 export async function lockedUntil(db: AuthDb, scope: LockScope, now = Date.now()): Promise<Date | null> {
@@ -89,7 +91,7 @@ export async function lockedUntil(db: AuthDb, scope: LockScope, now = Date.now()
 
   const accountWhere = scope.kind === 'admin'
     ? { kind: 'admin', ip: scope.ip }
-    : { kind: 'member', memberId: scope.memberId ?? '' };
+    : { kind: scope.kind, memberId: scope.memberId ?? '' };
   const recent = await db.loginAttempt.findMany({
     where: { ...accountWhere, createdAt: { gt: since } },
     orderBy: { createdAt: 'desc' }, select: { success: true, createdAt: true }, take: 50,
@@ -106,7 +108,7 @@ export async function lockedUntil(db: AuthDb, scope: LockScope, now = Date.now()
   return until(fromIp, MAX_IP_FAILURES);
 }
 
-export async function recordAttempt(db: AuthDb, request: Request, data: { kind: 'member' | 'admin'; memberId?: string | null; success: boolean; reason: string }) {
+export async function recordAttempt(db: AuthDb, request: Request, data: { kind: AttemptKind; memberId?: string | null; success: boolean; reason: string }) {
   try {
     await db.loginAttempt.create({ data: { ...data, memberId: data.memberId ?? null, ip: clientIp(request), userAgent: userAgentOf(request) } });
   } catch (error) {

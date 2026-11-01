@@ -133,7 +133,7 @@ export function LoginLogPanel() {
             {rows.map(row => (
               <tr key={row.id} style={{ borderBottom: "1px solid var(--color-border)" }}>
                 <td style={{ ...cell, whiteSpace: "nowrap" }}>{when(row.createdAt)}</td>
-                <td style={cell}>{row.kind === "admin" ? "ผู้ดูแล" : "สมาชิก"}</td>
+                <td style={cell}>{row.kind === "admin" ? "ผู้ดูแล" : row.kind === "kpi-hub" ? "รหัส KPI กลาง" : "สมาชิก"}</td>
                 <td style={cell}>{row.memberName || row.memberId || "-"}</td>
                 <td style={{ ...cell, color: row.success ? "var(--color-success, #16a34a)" : "var(--color-danger)", whiteSpace: "nowrap" }}>
                   {REASONS[row.reason] || row.reason}
