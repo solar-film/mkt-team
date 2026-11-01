@@ -5,28 +5,30 @@
   overflow-x: auto;
 }
 
-/* Fixed layout: the name column takes what the set-width columns leave. */
+/* Fixed layout: the name column takes everything the set-width columns leave. */
 .table {
   width: 100%;
-  min-width: 900px;
+  min-width: 920px;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
 }
 
 .table th {
   text-align: left;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-text-secondary);
-  padding: 0.6rem 0.5rem;
+  padding: 0.5rem 0.45rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-hover);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table td {
-  padding: 0.25rem 0.35rem;
+  padding: 0.15rem 0.25rem;
   border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
@@ -35,23 +37,28 @@
   background: var(--color-surface-hover);
 }
 
-.colSmall { width: 92px; }
-.colDate { width: 134px; }
-.colPlatform { width: 118px; }
-.colKpi { width: 150px; }
-.colStatus { width: 108px; }
-.colActions { width: 64px; }
+.colCompany { width: 72px; }
+.colMember { width: 88px; }
+.colDate { width: 124px; }
+.colPlatform { width: 104px; }
+.colKpi { width: 128px; }
+.colStatus { width: 114px; }
+.colActions { width: 58px; }
 
 /* Platform and format share one column, one above the other. */
 .stack {
   display: grid;
-  gap: 0.15rem;
+}
+
+.stack .cell {
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
 }
 
 .titleCell {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   min-width: 0;
 }
 
@@ -59,23 +66,54 @@
   flex: 1;
 }
 
-.kindSelect {
-  flex: none !important;
-  width: 92px !important;
-  font-weight: 600;
+.kindIcon {
+  flex: none;
+  display: inline-flex;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.kindIcon.content {
   color: var(--color-primary);
+}
+
+/* New row: two icon buttons pick task or content. */
+.kindToggle {
+  flex: none;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+}
+
+.kindToggle button {
+  display: inline-flex;
+  padding: 0.25rem 0.35rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.kindToggle button[aria-pressed='true'] {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(15, 42, 77, 0.15);
 }
 
 /* Cells look like text until hovered or focused, so the table reads like a sheet. */
 .cell {
   width: 100%;
   min-width: 0;
-  padding: 0.35rem 0.4rem;
+  padding: 0.3rem 0.35rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: transparent;
   font: inherit;
-  color: var(--color-text-primary, inherit);
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
 }
 
 .cell:hover:not(:disabled) {
@@ -95,29 +133,20 @@
   cursor: not-allowed;
 }
 
-.badge,
-.badgeContent {
+.badge {
   display: inline-block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  padding: 0.15rem 0.45rem;
+  padding: 0.1rem 0.4rem;
   border-radius: 4px;
   white-space: nowrap;
-}
-
-.badge {
   color: var(--color-text-secondary);
   background: #f1f5f9;
 }
 
-.badgeContent {
-  color: var(--color-primary);
-  background: #dbe6f5;
-}
-
 .muted {
   color: var(--color-text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
 }
 
 .done .cell {
@@ -128,6 +157,14 @@
   color: var(--color-text-secondary);
 }
 
+.ideaTitle {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 0.35rem;
+}
+
 .actions {
   white-space: nowrap;
   text-align: right;
@@ -135,13 +172,13 @@
 
 .iconBtn {
   display: inline-flex;
-  padding: 0.35rem;
+  padding: 0.3rem;
   border: none;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-secondary);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .iconBtn:hover {
@@ -154,15 +191,15 @@
 
 .empty {
   text-align: center;
-  padding: 1.5rem !important;
+  padding: 1.25rem !important;
   color: var(--color-text-secondary);
 }
 
 .addRow td {
   background: #f8fbff;
   border-bottom: none;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
 }
 
 .addRow .cell {
@@ -170,11 +207,17 @@
   background: var(--color-surface);
 }
 
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
 
 .hint {
   margin: 0;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-text-secondary);
   border-top: 1px solid var(--color-border);
 }

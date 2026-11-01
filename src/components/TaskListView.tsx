@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import { HiOutlinePencilSquare, HiOutlineTrash, HiPlus } from 'react-icons/hi2';
+import { HiClipboardDocumentList, HiDocumentText, HiOutlinePencilSquare, HiOutlineTrash, HiPlus } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import { memberSelectionLabel, parseSelection } from '@/lib/assignments';
@@ -62,10 +62,10 @@ export default function TaskListView({ items, members, kpis, defaultMemberId, de
         <thead>
           <tr>
             <th>ชื่องาน / คอนเทนต์</th>
-            <th className={styles.colSmall}>บริษัท</th>
-            <th className={styles.colSmall}>ผู้รับผิดชอบ</th>
+            <th className={styles.colCompany}>บริษัท</th>
+            <th className={styles.colMember}>ผู้รับผิดชอบ</th>
             <th className={styles.colDate}>กำหนดส่ง / เผยแพร่</th>
-            <th className={styles.colPlatform}>แพลตฟอร์ม · รูปแบบ</th>
+            <th className={styles.colPlatform} title="แพลตฟอร์ม และรูปแบบคอนเทนต์">แพลตฟอร์ม</th>
             <th className={styles.colKpi}>KPI</th>
             <th className={styles.colStatus}>สถานะ</th>
             <th className={styles.colActions} aria-label="จัดการ" />
@@ -160,7 +160,9 @@ function Row({ item, people, members, kpis, onSaved, onStatusChange, onOpen, onD
     // Ideas keep their own fields; they are edited from the idea form.
     return (
       <tr className={styles.idea}>
-        <td colSpan={6}><span className={styles.badge}>💡 ไอเดีย</span> {item.title} <small className={styles.muted}>· {memberSelectionLabel(item.memberId, members)}</small></td>
+        <td colSpan={6}>
+          <span className={styles.ideaTitle} title={item.title}><span className={styles.badge}>💡 ไอเดีย</span> {item.title} <small className={styles.muted}>· {memberSelectionLabel(item.memberId, members)}</small></span>
+        </td>
         <td><Choice label="สถานะ" value={item.status} options={STATUSES} onChange={status => onStatusChange(item, status)} /></td>
         <td className={styles.actions}><button type="button" className={styles.iconBtn} onClick={() => onOpen(item)} title="แก้ไข"><HiOutlinePencilSquare /></button></td>
       </tr>
@@ -171,7 +173,9 @@ function Row({ item, people, members, kpis, onSaved, onStatusChange, onOpen, onD
     <tr className={item.status === 'done' ? styles.done : undefined}>
       <td>
         <div className={styles.titleCell}>
-          <span className={isTask ? styles.badge : styles.badgeContent}>{isTask ? 'งาน' : 'คอนเทนต์'}</span>
+          <span className={`${styles.kindIcon}${isTask ? '' : ` ${styles.content}`}`} title={isTask ? 'งาน' : 'คอนเทนต์'} aria-label={isTask ? 'งาน' : 'คอนเทนต์'}>
+            {isTask ? <HiClipboardDocumentList /> : <HiDocumentText />}
+          </span>
           <input className={styles.cell} value={title} aria-label="ชื่อ"
             onChange={e => setTitle(e.target.value)} onBlur={commitTitle}
             onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setTitle(item.title); e.currentTarget.blur(); } }} />
@@ -260,11 +264,11 @@ function AddRow({ people, kpis, defaultMemberId, defaultCompany, onSaved }: {
     <tr className={styles.addRow}>
       <td>
         <div className={styles.titleCell}>
-          <select className={`${styles.cell} ${styles.kindSelect}`} value={kind} aria-label="ประเภทรายการใหม่" onChange={e => setKind(e.target.value as 'task' | 'content')}>
-            <option value="task">งาน</option>
-            <option value="content">คอนเทนต์</option>
-          </select>
-          <input ref={titleRef} className={styles.cell} value={title} placeholder="พิมพ์ชื่อแล้วกด Enter เพื่อเพิ่ม" aria-label="ชื่อรายการใหม่" onChange={e => setTitle(e.target.value)} onKeyDown={onEnter} />
+          <span className={styles.kindToggle} role="group" aria-label="ประเภทรายการใหม่">
+            <button type="button" aria-pressed={kind === 'task'} onClick={() => setKind('task')} title="งาน" aria-label="งาน"><HiClipboardDocumentList /></button>
+            <button type="button" aria-pressed={kind === 'content'} onClick={() => setKind('content')} title="คอนเทนต์" aria-label="คอนเทนต์"><HiDocumentText /></button>
+          </span>
+          <input ref={titleRef} className={styles.cell} value={title} placeholder={kind === 'task' ? 'พิมพ์ชื่องาน แล้วกด Enter' : 'พิมพ์ชื่อคอนเทนต์ แล้วกด Enter'} aria-label="ชื่อรายการใหม่" onChange={e => setTitle(e.target.value)} onKeyDown={onEnter} />
         </div>
       </td>
       <td><Choice label="บริษัทรายการใหม่" value={company} placeholder="เลือก" options={COMPANIES.map(c => [c, c])} onChange={setCompany} /></td>
@@ -282,7 +286,7 @@ function AddRow({ people, kpis, defaultMemberId, defaultCompany, onSaved }: {
           options={kpiOptions.map(k => [k.id, k.name])} onChange={setKpiId} />
       </td>
       <td colSpan={2}>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => void submit()} title={missing.length ? `ยังขาด: ${missing.join(', ')}` : 'เพิ่มรายการ'}>
+        <button type="button" className={`btn btn-primary btn-sm ${styles.addBtn}`} onClick={() => void submit()} title={missing.length ? `ยังขาด: ${missing.join(', ')}` : 'เพิ่มรายการ'}>
           <HiPlus /> เพิ่ม
         </button>
       </td>

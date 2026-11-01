@@ -1,0 +1,43 @@
+/* Today's and tomorrow's events: small pills in one row beside the heading, long titles cut. */
+.events {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  max-width: min(100%, 440px);
+  margin-top: 0.25rem;
+}
+
+.event {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius-full);
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.event strong {
+  flex: none;
+  font-weight: 700;
+}
+
+.eventTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e11d48;
+}
