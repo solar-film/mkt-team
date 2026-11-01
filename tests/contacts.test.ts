@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  accountLines, callDate, companyChannelTable, dailyByChannel, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
-  summarizeCallLog, validatePhoneUpload, weekdayAverages, type ContactRow,
+  accountLines, callDate, companyChannelTable, dailyByChannel, mergeCarLine, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
+  summarizeCallLog, summarizeCarLineDaily, validatePhoneUpload, weekdayAverages, type ContactRow,
 } from '../src/lib/contact-data';
 
 // Made-up callers and figures; real numbers never enter this public repository.
@@ -117,4 +117,28 @@ test('weekday averages skip today and later days, Monday first', () => {
   assert.equal(averages[0].label, 'จ.');
   // 5 Oct 2026 is a Monday, 6 Oct a Tuesday; 7 Oct (today) is not counted.
   assert.deepEqual(averages.slice(0, 3).map(a => a.average), [16, 3, null]);
+});
+
+test('CAR_Line_Daily counts message rows per day from the first full covered day; customer IDs are not needed', () => {
+  const kinds = [['kind'], ['coverage'], ['message'], ['message'], ['message'], [], ['message']];
+  const days = [['day', 'first_at'], ['', '2026-10-01T06:24:22.344Z'], ['2026-10-01', 'x'], ['2026-10-02', 'x'], ['2026-10-02', 'x'], [], ['2026-10-03', 'x']];
+  assert.deepEqual(summarizeCarLineDaily(kinds, days), { from: '2026-10-02', rows: [{ date: '2026-10-02', contacts: 2 }, { date: '2026-10-03', contacts: 1 }] });
+  assert.throws(() => summarizeCarLineDaily([['kind'], ['message']], [['day'], ['2026-10-02']]), /coverage/);
+  assert.throws(() => summarizeCarLineDaily([['x']], [['day']]), /หัวคอลัมน์/);
+  assert.throws(() => summarizeCarLineDaily([['kind'], ['coverage'], ['message']], [['day'], ['', '2026-10-01T00:00:00Z'], ['31/10/2026']]), /แถวที่ 3/);
+});
+
+test('CAR LINE from the sheet replaces GOOD CRM from its first full day, and never overlaps when the sheet fails', () => {
+  const crm: ContactRow[] = [
+    { date: '2026-10-01', channel: 'line', company: 'CAR', account: '@maholan', contacts: 9, newContacts: 3 },
+    { date: '2026-10-02', channel: 'line', company: 'CAR', account: '@maholan', contacts: 1, newContacts: 1 },
+    { date: '2026-10-02', channel: 'facebook', company: 'CAR', account: 'page', contacts: 4, newContacts: 2 },
+  ];
+  const sheet = { from: '2026-10-02', rows: [{ date: '2026-10-02', contacts: 13 }, { date: '2026-11-05', contacts: 2 }] };
+  const ok = mergeCarLine(crm, sheet, { from: '2026-09-01', to: '2026-10-31' }, new Set());
+  assert.deepEqual(ok.goodcrm.map(r => `${r.date} ${r.channel}`), ['2026-10-01 line', '2026-10-02 facebook']);
+  assert.deepEqual(ok.sheet, [{ date: '2026-10-02', channel: 'line', company: 'CAR', account: '@maholan', contacts: 13, newContacts: null }]);
+  const failed = mergeCarLine(crm, null, { from: '2026-09-01', to: '2026-10-31' }, new Set(['2026-10-02']));
+  assert.equal(failed.sheet, null);
+  assert.deepEqual(failed.goodcrm.map(r => `${r.date} ${r.channel}`), ['2026-10-01 line', '2026-10-02 facebook']);
 });

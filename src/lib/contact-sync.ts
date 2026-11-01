@@ -1,5 +1,6 @@
+import { JWT } from 'google-auth-library';
 import { prisma } from './prisma';
-import { normalizeGoodCrmRows, type ContactRow, type PhoneUpload } from './contact-data';
+import { mergeCarLine, normalizeGoodCrmRows, summarizeCarLineDaily, type ContactRow, type PhoneUpload } from './contact-data';
 
 // GOOD CRM (a separate Supabase project) exposes public.mkt_contact_daily(p_key, p_from, p_to):
 // per day × platform × account counts only, guarded by GOOD_CRM_STATS_KEY (only its hash lives there).
@@ -41,30 +42,75 @@ async function fetchGoodCrm(from: string, to: string): Promise<{ rows: ContactRo
   return { rows, unlabelled: Array.isArray(body) ? body.length - rows.length : 0 };
 }
 
+// LINE @maholan comes from the CAR_Line_Daily sheet (see contact-data.ts), read with the site's
+// existing service account. The sheet id stays in the environment, out of this public repository.
+const CAR_LINE_SOURCE = 'car_line_sheet';
+
+const carLineConfigured = () =>
+  Boolean(process.env.CAR_LINE_SHEET_ID?.trim() && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
+
+async function fetchCarLineSheet() {
+  const client = new JWT({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  });
+  // Column C holds customer IDs and is skipped on purpose.
+  const query = ["'CAR_Line_Daily'!A:A", "'CAR_Line_Daily'!D:E"].map(range => `ranges=${encodeURIComponent(range)}`).join('&');
+  const response = await client.request<{ valueRanges?: { values?: unknown[][] }[] }>({
+    url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(process.env.CAR_LINE_SHEET_ID!.trim())}/values:batchGet?${query}`,
+    timeout: 15_000,
+  });
+  const [kinds, days] = (response.data.valueRanges ?? []).map(range => range.values ?? []);
+  return summarizeCarLineDaily(kinds ?? [], days ?? []);
+}
+
 export interface ContactSyncResult { ok: boolean; from: string; to: string; rows: number; message: string | null }
 
-/** Copies GOOD CRM counts for from..to into ContactDaily, replacing that window (old numbers stay if the pull fails). */
+/**
+ * Copies GOOD CRM counts (and LINE @maholan from CAR_Line_Daily) for from..to into ContactDaily,
+ * replacing that window. Old numbers stay if the pull fails.
+ */
 export async function syncGoodCrm(to: string, trigger: 'cron' | 'member', fromOverride?: string): Promise<ContactSyncResult> {
   let from = fromOverride;
   if (!from) {
-    const any = await prisma.contactDaily.findFirst({ where: { source: 'goodcrm' }, select: { id: true } });
+    const [crm, sheetAny] = await Promise.all([
+      prisma.contactDaily.findFirst({ where: { source: 'goodcrm' }, select: { id: true } }),
+      prisma.contactDaily.findFirst({ where: { source: CAR_LINE_SOURCE }, select: { id: true } }),
+    ]);
     const start = isoDay(to);
     start.setUTCDate(start.getUTCDate() - (REFRESH_DAYS - 1));
-    from = any ? start.toISOString().slice(0, 10) : BACKFILL_FROM;
+    // The first pull of either source copies its whole history.
+    from = crm && (sheetAny || !carLineConfigured()) ? start.toISOString().slice(0, 10) : BACKFILL_FROM;
   }
+  const window = { gte: isoDay(from), lte: isoDay(to) };
   const run = await prisma.contactSyncRun.create({ data: { source: 'goodcrm', trigger, dateFrom: isoDay(from), dateTo: isoDay(to) } });
   try {
     if (!goodCrmConfigured()) throw new Error('ยังไม่ได้ตั้งค่า GOOD_CRM_URL / GOOD_CRM_PUBLISHABLE_KEY / GOOD_CRM_STATS_KEY');
-    const { rows, unlabelled } = await fetchGoodCrm(from, to);
-    await prisma.$transaction([
-      prisma.contactDaily.deleteMany({ where: { source: 'goodcrm', date: { gte: isoDay(from), lte: isoDay(to) } } }),
-      prisma.contactDaily.createMany({
-        data: rows.map(({ date, ...row }) => ({ ...row, date: isoDay(date), month: date.slice(0, 7), source: 'goodcrm' })),
-      }),
+    const [{ rows: crmRows, unlabelled }, sheet] = await Promise.all([
+      fetchGoodCrm(from, to),
+      carLineConfigured() ? fetchCarLineSheet().catch((error: unknown) => error instanceof Error ? error : new Error(String(error))) : null,
     ]);
-    const message = unlabelled ? `ข้าม ${unlabelled} แถวของบัญชีที่ GOOD CRM ยังไม่ได้ระบุบริษัท` : null;
-    await prisma.contactSyncRun.update({ where: { id: run.id }, data: { ok: true, rows: rows.length, message, finishedAt: new Date() } });
-    return { ok: true, from, to, rows: rows.length, message };
+    const sheetError = sheet instanceof Error ? sheet : null;
+    const sheetData = sheet instanceof Error ? null : sheet;
+    if (sheetError) console.error('CAR_Line_Daily read failed:', safeMessage(sheetError));
+    const stored = sheetData ? [] : await prisma.contactDaily.findMany({ where: { source: CAR_LINE_SOURCE, date: window }, select: { date: true } });
+    const merged = mergeCarLine(crmRows, sheetData, { from, to }, new Set(stored.map(r => r.date.toISOString().slice(0, 10))));
+    const toData = (rows: ContactRow[], source: string) =>
+      rows.map(({ date, ...row }) => ({ ...row, date: isoDay(date), month: date.slice(0, 7), source }));
+    await prisma.$transaction([
+      prisma.contactDaily.deleteMany({ where: { source: merged.sheet ? { in: ['goodcrm', CAR_LINE_SOURCE] } : 'goodcrm', date: window } }),
+      prisma.contactDaily.createMany({ data: [...toData(merged.goodcrm, 'goodcrm'), ...toData(merged.sheet ?? [], CAR_LINE_SOURCE)] }),
+    ]);
+    const notes = [
+      unlabelled ? `ข้าม ${unlabelled} แถวของบัญชีที่ GOOD CRM ยังไม่ได้ระบุบริษัท` : '',
+      sheetError ? `อ่าน CAR_Line_Daily ไม่ได้ (LINE @maholan คงตัวเลขเดิม): ${safeMessage(sheetError)}` : '',
+      !carLineConfigured() ? 'ยังไม่ได้ตั้ง CAR_LINE_SHEET_ID: LINE @maholan ใช้ตัวเลข GOOD CRM' : '',
+    ].filter(Boolean);
+    const message = notes.length ? notes.join(' · ').slice(0, 300) : null;
+    const rows = merged.goodcrm.length + (merged.sheet?.length ?? 0);
+    await prisma.contactSyncRun.update({ where: { id: run.id }, data: { ok: true, rows, message, finishedAt: new Date() } });
+    return { ok: true, from, to, rows, message };
   } catch (error) {
     const message = safeMessage(error);
     console.error('Contact sync failed:', message);

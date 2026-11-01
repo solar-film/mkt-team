@@ -670,6 +670,7 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
               <li>LINE OA / FB Chat / IG: ดึงจาก GOOD CRM ทุกคืนหลังเที่ยงคืน (ย้อน 7 วัน) · ข้อมูลถึง {crm?.latestDate ?? '—'} · ดึงสำเร็จล่าสุด {when(crm?.lastOkAt ?? null)}</li>
               <li>โทร: จากไฟล์ประวัติการโทรที่อัปโหลด · ข้อมูลถึง {ready.sync.find(s => s.source === 'phone')?.latestDate ?? '—'} · <Link href={`/contacts/phone${query}`}>อัปโหลดไฟล์</Link></li>
               <li>บัญชี: LINE @3mfilm, @goodfilm = GFS · @mhl1 = MHL อาคาร · @maholan = MHL CAR · FB และ IG ตามเพจของแต่ละบริษัท · TikTok ยังไม่ได้เชื่อม</li>
+              <li>LINE @maholan ตั้งแต่ 2 ต.ค. 2569 อ่านจากชีต CAR_Line_Daily (GOOD CRM ไม่ได้รับ @maholan ตั้งแต่ 4 ต.ค.) นับลูกค้าไม่ซ้ำต่อวันเหมือนกัน แต่ไม่แยกลูกค้าใหม่</li>
               <li>ลูกค้าคนเดียวทักหลายช่องทาง นับแยกตามบัญชี · GOOD CRM เริ่มเก็บตั้งแต่ ก.ย. 2569 ข้อมูลก่อนหน้านั้นไม่มี</li>
             </ul>
           </section>

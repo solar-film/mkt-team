@@ -165,6 +165,65 @@ export function normalizeGoodCrmRows(data: unknown): ContactRow[] {
 }
 
 // ---------------------------------------------------------------------------------------------
+// LINE @maholan (MHL CAR) from the CAR_Line_Daily sheet that the Line+FB_Chat script writes.
+// Since 4 Oct 2026 that script no longer forwards @maholan to GOOD CRM, while this sheet keeps
+// one row per customer per Thai day (kind "message") plus a "coverage" row marking when it began.
+
+export const CAR_LINE_ACCOUNT = '@maholan';
+
+/**
+ * Counts per day from the sheet's kind (column A) and day (column D); customer IDs are never read.
+ * `from` is the first full day the sheet covers: the day after its coverage row started.
+ */
+export function summarizeCarLineDaily(kinds: unknown[][], days: unknown[][]): { from: string; rows: { date: string; contacts: number }[] } {
+  if (String(kinds[0]?.[0] ?? '').trim() !== 'kind' || String(days[0]?.[0] ?? '').trim() !== 'day') {
+    throw new Error('CAR_Line_Daily: หัวคอลัมน์ไม่ใช่ kind / day');
+  }
+  let started = '';
+  const counts = new Map<string, number>();
+  for (let i = 1; i < kinds.length; i++) {
+    const kind = String(kinds[i]?.[0] ?? '').trim();
+    if (kind === 'coverage') {
+      const at = String(days[i]?.[1] ?? '');
+      const day = Number.isNaN(Date.parse(at)) ? '' : new Date(Date.parse(at) + 7 * 3_600_000).toISOString().slice(0, 10);
+      if (day && (!started || day < started)) started = day;
+    } else if (kind === 'message') {
+      const day = String(days[i]?.[0] ?? '').trim();
+      if (!isDateKey(day)) throw new Error(`CAR_Line_Daily: แถวที่ ${i + 1} วันที่ไม่ถูกต้อง`);
+      counts.set(day, (counts.get(day) ?? 0) + 1);
+    }
+  }
+  if (!started) throw new Error('CAR_Line_Daily: ไม่พบแถว coverage');
+  const next = new Date(`${started}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const from = next.toISOString().slice(0, 10);
+  const rows = [...counts.entries()].filter(([date]) => date >= from).sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, contacts]) => ({ date, contacts }));
+  return { from, rows };
+}
+
+/**
+ * Which rows a pull stores. When the sheet was read, it replaces GOOD CRM's MHL CAR LINE rows from its
+ * first full day on. When it could not be read, sheet rows already stored stay, and GOOD CRM rows for
+ * those days are left out so the two never overlap.
+ */
+export function mergeCarLine(
+  goodcrm: ContactRow[],
+  sheet: { from: string; rows: { date: string; contacts: number }[] } | null,
+  window: { from: string; to: string },
+  storedSheetDates: Set<string>,
+): { goodcrm: ContactRow[]; sheet: ContactRow[] | null } {
+  const isCarLine = (r: ContactRow) => r.channel === 'line' && r.company === 'CAR';
+  if (!sheet) return { goodcrm: goodcrm.filter(r => !(isCarLine(r) && storedSheetDates.has(r.date))), sheet: null };
+  return {
+    goodcrm: goodcrm.filter(r => !(isCarLine(r) && r.date >= sheet.from)),
+    sheet: sheet.rows.filter(r => r.date >= window.from && r.date <= window.to).map(r => ({
+      date: r.date, channel: 'line', company: 'CAR', account: CAR_LINE_ACCOUNT, contacts: r.contacts, newContacts: null,
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Call-log files (CSV exported from the phone system, the same files the ประวัติการโทร sheet uses).
 // Parsed in the browser: only per-day counts are sent to the server, never phone numbers.
 
