@@ -491,6 +491,35 @@ b, strong { font-weight: 600; }
 }
 
 /* Kanban Board */
+/* Board / list switch on the tasks page. */
+.view-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+}
+
+.view-tabs button {
+  padding: 0.35rem 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.view-tabs button.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 42, 77, 0.12);
+}
+
 .kanban-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

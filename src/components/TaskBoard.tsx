@@ -24,8 +24,10 @@ import TaskKpiSelect from '@/components/TaskKpiSelect';
 import WorkReviewPanel from '@/components/WorkReviewPanel';
 import { validTaskKpiIds } from '@/lib/task-kpi';
 import { hasLink, requiresLinkToComplete } from '@/lib/completion-link';
+import { isKpiMatchPlatform } from '@/lib/content-kpi';
+import TaskListView from '@/components/TaskListView';
 
-interface UnifiedItem {
+export interface UnifiedItem {
   itemType: 'task' | 'content';
   id: string; 
   title: string; 
@@ -55,9 +57,13 @@ interface UnifiedItem {
   promotion?: string | null;
 }
 
-interface TeamMember {
+export interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
 }
+
+// Desktop view of the board: kanban columns or an editable list for typing plans.
+type BoardView = 'board' | 'list';
+const VIEW_KEY = 'mkt-tasks-view';
 
 const formatDateTime = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -67,18 +73,6 @@ const formatDateTime = (dateStr: string) => {
   if (hours === '00' && minutes === '00') return datePart;
   return `${datePart} ${hours}:${minutes}`;
 }
-
-const isKpiMatchPlatform = (kpiName: string, platform: string) => {
-  if (!platform) return true;
-  const p = platform.toLowerCase();
-  const k = kpiName.toLowerCase();
-  if (p === 'facebook' && (k.includes('facebook') || k.includes('fb'))) return true;
-  if (p === 'instagram' && (k.includes('instagram') || k.includes('ig'))) return true;
-  if (p === 'tiktok' && (k.includes('tiktok') || k.includes('tt'))) return true;
-  if (p === 'youtube' && (k.includes('youtube') || k.includes('yt'))) return true;
-  if (p === 'icons' && k.includes('icons')) return true;
-  return k.includes(p);
-};
 
 interface TaskBoardProps {
   onEventsChange?: (events: any[]) => void;
@@ -102,7 +96,17 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllDone, setShowAllDone] = useState(false);
   const [mobileTab, setMobileTab] = useState('todo');
-  
+  const [view, setView] = useState<BoardView>('board');
+
+  // The chosen view is a per-browser convenience; it may be unavailable (private mode).
+  useEffect(() => {
+    try { if (localStorage.getItem(VIEW_KEY) === 'list') setView('list'); } catch { /* keep the board */ }
+  }, []);
+  const chooseView = (next: BoardView) => {
+    setView(next);
+    try { localStorage.setItem(VIEW_KEY, next); } catch { /* not remembered */ }
+  };
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newItemType, setNewItemType] = useState<'task' | 'content'>('task');
@@ -721,11 +725,29 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       </div>
 
       <div className="desktop-only">
-        <div className="kanban-board">
-          {renderColumn('todo', 'รอดำเนินการ')}
-          {renderColumn('in_progress', 'กำลังทำ')}
-          {renderColumn('done', 'เสร็จแล้ว')}
+        <div className="view-tabs" role="tablist" aria-label="รูปแบบการแสดง">
+          <button type="button" role="tab" aria-selected={view === 'board'} className={view === 'board' ? 'active' : ''} onClick={() => chooseView('board')}>บอร์ด</button>
+          <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'active' : ''} onClick={() => chooseView('list')}>รายการ</button>
         </div>
+        {view === 'board' ? (
+          <div className="kanban-board">
+            {renderColumn('todo', 'รอดำเนินการ')}
+            {renderColumn('in_progress', 'กำลังทำ')}
+            {renderColumn('done', 'เสร็จแล้ว')}
+          </div>
+        ) : (
+          <TaskListView
+            items={filteredItems}
+            members={members}
+            kpis={kpis}
+            defaultMemberId={filterMemberId || (currentUserId && currentUserId !== 'GUEST' ? currentUserId : '')}
+            defaultCompany={filterCompany !== 'all' ? filterCompany : ''}
+            onSaved={fetchData}
+            onStatusChange={handleStatusChange}
+            onOpen={handleEditClick}
+            onDelete={item => handleDeleteClick(item.id, item.itemType)}
+          />
+        )}
       </div>
 
       <div className="mobile-only" style={{ paddingBottom: '2rem' }}>

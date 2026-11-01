@@ -13,7 +13,7 @@
     "test:performance-security": "tsx --test tests/performance-security.test.ts",
     "test:avatars": "tsx --test tests/member-avatar.test.ts",
     "test:consistency": "tsx --test tests/date-status-consistency.test.ts",
-    "test:completion-link": "tsx --test tests/completion-link.test.ts",
+    "test:completion-link": "tsx --test tests/completion-link.test.ts tests/content-kpi.test.ts",
     "test:stats-due": "tsx --test tests/stats-due.test.ts",
     "test:event-dates": "tsx --test tests/event-dates.test.ts",
     "test:company-stats": "tsx --test tests/company-stats.test.ts",

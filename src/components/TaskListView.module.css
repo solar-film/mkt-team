@@ -1,0 +1,180 @@
+.wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+/* Fixed layout: the name column takes what the set-width columns leave. */
+.table {
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-hover);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.25rem 0.35rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-hover);
+}
+
+.colSmall { width: 92px; }
+.colDate { width: 134px; }
+.colPlatform { width: 118px; }
+.colKpi { width: 150px; }
+.colStatus { width: 108px; }
+.colActions { width: 64px; }
+
+/* Platform and format share one column, one above the other. */
+.stack {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.titleCell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.titleCell .cell {
+  flex: 1;
+}
+
+.kindSelect {
+  flex: none !important;
+  width: 92px !important;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Cells look like text until hovered or focused, so the table reads like a sheet. */
+.cell {
+  width: 100%;
+  min-width: 0;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  font: inherit;
+  color: var(--color-text-primary, inherit);
+}
+
+.cell:hover:not(:disabled) {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.cell:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 2px rgba(3, 74, 173, 0.12);
+}
+
+.cell:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.badge,
+.badgeContent {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.badge {
+  color: var(--color-text-secondary);
+  background: #f1f5f9;
+}
+
+.badgeContent {
+  color: var(--color-primary);
+  background: #dbe6f5;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.done .cell {
+  color: var(--color-text-secondary);
+}
+
+.idea td {
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.iconBtn {
+  display: inline-flex;
+  padding: 0.35rem;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.iconBtn:hover {
+  background: var(--color-surface-hover);
+}
+
+.danger {
+  color: var(--color-danger);
+}
+
+.empty {
+  text-align: center;
+  padding: 1.5rem !important;
+  color: var(--color-text-secondary);
+}
+
+.addRow td {
+  background: #f8fbff;
+  border-bottom: none;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.addRow .cell {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+
+.hint {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
+}
