@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { kpiScore, monthQueryRange, percent, summarizeMonth, type ReviewItem } from '../src/lib/kpi-summary';
-import { parseWorkReview, submittedAtForStatus, WorkReviewError } from '../src/lib/work-review';
+import { parseReach7, parseWorkReview, submittedAtForStatus, WorkReviewError } from '../src/lib/work-review';
 import { EvaluationInputError, parseEvaluations } from '../src/lib/member-evaluation';
 
 // Thai calendar day at a given Thai hour, as a UTC Date.
@@ -83,6 +83,13 @@ test('review input: validates choices, clears with empty, drops reason on pass',
   assert.deepEqual(parseWorkReview({ promotion: 'paid' }, 'content'), { promotion: 'paid' });
   assert.throws(() => parseWorkReview({ firstReview: 'maybe' }, 'task'), WorkReviewError);
   assert.throws(() => parseWorkReview({ submittedAt: 'not a date' }, 'task'), WorkReviewError);
+  assert.equal(parseReach7(undefined), undefined, 'missing reach is left unchanged');
+  assert.equal(parseReach7(''), null);
+  assert.equal(parseReach7('  '), null, 'blank is cleared, not 0');
+  assert.equal(parseReach7(null), null);
+  assert.equal(parseReach7('1,250'), 1250);
+  assert.equal(parseReach7(0), 0, 'zero is a real reach');
+  for (const bad of ['-5', '12.5', 'abc', '0x10', 3_000_000_000, true]) assert.throws(() => parseReach7(bad), WorkReviewError, String(bad));
 });
 
 test('hand-in time follows the status', () => {

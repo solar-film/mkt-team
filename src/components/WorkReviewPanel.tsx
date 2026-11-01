@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { HiChartBar } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
@@ -30,6 +30,24 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
     promotion: values.promotion ?? '',
   });
   const [saving, setSaving] = useState(false);
+  // Reach @7 วัน sits in the content's D+7 stats, so it is loaded apart from the task list.
+  const [reach, setReach] = useState<{ status: 'loading' | 'ready' | 'failed'; saved: number | null; source: string | null; typed: string }>(
+    { status: kind === 'content' ? 'loading' : 'ready', saved: null, source: null, typed: '' });
+  const showReach = (reach7: number | null, source: string | null) =>
+    setReach({ status: 'ready', saved: reach7, source, typed: reach7 == null ? '' : String(reach7) });
+
+  useEffect(() => {
+    if (kind !== 'content') return;
+    let live = true;
+    fetchWorkspace(`/api/work-review?id=${encodeURIComponent(id)}`)
+      .then(async response => {
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error);
+        if (live) setReach({ status: 'ready', saved: body.reach7, source: body.reach7Source, typed: body.reach7 == null ? '' : String(body.reach7) });
+      })
+      .catch(() => { if (live) setReach(prev => ({ ...prev, status: 'failed' })); });
+    return () => { live = false; };
+  }, [kind, id]);
 
   const save = async () => {
     setSaving(true);
@@ -37,17 +55,22 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
       // A typed day is stored as noon Thai time so it stays the same calendar day everywhere.
       const keptDay = values.submittedAt ? bangkokDateKey(values.submittedAt) : '';
       const submittedAt = form.submittedDay === keptDay ? undefined : form.submittedDay ? `${form.submittedDay}T12:00:00+07:00` : null;
+      // Reach is sent only once the stored value is known, and only when it was changed.
+      const typedReach = reach.typed.replace(/,/g, '').trim();
+      const reach7 = kind === 'content' && reach.status === 'ready' && typedReach !== (reach.saved == null ? '' : String(reach.saved))
+        ? typedReach : undefined;
       const response = await fetchWorkspace('/api/work-review', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           kind, id, submittedAt, waitingOn: form.waitingOn, firstReview: form.firstReview,
           reviseReason: form.firstReview === 'revise' ? form.reviseReason : null,
-          ...(kind === 'content' ? { promotion: form.promotion } : {}),
+          ...(kind === 'content' ? { promotion: form.promotion, reach7 } : {}),
         }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'บันทึกไม่สำเร็จ');
+      if (kind === 'content' && 'reach7' in body) showReach(body.reach7, body.reach7Source);
       onSaved(body);
       toast.success('บันทึกผลงาน KPI แล้ว');
     } catch (error) {
@@ -94,6 +117,18 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
               <option value="">ไม่ระบุ</option>
               {Object.entries(PROMOTION).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
+          </label>
+        )}
+        {kind === 'content' && (
+          <label style={field}>
+            <span style={label}>Reach @7 วัน (คน)</span>
+            <input type="text" inputMode="numeric" className="form-input" maxLength={13}
+              value={reach.typed} disabled={reach.status !== 'ready'}
+              placeholder={reach.status === 'loading' ? 'กำลังโหลด…' : reach.status === 'failed' ? 'โหลดไม่สำเร็จ' : 'ยอด Reach วันที่ 7 หลังโพสต์'}
+              onChange={e => setReach({ ...reach, typed: e.target.value.replace(/[^\d,]/g, '') })} />
+            {reach.saved != null && reach.source === 'windsor' && (
+              <small style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>ดึงอัตโนมัติจาก Facebook · แก้ได้ถ้าไม่ถูก</small>
+            )}
           </label>
         )}
       </div>

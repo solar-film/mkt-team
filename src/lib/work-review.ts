@@ -52,6 +52,24 @@ export function parseWorkReview(body: Record<string, unknown>, kind: 'task' | 'c
   return review;
 }
 
+const MAX_REACH = 2_147_483_647;
+
+/**
+ * Reach @7 วัน typed into the review panel (content only). It lives in ContentMetric D+7,
+ * not on the content row, so it is parsed apart from parseWorkReview.
+ * undefined = leave as is, null = clear, otherwise a whole number of people.
+ */
+export function parseReach7(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  const text = typeof value === 'string' ? value.replace(/,/g, '').trim() : null;
+  if (value === null || text === '') return null;
+  const reach = text === null ? value : /^\d+$/.test(text) ? Number(text) : NaN;
+  if (typeof reach !== 'number' || !Number.isInteger(reach) || reach < 0 || reach > MAX_REACH) {
+    throw new WorkReviewError('Reach @7 วัน ต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป');
+  }
+  return reach;
+}
+
 /**
  * Hand-in time follows the status: moving to "done" stamps it (unless already set), moving
  * back out clears it so the work is timed again when it is finished for real.
