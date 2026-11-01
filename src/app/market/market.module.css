@@ -105,16 +105,29 @@
 .insightDetail { font-size: 0.8rem; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
 
 .subhead { margin: 1.1rem 0 0.5rem; font-size: 0.875rem; font-weight: 700; color: var(--color-text-primary); }
-.campaignList { list-style: none; margin: 0; padding: 0; border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; }
-.campaignItem { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.7rem 0.9rem; }
-.campaignItem + .campaignItem { border-top: 1px solid var(--color-border); }
-.campaignText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
-.campaignText small { font-size: 0.72rem; font-weight: 600; color: var(--color-text-secondary); }
-.campaignText strong { font-size: 0.9rem; color: var(--color-text-primary); overflow-wrap: anywhere; }
-.campaignText span { font-size: 0.78rem; color: var(--color-text-secondary); }
-.campaignValue { font-weight: 700; font-size: 0.95rem; white-space: nowrap; color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
-.campaignItem[data-tone='good'] .campaignValue { color: var(--good); }
-.campaignItem[data-tone='warn'] .campaignValue { color: var(--warn); }
+.campaignGroup + .campaignGroup { margin-top: 1rem; }
+.groupHead { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--color-text-primary); }
+.groupHead small { font-weight: 400; font-size: 0.75rem; color: var(--color-text-secondary); }
+.groupCount { margin-left: auto; padding: 0.15rem 0.6rem; border-radius: 999px; background: #fef3c7; color: var(--warn); font-size: 0.75rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.groupNote { margin: -0.15rem 0 0.6rem; font-size: 0.75rem; color: var(--color-text-secondary); }
+.costPair, .campaignGrid { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.costPair { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.campaignGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+.campaignCard {
+  display: flex; flex-direction: column; gap: 0.3rem; min-width: 0;
+  padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--color-border); border-left-width: 4px; background: #f8fafc;
+}
+.campaignCard[data-tone='good'] { border-left-color: var(--good); background: #f0fdf4; }
+.campaignCard[data-tone='warn'] { border-left-color: var(--warn); }
+.costPair .campaignCard[data-tone='warn'] { background: #fffbeb; }
+.campaignBadge { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); }
+.campaignBig { font-size: 1.35rem; font-weight: 700; line-height: 1.2; color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+.campaignCard[data-tone='good'] .campaignBig { color: var(--good); }
+.campaignCard[data-tone='warn'] .campaignBig { color: var(--warn); }
+.campaignName { font-size: 0.88rem; font-weight: 600; color: var(--color-text-primary); overflow-wrap: anywhere; }
+.campaignWhere { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--color-text-secondary); min-width: 0; overflow-wrap: anywhere; }
+.platformDot { display: inline-flex; flex-shrink: 0; font-size: 0.85rem; font-style: normal; }
+.campaignMetric { margin-top: 0.15rem; padding-top: 0.4rem; border-top: 1px dashed var(--color-border); font-size: 0.78rem; color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
 
 .shareBar { display: flex; gap: 2px; height: 14px; border-radius: 999px; overflow: hidden; margin-bottom: 0.5rem; background: var(--color-border); }
 .shareBar span { display: block; height: 100%; }

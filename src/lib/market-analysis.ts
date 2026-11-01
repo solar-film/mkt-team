@@ -149,8 +149,13 @@ export interface Finding {
   detail: string;
   label: string;
   value: string;
-  /** Campaign the finding names. */
+  /** Campaign the finding names, with where it runs and its spend so the page can group and total them. */
   campaign?: string;
+  platform?: Platform;
+  account?: string;
+  spend?: number;
+  /** Short figures behind a campaign finding, e.g. "12 ผลลัพธ์ จาก ฿1,500". */
+  metric?: string;
   shares?: { platform: Platform; label: string; share: number }[];
 }
 
@@ -208,6 +213,7 @@ export function findings(data: MarketData, f: Filter): Finding[] {
   for (const l of sizable.filter(l => results(l) === 0).slice(0, 5)) {
     out.push({
       tone: 'warn', kind: 'campaign', label: 'ใช้เงินแต่ยังไม่มีผลลัพธ์', value: baht(l.spend), campaign: l.campaignName,
+      platform: l.platform, account: l.accountName, spend: l.spend,
       title: `แคมเปญใช้เงินแต่ยังไม่มีผลลัพธ์: ${l.campaignName}`,
       detail: `${where(l)} · ไม่มีลีด/แชท/Conversion (บางแคมเปญตั้งใจทำยอดเห็น/ผู้ติดตาม)`,
     });
@@ -219,10 +225,12 @@ export function findings(data: MarketData, f: Filter): Finding[] {
     const resultsOf = (l: CampaignLine) => `${Math.round(results(l)).toLocaleString('th-TH')} ผลลัพธ์ จาก ${baht(l.spend)}`;
     out.push({
       tone: 'good', kind: 'campaign', label: 'ต้นทุนต่อผลลัพธ์ดีที่สุด', value: `${baht(costPerResult(best)!)}/ผลลัพธ์`, campaign: best.campaignName,
+      platform: best.platform, account: best.accountName, spend: best.spend, metric: resultsOf(best),
       title: `ต้นทุนต่อผลลัพธ์ดีที่สุด: ${best.campaignName}`, detail: `${where(best)} · ${resultsOf(best)}`,
     });
     out.push({
       tone: 'warn', kind: 'campaign', label: 'ต้นทุนต่อผลลัพธ์สูงที่สุด', value: `${baht(costPerResult(worst)!)}/ผลลัพธ์`, campaign: worst.campaignName,
+      platform: worst.platform, account: worst.accountName, spend: worst.spend, metric: resultsOf(worst),
       title: `ต้นทุนต่อผลลัพธ์สูงที่สุด: ${worst.campaignName}`, detail: `${where(worst)} · ${resultsOf(worst)}`,
     });
   }

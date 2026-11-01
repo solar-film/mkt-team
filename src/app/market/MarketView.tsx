@@ -14,7 +14,7 @@ import {
   BRANDS, change, costPerResult, cpc, ctr, daysInMonth, isMonthKey, monthLabel, PLATFORM_INFO, PLATFORMS, results, shiftMonth, thaiMonthShort,
   type Brand, type KeywordKind, type MarketData, type Metrics, type Platform,
 } from '@/lib/ads-data';
-import { breakdown, campaignLines, compare, dailySeries, findings, keywordLines, spendByMonth, type Breakdown, type Filter, type Finding } from '@/lib/market-analysis';
+import { breakdown, campaignLines, compare, dailySeries, findings, keywordLines, MIN_CAMPAIGN_SPEND, spendByMonth, type Breakdown, type Filter, type Finding } from '@/lib/market-analysis';
 import styles from './market.module.css';
 
 export type MarketMode = 'overview' | 'analysis' | Platform;
@@ -349,6 +349,62 @@ function ToneIcon({ tone }: { tone: Finding['tone'] }) {
   return <Icon className={styles.toneIcon} data-tone={tone} role="img" aria-label={TONE_LABEL[tone]} />;
 }
 
+function CampaignWhere({ f }: { f: Finding }) {
+  if (!f.platform) return null;
+  return (
+    <span className={styles.campaignWhere}>
+      <i className={styles.platformDot} style={{ color: SERIES_COLOR[f.platform] }} aria-hidden>{MODE_ICON[f.platform]}</i>
+      {PLATFORM_INFO[f.platform].label} · {f.account}
+    </span>
+  );
+}
+
+/** Campaign findings split in two: cost-per-result best vs worst side by side, then spend with no results. */
+function CampaignFindings({ items }: { items: Finding[] }) {
+  const noResult = items.filter(f => f.label === 'ใช้เงินแต่ยังไม่มีผลลัพธ์');
+  const cost = items.filter(f => !noResult.includes(f));
+  const noResultSpend = noResult.reduce((sum, f) => sum + (f.spend ?? 0), 0);
+  return (
+    <>
+      <h3 className={styles.subhead}>แคมเปญที่ควรรู้</h3>
+      {cost.length > 0 && (
+        <div className={styles.campaignGroup}>
+          <p className={styles.groupHead}>ต้นทุนต่อผลลัพธ์ <small>เทียบเฉพาะแคมเปญที่ใช้เงินตั้งแต่ {baht(MIN_CAMPAIGN_SPEND)} และมีผลลัพธ์</small></p>
+          <ul className={styles.costPair}>
+            {cost.map(f => (
+              <li key={f.label} className={styles.campaignCard} data-tone={f.tone} title={f.title}>
+                <span className={styles.campaignBadge}><ToneIcon tone={f.tone} />{f.label}</span>
+                <span className={styles.campaignBig}>{f.value}</span>
+                <strong className={styles.campaignName}>{f.campaign}</strong>
+                <CampaignWhere f={f} />
+                {f.metric && <span className={styles.campaignMetric}>{f.metric}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {noResult.length > 0 && (
+        <div className={styles.campaignGroup}>
+          <p className={styles.groupHead}>
+            <ToneIcon tone="warn" />ใช้เงินแต่ยังไม่มีผลลัพธ์
+            <span className={styles.groupCount}>{noResult.length} แคมเปญ · รวม {baht(noResultSpend)}</span>
+          </p>
+          <p className={styles.groupNote}>ยังไม่มีลีด แชท หรือ Conversion — บางแคมเปญตั้งใจทำยอดเห็นหรือผู้ติดตาม ควรเช็กเป้าหมายแคมเปญก่อนสรุป</p>
+          <ul className={styles.campaignGrid}>
+            {noResult.map(f => (
+              <li key={`${f.platform}|${f.account}|${f.campaign}`} className={styles.campaignCard} data-tone={f.tone} title={f.title}>
+                <span className={styles.campaignBig}>{f.value}</span>
+                <strong className={styles.campaignName}>{f.campaign}</strong>
+                <CampaignWhere f={f} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
 function Analysis({ data, filter }: { data: MarketData; filter: Filter }) {
   const items = findings(data, filter);
   const perPlatform = PLATFORMS.map(platform => {
@@ -387,24 +443,7 @@ function Analysis({ data, filter }: { data: MarketData; filter: Filter }) {
                 ))}
               </ul>
             )}
-            {campaigns.length > 0 && (
-              <>
-                <h3 className={styles.subhead}>แคมเปญที่ควรรู้</h3>
-                <ul className={styles.campaignList}>
-                  {campaigns.map((f, i) => (
-                    <li key={i} className={styles.campaignItem} data-tone={f.tone}>
-                      <ToneIcon tone={f.tone} />
-                      <div className={styles.campaignText}>
-                        <small>{f.label}</small>
-                        <strong>{f.campaign}</strong>
-                        <span>{f.detail}</span>
-                      </div>
-                      <span className={styles.campaignValue}>{f.value}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+            {campaigns.length > 0 && <CampaignFindings items={campaigns} />}
             {mix?.shares && (
               <>
                 <h3 className={styles.subhead}>{mix.label}</h3>
