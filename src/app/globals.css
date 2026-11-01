@@ -279,6 +279,36 @@ b, strong { font-weight: 600; }
   .sidebar:not(.collapsed) .sidebar-link.group-closed {
     display: none !important;
   }
+
+  /* Links sit indented under their heading on a thin guide line, so heading and item read apart. */
+  .sidebar:not(.collapsed) .sidebar-link {
+    position: relative;
+    margin-left: 1.1rem;
+    padding-left: 0.85rem;
+  }
+
+  .sidebar:not(.collapsed) .sidebar-link::before {
+    content: '';
+    position: absolute;
+    left: -0.55rem;
+    top: -0.0625rem;
+    bottom: -0.0625rem;
+    width: 1px;
+    background: var(--color-navy-line);
+  }
+
+  .sidebar:not(.collapsed) .sidebar-link svg {
+    font-size: 1.05rem;
+  }
+
+  .sidebar:not(.collapsed) .sidebar-group-label {
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  .sidebar:not(.collapsed) .sidebar-group-label.first {
+    margin-top: 0;
+  }
 }
 
 .sidebar-external-mark {
