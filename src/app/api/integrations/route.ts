@@ -7,6 +7,7 @@ import {
   loadGbpPageDataFast,
   MAX_REVIEWS_PER_BUSINESS,
   saveGbpSheetConfig,
+  savePorterSheetConfig,
   syncGbpReviews,
   syncLinkedSheetIfConfigured,
 } from '@/lib/gbp-sync';
@@ -61,6 +62,25 @@ export async function POST(request: NextRequest) {
           ...result,
           syncInfo,
         },
+        { status: result.ok ? 200 : 400 }
+      );
+    }
+
+    if (body.kind === 'save-porter-sheet') {
+      const porterSheetId = await savePorterSheetConfig(String(body.porterSheetUrl || ''));
+      if (!porterSheetId) {
+        const syncInfo = await getGbpSyncInfo();
+        return NextResponse.json({
+          success: true,
+          cleared: true,
+          message: 'ยกเลิกชีต Porter แล้ว ระบบกลับไปใช้รีวิวจาก Google Maps API',
+          syncInfo,
+        });
+      }
+      const result = await syncGbpReviews();
+      const syncInfo = await getGbpSyncInfo();
+      return NextResponse.json(
+        { success: result.ok, ...result, syncInfo },
         { status: result.ok ? 200 : 400 }
       );
     }

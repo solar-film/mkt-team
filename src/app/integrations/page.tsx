@@ -50,9 +50,11 @@ interface GbpReview {
 }
 
 interface GbpSyncInfo {
-  mode?: 'places_api' | 'sheet_and_places';
+  mode?: 'places_api' | 'sheet_and_places' | 'porter';
   sheetId: string;
   sheetUrl: string;
+  porterSheetId?: string;
+  porterSheetUrl?: string;
   serviceAccountEmail: string;
   configured: boolean;
   lastSyncedAt: string | null;
@@ -179,6 +181,8 @@ export default function GbpReviewsPage() {
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
   const [sheetUrlInput, setSheetUrlInput] = useState('');
   const [savingSheet, setSavingSheet] = useState(false);
+  const [porterUrlInput, setPorterUrlInput] = useState('');
+  const [savingPorter, setSavingPorter] = useState(false);
 
   // Add Single Review Modal
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -218,6 +222,7 @@ export default function GbpReviewsPage() {
         if (data.syncInfo) {
           setSyncInfo(data.syncInfo);
           setSheetUrlInput(data.syncInfo.sheetUrl || '');
+          setPorterUrlInput(data.syncInfo.porterSheetUrl || '');
         }
       }
     } catch (error) {
@@ -254,6 +259,31 @@ export default function GbpReviewsPage() {
       toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ Google Sheet');
     } finally {
       setSavingSheet(false);
+    }
+  };
+
+  const handleSavePorterSheet = async () => {
+    setSavingPorter(true);
+    try {
+      const res = await fetchWorkspace('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'save-porter-sheet', porterSheetUrl: porterUrlInput }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(data.message || 'บันทึกชีต Porter และดึงรีวิวเรียบร้อย');
+        setIsSheetModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.message || data.error || 'อ่านชีต Porter ไม่ได้ กรุณาตรวจสอบการแชร์สิทธิ์');
+        if (data.syncInfo) setSyncInfo(data.syncInfo);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมชีต Porter');
+    } finally {
+      setSavingPorter(false);
     }
   };
 
@@ -708,7 +738,9 @@ export default function GbpReviewsPage() {
               รีวิวจาก Google Maps แยกแต่ละธุรกิจ (วันที่ใหม่สุดอยู่บน)
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              Google API ทางการส่งเฉพาะรีวิวเด่นที่ Google คัดให้ (ไม่ใช่รีวิวใหม่ทุกรายการ) · รีวิวใหม่ที่ไม่ได้มาสามารถกด “บันทึกรีวิวเสริม” ได้
+              {syncInfo?.porterSheetId
+                ? 'รีวิวใหม่ล่าสุดพร้อมคำตอบกลับจาก Porter Metrics (Google Business Profile) · เก็บสะสมในระบบทุกวัน'
+                : 'Google API ทางการส่งเฉพาะรีวิวเด่นที่ Google คัดให้ (ไม่ใช่รีวิวใหม่ทุกรายการ) · ผูกชีต Porter ที่ปุ่มตั้งค่าเพื่อดึงรีวิวใหม่ล่าสุดพร้อมคำตอบกลับ'}
             </p>
           </div>
 
@@ -1105,6 +1137,67 @@ export default function GbpReviewsPage() {
             </button>
           </div>
         </form>
+
+        {/* Porter Metrics: source of newest reviews + owner replies (read-only sheet, separate from the export sheet above) */}
+        <div
+          style={{
+            marginTop: '1.25rem',
+            paddingTop: '1.1rem',
+            borderTop: '1px solid #e2e8f0',
+            fontSize: '0.85rem',
+            lineHeight: 1.65,
+            color: '#334155',
+          }}
+        >
+          <div style={{ fontWeight: 700, color: '#0f2942', marginBottom: '0.45rem' }}>
+            แหล่งรีวิวใหม่ล่าสุด + คำตอบกลับ: ชีตจาก Porter Metrics
+          </div>
+          <ol style={{ margin: '0 0 0.75rem', paddingLeft: '1.2rem', display: 'grid', gap: '0.35rem' }}>
+            <li>
+              ใน Porter Metrics (ส่วนเสริม Google Sheets) เลือกแหล่ง <b>Google Business Profile</b> ทั้ง 3 สาขา แล้วดึงฟิลด์
+              ชื่อสาขา (Location name), Review comment, Review star rating, Review creation date, Review reply comment
+              และตั้งให้รีเฟรชทุกวัน
+            </li>
+            <li>แชร์ชีตนั้นให้อีเมลระบบด้านบน (สิทธิ์ Viewer พอ) แล้ววางลิงก์ด้านล่าง</li>
+          </ol>
+          {syncInfo?.porterSheetUrl ? (
+            <a
+              href={syncInfo.porterSheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                color: '#15803d',
+                textDecoration: 'underline',
+                marginBottom: '0.6rem',
+              }}
+            >
+              <HiTableCells size={16} /> เปิดชีต Porter ที่ผูกอยู่ <HiArrowTopRightOnSquare size={14} />
+            </a>
+          ) : null}
+          <div className="form-group">
+            <label className="form-label" htmlFor="porter-sheet-url">
+              ลิงก์ชีต Porter (เว้นว่างแล้วบันทึก = ยกเลิก)
+            </label>
+            <input
+              id="porter-sheet-url"
+              type="text"
+              className="form-input"
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              value={porterUrlInput}
+              onChange={e => setPorterUrlInput(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+            <button type="button" className="btn btn-primary" disabled={savingPorter} onClick={handleSavePorterSheet}>
+              {savingPorter ? 'กำลังอ่านชีต Porter…' : 'บันทึกชีต Porter และดึงรีวิว'}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Modal: Add Single GBP Review */}

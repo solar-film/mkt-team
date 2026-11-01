@@ -22,8 +22,9 @@
     "test:member-auth": "tsx --test tests/member-auth.test.ts",
     "test:data-sources": "tsx --test tests/data-sources.test.ts",
     "test:kpi-hub": "tsx --test tests/kpi-summary.test.ts tests/facebook-posts.test.ts",
-    "test:release": "npm run test:shared-assignments && npm run test:performance-security && npm run test:avatars && npm run test:consistency && npm run test:completion-link && npm run test:stats-due && npm run test:event-dates && npm run test:company-stats && npm run test:external-link && npm run test:member-auth && npm run test:market && npm run test:data-sources && npm run test:kpi-hub && npm run test:contacts && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs",
-    "test:contacts": "tsx --test tests/contacts.test.ts"
+    "test:release": "npm run test:shared-assignments && npm run test:performance-security && npm run test:avatars && npm run test:consistency && npm run test:completion-link && npm run test:stats-due && npm run test:event-dates && npm run test:company-stats && npm run test:external-link && npm run test:member-auth && npm run test:market && npm run test:data-sources && npm run test:kpi-hub && npm run test:contacts && npm run test:gbp && node --test tests/production-migration-runner.test.cjs tests/release-environment.test.cjs",
+    "test:contacts": "tsx --test tests/contacts.test.ts",
+    "test:gbp": "tsx --test tests/gbp-porter.test.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

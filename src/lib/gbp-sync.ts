@@ -1,8 +1,10 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
 import { JWT } from 'google-auth-library';
 import { prisma } from './prisma';
+import { parsePorterSheet, PORTER_SOURCE } from './gbp-porter';
 
 export const MAX_REVIEWS_PER_BUSINESS = 10;
+const PORTER_KEEP_PER_BUSINESS = 50; // history kept in DB per business (Porter free plan only exposes the last 30 days)
 const PLACES_CACHE_TAG = 'gbp-places';
 const PLACES_CACHE_SECONDS = 3600; // 1 hour server-side Data Cache; daily 07:00 cron also persists to DB
 
@@ -39,9 +41,12 @@ export interface GbpReviewItem {
 }
 
 export interface GbpSyncInfo {
-  mode: 'places_api' | 'sheet_and_places';
+  mode: 'places_api' | 'sheet_and_places' | 'porter';
   sheetId: string;
   sheetUrl: string;
+  /** Porter Metrics export sheet that supplies the newest reviews + owner replies (read-only, separate from sheetId). */
+  porterSheetId: string;
+  porterSheetUrl: string;
   serviceAccountEmail: string;
   configured: boolean;
   lastSyncedAt: string | null;
@@ -173,6 +178,18 @@ export async function ensureGbpTables() {
     `);
   }
 
+  const porterCol = await prisma
+    .$queryRawUnsafe<{ ok: number }[]>(
+      `SELECT 1 AS ok FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'GbpSyncConfig' AND column_name = 'porterSheetId';`
+    )
+    .catch(() => []);
+  if (porterCol.length === 0) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "GbpSyncConfig" ADD COLUMN IF NOT EXISTS "porterSheetId" TEXT NOT NULL DEFAULT '';`
+    );
+  }
+
   for (const loc of DEFAULT_LOCATIONS) {
     await prisma.$executeRawUnsafe(
       `INSERT INTO "GbpLocation" (
@@ -212,31 +229,64 @@ export function extractSheetId(input: string): string {
 
 /** Fast non-blocking sync info lookup (never runs DDL, safe for /api/data-sources and GET /api/integrations). */
 export async function getGbpSyncInfo(): Promise<GbpSyncInfo> {
+  // to_jsonb keeps this read working before the porterSheetId column has been added on a write path
   const rows = await withTimeout(
     prisma.$queryRawUnsafe<
-      { sheetId: string; lastSyncedAt: Date | null; lastSyncOk: boolean | null; lastSyncMessage: string | null }[]
-    >(`SELECT "sheetId", "lastSyncedAt", "lastSyncOk", "lastSyncMessage" FROM "GbpSyncConfig" WHERE "id" = 'default' LIMIT 1;`),
+      {
+        row: {
+          sheetId?: string;
+          porterSheetId?: string;
+          lastSyncedAt?: string | null;
+          lastSyncOk?: boolean | null;
+          lastSyncMessage?: string | null;
+        };
+      }[]
+    >(`SELECT to_jsonb(c) AS row FROM "GbpSyncConfig" c WHERE c."id" = 'default' LIMIT 1;`),
     2000,
     []
   );
+  const cfg = rows?.[0]?.row;
 
-  const dbSheetId = rows?.[0]?.sheetId?.trim() || '';
+  const dbSheetId = cfg?.sheetId?.trim() || '';
   const envSheetId = process.env.GBP_REVIEWS_SHEET_ID?.trim() || '';
   const sheetId = dbSheetId || extractSheetId(envSheetId) || envSheetId;
+  const porterSheetId = cfg?.porterSheetId?.trim() || extractSheetId(process.env.GBP_PORTER_SHEET_ID || '');
   const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || '';
   const hasCredentials = Boolean(serviceAccountEmail && process.env.GOOGLE_PRIVATE_KEY);
+  const lastSyncedAt = cfg?.lastSyncedAt ? new Date(cfg.lastSyncedAt) : null;
 
   return {
-    mode: sheetId ? 'sheet_and_places' : 'places_api',
+    mode: porterSheetId ? 'porter' : sheetId ? 'sheet_and_places' : 'places_api',
     sheetId,
     sheetUrl: sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}` : '',
+    porterSheetId,
+    porterSheetUrl: porterSheetId ? `https://docs.google.com/spreadsheets/d/${porterSheetId}` : '',
     serviceAccountEmail,
     configured: hasCredentials,
-    lastSyncedAt: rows?.[0]?.lastSyncedAt ? rows[0].lastSyncedAt.toISOString() : null,
-    lastSyncOk: rows?.[0]?.lastSyncOk ?? null,
-    lastSyncMessage: rows?.[0]?.lastSyncMessage ?? null,
-    scheduleText: 'ดึงจาก Google Maps อัตโนมัติทุกวัน 07:00 น. (และแคชความเร็วสูงอัปเดตทุกชั่วโมง)',
+    lastSyncedAt: lastSyncedAt && !Number.isNaN(lastSyncedAt.getTime()) ? lastSyncedAt.toISOString() : null,
+    lastSyncOk: cfg?.lastSyncOk ?? null,
+    lastSyncMessage: cfg?.lastSyncMessage ?? null,
+    scheduleText: porterSheetId
+      ? 'ดึงรีวิวใหม่ล่าสุดพร้อมคำตอบกลับจากชีต Porter ทุกวัน 07:00 น. (คะแนนดาวและยอดรีวิวสะสมจาก Google Maps)'
+      : 'ดึงจาก Google Maps อัตโนมัติทุกวัน 07:00 น. (และแคชความเร็วสูงอัปเดตทุกชั่วโมง)',
   };
+}
+
+/** Saves (or clears with an empty value) the Porter Metrics export sheet used as the review source. */
+export async function savePorterSheetConfig(sheetUrlOrId: string): Promise<string> {
+  await ensureGbpTables();
+  const porterSheetId = extractSheetId(sheetUrlOrId);
+  if (sheetUrlOrId.trim() && !porterSheetId) {
+    throw new Error('รูปแบบลิงก์หรือรหัสชีต Porter ไม่ถูกต้อง');
+  }
+
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO "GbpSyncConfig" ("id", "porterSheetId", "updatedAt")
+     VALUES ('default', $1, CURRENT_TIMESTAMP)
+     ON CONFLICT ("id") DO UPDATE SET "porterSheetId" = $1, "updatedAt" = CURRENT_TIMESTAMP;`,
+    porterSheetId
+  );
+  return porterSheetId;
 }
 
 export async function saveGbpSheetConfig(sheetUrlOrId: string): Promise<string> {
@@ -253,76 +303,6 @@ export async function saveGbpSheetConfig(sheetUrlOrId: string): Promise<string> 
     sheetId
   );
   return sheetId;
-}
-
-function parseStarRating(raw: unknown): number {
-  const s = String(raw ?? '').trim().toUpperCase();
-  if (!s) return 5;
-  const wordMap: Record<string, number> = {
-    FIVE: 5,
-    STAR_RATING_FIVE: 5,
-    FOUR: 4,
-    STAR_RATING_FOUR: 4,
-    THREE: 3,
-    STAR_RATING_THREE: 3,
-    TWO: 2,
-    STAR_RATING_TWO: 2,
-    ONE: 1,
-    STAR_RATING_ONE: 1,
-  };
-  if (wordMap[s]) return wordMap[s];
-  const starChars = (s.match(/★/g) || []).length;
-  if (starChars >= 1 && starChars <= 5) return starChars;
-  const num = Number(s.replace(/[^0-9.]/g, ''));
-  if (Number.isFinite(num) && num >= 1 && num <= 5) return Math.round(num);
-  return 5;
-}
-
-function normalizeDate(raw: unknown): string {
-  const s = String(raw ?? '').trim();
-  if (!s) return new Date().toISOString().slice(0, 10);
-  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) {
-    const [, y, m, d] = iso;
-    return `${Number(y) > 2400 ? Number(y) - 543 : y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-  }
-  const slash = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
-  if (slash) {
-    const [, p1, p2, yRaw] = slash;
-    let year = Number(yRaw);
-    if (year < 100) year += 2000;
-    if (year > 2400) year -= 543;
-    const isDayFirst = Number(p1) > 12;
-    const month = isDayFirst ? p2 : p1;
-    const day = isDayFirst ? p1 : p2;
-    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-  const parsed = new Date(s);
-  if (!Number.isNaN(parsed.getTime())) {
-    return parsed.toISOString().slice(0, 10);
-  }
-  return new Date().toISOString().slice(0, 10);
-}
-
-function matchSingleLocationText(text: string): string | null {
-  const s = (text || '').toLowerCase();
-  if (!s.trim()) return null;
-  if (/car|รถยนต์|ฟิล์มรถ/.test(s)) return 'loc-car';
-  if (/gfs|good\s*film|goodfilm|กู๊ดฟิล์ม/.test(s)) return 'loc-gfs';
-  if (/mhl|maholan|มโหฬาร/.test(s)) return 'loc-mhl';
-  return null;
-}
-
-export function mapLocationToId(locationText: string, fallbackTabTitle = ''): string | null {
-  return matchSingleLocationText(locationText) ?? matchSingleLocationText(fallbackTabTitle);
-}
-
-function findColIndex(headers: string[], matchers: RegExp[], exclude?: RegExp): number {
-  for (const regex of matchers) {
-    const idx = headers.findIndex(h => regex.test(h) && (!exclude || !exclude.test(h)));
-    if (idx !== -1) return idx;
-  }
-  return -1;
 }
 
 interface PlaceApiReview {
@@ -508,10 +488,42 @@ async function replaceLocationReviewsBulk(locId: string, rows: GbpReviewItem[]) 
   );
 }
 
+/** Upserts Porter reviews without deleting older ones, so the free plan's 30-day window accumulates history day by day. */
+async function upsertPorterReviewsBulk(rows: GbpReviewItem[]) {
+  if (rows.length === 0) return;
+  const valuesSql: string[] = [];
+  const params: unknown[] = [];
+  rows.forEach((r, idx) => {
+    const base = idx * 9;
+    valuesSql.push(
+      `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9})`
+    );
+    params.push(r.id, r.locationId, r.reviewerName, r.rating, r.comment, r.reviewDate, r.replyText, r.repliedBy, r.source);
+  });
+
+  // A reply found in the sheet wins; otherwise keep any reply staff recorded on the web
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO "GbpReview" (
+      "id", "locationId", "reviewerName", "rating", "comment",
+      "reviewDate", "replyText", "repliedBy", "source"
+    ) VALUES ${valuesSql.join(', ')}
+    ON CONFLICT ("id") DO UPDATE SET
+      "reviewerName" = EXCLUDED."reviewerName",
+      "rating" = EXCLUDED."rating",
+      "comment" = EXCLUDED."comment",
+      "reviewDate" = EXCLUDED."reviewDate",
+      "replyText" = CASE WHEN EXCLUDED."replyText" <> '' THEN EXCLUDED."replyText" ELSE "GbpReview"."replyText" END,
+      "repliedBy" = CASE WHEN EXCLUDED."repliedBy" <> '' THEN EXCLUDED."repliedBy" ELSE "GbpReview"."repliedBy" END,
+      "source" = EXCLUDED."source";`,
+    ...params
+  );
+}
+
 /**
- * Reads all tabs from an optional Porter Metrics Google Sheet and stores the 10 latest reviews per business.
+ * Reads all tabs of the Porter Metrics Google Sheet (newest reviews + owner replies) and accumulates them in the DB.
+ * Keeps the newest PORTER_KEEP_PER_BUSINESS rows per business; the page shows the newest MAX_REVIEWS_PER_BUSINESS.
  */
-export async function syncPorterGbpSheet(): Promise<{
+export async function syncPorterGbpSheet(sheetIdOverride?: string): Promise<{
   ok: boolean;
   imported: number;
   perBusiness: Record<string, number>;
@@ -519,8 +531,9 @@ export async function syncPorterGbpSheet(): Promise<{
 }> {
   await ensureGbpTables();
   const info = await getGbpSyncInfo();
-  if (!info.sheetId) {
-    return { ok: false, imported: 0, perBusiness: {}, message: 'ยังไม่ได้ตั้งค่าลิงก์ Google Sheet' };
+  const sheetId = sheetIdOverride || info.porterSheetId;
+  if (!sheetId) {
+    return { ok: false, imported: 0, perBusiness: {}, message: 'ยังไม่ได้ตั้งค่าลิงก์ชีต Porter' };
   }
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
     return { ok: false, imported: 0, perBusiness: {}, message: 'ยังไม่มีข้อมูล Service Account ในเซิร์ฟเวอร์' };
@@ -534,7 +547,7 @@ export async function syncPorterGbpSheet(): Promise<{
     });
 
     const metaRes = await client.request<{ sheets?: { properties?: { title?: string } }[] }>({
-      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(info.sheetId)}?fields=sheets.properties.title`,
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=sheets.properties.title`,
       timeout: 10000,
     });
 
@@ -547,197 +560,101 @@ export async function syncPorterGbpSheet(): Promise<{
     }
 
     const rangesQuery = sheetTitles
-      .map(title => `ranges=${encodeURIComponent(`'${title.replace(/'/g, "''")}'!A1:Z500`)}`)
+      .map(title => `ranges=${encodeURIComponent(`'${title.replace(/'/g, "''")}'!A1:Z2000`)}`)
       .join('&');
 
     const valuesRes = await client.request<{ valueRanges?: { range?: string; values?: unknown[][] }[] }>({
-      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(info.sheetId)}/values:batchGet?${rangesQuery}`,
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values:batchGet?${rangesQuery}`,
       timeout: 12000,
     });
 
-    const groupedReviews: Record<string, GbpReviewItem[]> = {
-      'loc-gfs': [],
-      'loc-mhl': [],
-      'loc-car': [],
-    };
-    const summaryStats: Record<string, { rating?: number; totalReviews?: number }> = {};
-
-    (valuesRes.data.valueRanges || []).forEach((vr, tabIdx) => {
-      const tabTitle = sheetTitles[tabIdx] || '';
-      const rows = vr.values || [];
-      if (rows.length < 2) return;
-
-      let headerRowIndex = 0;
-      for (let i = 0; i < Math.min(5, rows.length); i++) {
-        const candidate = (rows[i] || []).map(c => String(c ?? '').toLowerCase());
-        const score = candidate.filter(c =>
-          /review|rating|star|comment|author|location|business|วันที่|รีวิว|คะแนน|ดาว|ธุรกิจ|สถานที่|ลูกค้า/.test(c)
-        ).length;
-        if (score >= 2) {
-          headerRowIndex = i;
-          break;
-        }
-      }
-
-      const headers = (rows[headerRowIndex] || []).map(c => String(c ?? '').trim().toLowerCase());
-      const locCol = findColIndex(
-        headers,
-        [
-          /location.?name|business.?name|store.?name|account.?name|profile.?name|ชื่อธุรกิจ|ชื่อสถานที่|ชื่อสาขา|ชื่อร้าน/,
-          /location|account|business|store|profile|branch|title|ธุรกิจ|สถานที่|สาขา/,
-        ],
-        /\bid\b|code|รหัส/
-      );
-      const dateCol = findColIndex(headers, [/^(date|review.?date|create.?time|timestamp|วันที่|วันที่รีวิว)/, /date|time|วันที่/], /reply/);
-      const reviewerCol = findColIndex(headers, [/reviewer|author|customer|user.?name|display.?name|ผู้รีวิว|ชื่อลูกค้า|ลูกค้า/], /reply/);
-      const ratingCol = findColIndex(headers, [/star.?rating|review.?rating|^rating$|^stars?$|ดาว|คะแนนดาว|^คะแนน$/], /average|avg|เฉลี่ย|total|count/);
-      const commentCol = findColIndex(headers, [/review.?comment|review.?text|review.?body|^comment$|^text$|ข้อความรีวิว|ความคิดเห็น|^รีวิว$|^ข้อความ$/], /reply|count|rating|total/);
-      const replyCol = findColIndex(headers, [/reply.?comment|review.?reply|owner.?reply|^reply$|response|ข้อความตอบกลับ|คำตอบ|ตอบกลับ/], /time|date|ผู้ตอบ/);
-      const repliedByCol = findColIndex(headers, [/replied.?by|responder|ผู้ตอบ/]);
-      const avgRatingCol = findColIndex(headers, [/average.?rating|avg.?rating|total.?rating|overall.?rating|คะแนนเฉลี่ย/]);
-      const totalReviewsCol = findColIndex(headers, [/total.?review|review.?count|^reviews$|จำนวนรีวิว|รีวิวสะสม/]);
-
-      for (const row of rows.slice(headerRowIndex + 1)) {
-        if (!row || row.every(c => !String(c ?? '').trim())) continue;
-        const locRaw = locCol >= 0 ? String(row[locCol] ?? '') : '';
-        const locId = mapLocationToId(locRaw, tabTitle);
-        if (!locId) continue;
-
-        if (avgRatingCol >= 0 && row[avgRatingCol] != null && String(row[avgRatingCol]).trim() !== '') {
-          const avg = Number(String(row[avgRatingCol]).replace(/[^0-9.]/g, ''));
-          if (Number.isFinite(avg) && avg >= 1 && avg <= 5) {
-            summaryStats[locId] = { ...summaryStats[locId], rating: Number(avg.toFixed(2)) };
-          }
-        }
-        if (totalReviewsCol >= 0 && row[totalReviewsCol] != null && String(row[totalReviewsCol]).trim() !== '') {
-          const tot = Number(String(row[totalReviewsCol]).replace(/[^0-9]/g, ''));
-          if (Number.isFinite(tot) && tot >= 0) {
-            summaryStats[locId] = { ...summaryStats[locId], totalReviews: tot };
-          }
-        }
-
-        if (reviewerCol < 0 && commentCol < 0) continue;
-        const reviewerName = reviewerCol >= 0 ? String(row[reviewerCol] ?? '').trim() : '';
-        const comment = commentCol >= 0 ? String(row[commentCol] ?? '').trim() : '';
-        if (!reviewerName && !comment) continue;
-
-        const reviewDate = dateCol >= 0 ? normalizeDate(row[dateCol]) : new Date().toISOString().slice(0, 10);
-        const replyText = replyCol >= 0 ? String(row[replyCol] ?? '').trim() : '';
-        const repliedBy = repliedByCol >= 0 ? String(row[repliedByCol] ?? '').trim() : '';
-
-        groupedReviews[locId].push({
-          id: `porter_${locId}_${groupedReviews[locId].length + 1}_${reviewDate}`,
-          locationId: locId,
-          reviewerName: reviewerName || 'ลูกค้า Google Maps',
-          rating: parseStarRating(ratingCol >= 0 ? row[ratingCol] : 5),
-          comment: comment || '(ให้คะแนนดาวโดยไม่มีข้อความ)',
-          reviewDate,
-          replyText,
-          repliedBy,
-          source: 'Porter Metrics Sheet',
-        });
-      }
-    });
-
-    const allExisting = await prisma.$queryRawUnsafe<
-      { locationId: string; reviewerName: string; reviewDate: string; replyText: string; repliedBy: string }[]
-    >(`SELECT "locationId", "reviewerName", "reviewDate", "replyText", "repliedBy" FROM "GbpReview";`);
+    const { reviewsByLoc, statsByLoc } = parsePorterSheet(
+      (valuesRes.data.valueRanges || []).map((vr, idx) => ({ title: sheetTitles[idx] || '', values: vr.values || [] }))
+    );
 
     let totalImported = 0;
     const perBusiness: Record<string, number> = { GFS: 0, MHL: 0, CAR: 0 };
     const idToKey: Record<string, string> = { 'loc-gfs': 'GFS', 'loc-mhl': 'MHL', 'loc-car': 'CAR' };
 
-    for (const [locId, rawList] of Object.entries(groupedReviews)) {
-      const seen = new Set<string>();
-      const unique = rawList.filter(item => {
-        const key = `${item.reviewerName}|${item.reviewDate}|${item.comment}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+    for (const [locId, rows] of Object.entries(reviewsByLoc)) {
+      const latest = rows.slice(0, PORTER_KEEP_PER_BUSINESS);
+      if (latest.length === 0) continue;
 
-      const existingMap = new Map(
-        allExisting
-          .filter(er => er.locationId === locId)
-          .map(er => [`${er.reviewerName}|${er.reviewDate}`, er])
+      await upsertPorterReviewsBulk(latest);
+      // Featured reviews from Places API have no replies and are not the newest; Porter replaces them for this business
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM "GbpReview" WHERE "locationId" = $1 AND "source" = 'Google Maps API';`,
+        locId
+      );
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM "GbpReview"
+         WHERE "locationId" = $1 AND "source" = $2
+           AND "id" NOT IN (
+             SELECT "id" FROM "GbpReview"
+             WHERE "locationId" = $1 AND "source" = $2
+             ORDER BY "reviewDate" DESC, "createdAt" DESC
+             LIMIT ${PORTER_KEEP_PER_BUSINESS}
+           );`,
+        locId,
+        PORTER_SOURCE
       );
 
-      const top10 = unique
-        .sort((a, b) => b.reviewDate.localeCompare(a.reviewDate))
-        .slice(0, MAX_REVIEWS_PER_BUSINESS)
-        .map((r, i) => {
-          const prev = existingMap.get(`${r.reviewerName}|${r.reviewDate}`);
-          return {
-            ...r,
-            id: `porter_${locId}_${i + 1}`,
-            replyText: r.replyText || prev?.replyText || '',
-            repliedBy: r.repliedBy || prev?.repliedBy || '',
-          };
-        });
+      totalImported += latest.length;
+      perBusiness[idToKey[locId]] = latest.length;
 
-      if (top10.length > 0) {
-        await replaceLocationReviewsBulk(locId, top10);
-        totalImported += top10.length;
-        perBusiness[idToKey[locId]] = top10.length;
-
-        const newestDate = top10[0].reviewDate;
-        const sheetRating = summaryStats[locId]?.rating ?? null;
-        const sheetTotal = summaryStats[locId]?.totalReviews ?? unique.length;
-
-        await prisma.$executeRawUnsafe(
-          `UPDATE "GbpLocation"
-           SET "rating" = COALESCE($2, "rating"),
-               "totalReviews" = GREATEST("totalReviews", $3),
-               "lastReviewAt" = GREATEST("lastReviewAt", $4),
-               "updatedAt" = CURRENT_TIMESTAMP
-           WHERE "id" = $1;`,
-          locId,
-          sheetRating,
-          sheetTotal,
-          newestDate
-        );
-      }
+      await prisma.$executeRawUnsafe(
+        `UPDATE "GbpLocation"
+         SET "rating" = COALESCE($2, "rating"),
+             "totalReviews" = GREATEST("totalReviews", $3),
+             "lastReviewAt" = GREATEST("lastReviewAt", $4),
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE "id" = $1;`,
+        locId,
+        statsByLoc[locId]?.rating ?? null,
+        statsByLoc[locId]?.totalReviews ?? 0,
+        latest[0].reviewDate
+      );
     }
 
     const msg =
       totalImported > 0
-        ? `ดึงสำเร็จ ${totalImported} รีวิว (CAR ${perBusiness.CAR}, GFS ${perBusiness.GFS}, MHL ${perBusiness.MHL})`
-        : 'เชื่อมต่อชีตสำเร็จ แต่ยังไม่พบแถวข้อมูลรีวิว';
+        ? `ดึงจากชีต Porter สำเร็จ ${totalImported} รีวิว (CAR ${perBusiness.CAR}, GFS ${perBusiness.GFS}, MHL ${perBusiness.MHL})`
+        : 'เชื่อมต่อชีต Porter สำเร็จ แต่ยังไม่พบแถวข้อมูลรีวิว';
 
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "GbpSyncConfig" ("id", "sheetId", "lastSyncedAt", "lastSyncOk", "lastSyncMessage", "updatedAt")
-       VALUES ('default', $1, CURRENT_TIMESTAMP, $2, $3, CURRENT_TIMESTAMP)
+      `INSERT INTO "GbpSyncConfig" ("id", "lastSyncedAt", "lastSyncOk", "lastSyncMessage", "updatedAt")
+       VALUES ('default', CURRENT_TIMESTAMP, $1, $2, CURRENT_TIMESTAMP)
        ON CONFLICT ("id") DO UPDATE
        SET "lastSyncedAt" = CURRENT_TIMESTAMP,
-           "lastSyncOk" = $2,
-           "lastSyncMessage" = $3,
+           "lastSyncOk" = $1,
+           "lastSyncMessage" = $2,
            "updatedAt" = CURRENT_TIMESTAMP;`,
-      info.sheetId,
       totalImported > 0,
       msg
     );
 
-    return { ok: true, imported: totalImported, perBusiness, message: msg };
+    return { ok: totalImported > 0, imported: totalImported, perBusiness, message: msg };
   } catch (error: unknown) {
     const rawMsg = error instanceof Error ? error.message : String(error);
     const friendly =
       rawMsg.includes('403') || rawMsg.includes('caller does not have permission')
-        ? 'ยังไม่ได้แชร์สิทธิ์อ่าน Google Sheet ให้เมล Service Account ของเว็บ'
+        ? 'ยังไม่ได้แชร์สิทธิ์อ่านชีต Porter ให้เมล Service Account ของเว็บ'
         : rawMsg.includes('404')
-        ? 'ไม่พบไฟล์ Google Sheet จากลิงก์ที่ระบุ'
-        : `ดึงข้อมูลไม่สำเร็จ: ${rawMsg.slice(0, 160)}`;
+        ? 'ไม่พบไฟล์ชีต Porter จากลิงก์ที่ระบุ'
+        : `ดึงข้อมูลจากชีต Porter ไม่สำเร็จ: ${rawMsg.slice(0, 160)}`;
 
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "GbpSyncConfig" ("id", "sheetId", "lastSyncedAt", "lastSyncOk", "lastSyncMessage", "updatedAt")
-       VALUES ('default', $1, CURRENT_TIMESTAMP, false, $2, CURRENT_TIMESTAMP)
-       ON CONFLICT ("id") DO UPDATE
-       SET "lastSyncedAt" = CURRENT_TIMESTAMP,
-           "lastSyncOk" = false,
-           "lastSyncMessage" = $2,
-           "updatedAt" = CURRENT_TIMESTAMP;`,
-      info.sheetId,
-      friendly
-    );
+    await prisma
+      .$executeRawUnsafe(
+        `INSERT INTO "GbpSyncConfig" ("id", "lastSyncedAt", "lastSyncOk", "lastSyncMessage", "updatedAt")
+         VALUES ('default', CURRENT_TIMESTAMP, false, $1, CURRENT_TIMESTAMP)
+         ON CONFLICT ("id") DO UPDATE
+         SET "lastSyncedAt" = CURRENT_TIMESTAMP,
+             "lastSyncOk" = false,
+             "lastSyncMessage" = $1,
+             "updatedAt" = CURRENT_TIMESTAMP;`,
+        friendly
+      )
+      .catch(() => {});
 
     return { ok: false, imported: 0, perBusiness: {}, message: friendly };
   }
@@ -747,6 +664,28 @@ export async function syncPorterGbpSheet(): Promise<{
  * Syncs live ratings, cumulative review counts, and latest reviews directly from Official Google Places API
  * into PostgreSQL in bulk (<800ms total), preserving any staff replies recorded in the database.
  */
+/** Porter mode: Places API still gives the live rating and all-time review count, but its reviews are not stored. */
+async function syncPlacesStatsOnly(): Promise<{ ok: boolean; message: string }> {
+  revalidateTag(PLACES_CACHE_TAG, { expire: 0 });
+  try {
+    const { stats } = await fetchLiveGooglePlacesData();
+    for (const [locId, s] of Object.entries(stats)) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "GbpLocation"
+         SET "rating" = $2, "totalReviews" = $3, "updatedAt" = CURRENT_TIMESTAMP
+         WHERE "id" = $1;`,
+        locId,
+        s.rating,
+        s.totalReviews
+      );
+    }
+    return { ok: true, message: 'คะแนนดาวจาก Google Maps อัปเดตแล้ว' };
+  } catch (error: unknown) {
+    const rawMsg = error instanceof Error ? error.message : String(error);
+    return { ok: false, message: `คะแนนดาวจาก Google Maps อัปเดตไม่สำเร็จ: ${rawMsg.slice(0, 120)}` };
+  }
+}
+
 export async function syncGooglePlacesDirect(): Promise<{
   ok: boolean;
   imported: number;
@@ -1054,6 +993,37 @@ export async function syncGbpReviews(): Promise<{
   message: string;
 }> {
   revalidateTag(PLACES_CACHE_TAG, { expire: 0 });
+  const porterInfo = await getGbpSyncInfo();
+
+  if (porterInfo.porterSheetId) {
+    const statsRes = await syncPlacesStatsOnly();
+    const porterRes = await syncPorterGbpSheet(porterInfo.porterSheetId);
+    const parts = [porterRes.message];
+    if (!statsRes.ok) parts.push(statsRes.message);
+
+    // Mirror into the web's own export sheet when it is a different file from the Porter source
+    if (porterRes.ok && porterInfo.sheetId && porterInfo.sheetId !== porterInfo.porterSheetId) {
+      const { locations, reviews } = await loadGbpPageDataFast();
+      const expRes = await exportGbpDataToSheet(porterInfo.sheetId, locations, reviews);
+      parts.push(expRes.ok ? 'บันทึกลง Google Sheet แล้ว' : expRes.message);
+    }
+
+    const combinedMsg = parts.join(' · ');
+    await prisma
+      .$executeRawUnsafe(
+        `UPDATE "GbpSyncConfig"
+         SET "lastSyncedAt" = CURRENT_TIMESTAMP,
+             "lastSyncOk" = $2,
+             "lastSyncMessage" = $1,
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE "id" = 'default';`,
+        combinedMsg,
+        porterRes.ok
+      )
+      .catch(() => {});
+    return { ...porterRes, message: combinedMsg };
+  }
+
   const directRes = await syncGooglePlacesDirect();
   const info = await getGbpSyncInfo();
 
@@ -1076,7 +1046,7 @@ export async function syncGbpReviews(): Promise<{
       return { ...directRes, message: combinedMsg };
     }
     // Fallback: if user linked a read-only Porter Metrics sheet with existing rows, import from it
-    const porterRes = await syncPorterGbpSheet();
+    const porterRes = await syncPorterGbpSheet(info.sheetId);
     if (porterRes.ok && porterRes.imported > 0) {
       return porterRes;
     }
@@ -1100,9 +1070,10 @@ export async function syncGbpReviews(): Promise<{
 /** Keeps the linked Google Sheet updated whenever staff add/reply/delete reviews on the web. */
 export async function syncLinkedSheetIfConfigured(): Promise<void> {
   const info = await getGbpSyncInfo();
-  if (!info.sheetId) return;
+  if (!info.sheetId || info.sheetId === info.porterSheetId) return;
   const { locations, reviews } = await loadGbpPageDataFast();
-  if (reviews.some(r => r.source === 'Porter Metrics Sheet')) return;
+  // Legacy setup where the export sheet itself is a Porter sheet: never overwrite it
+  if (!info.porterSheetId && reviews.some(r => r.source === PORTER_SOURCE)) return;
   await exportGbpDataToSheet(info.sheetId, locations, reviews).catch(() => {});
 }
 
@@ -1156,7 +1127,10 @@ export async function loadGbpPageDataFast(): Promise<{
       rating: liveStat?.rating ?? (!isOldMockup && dbLoc ? dbLoc.rating : def.rating),
       totalReviews: liveStat?.totalReviews ?? (!isOldMockup && dbLoc ? dbLoc.totalReviews : def.totalReviews),
       repliedCount: !isOldMockup && dbLoc ? dbLoc.repliedCount : 0,
-      lastReviewAt: liveStat?.lastReviewAt || (!isOldMockup && dbLoc?.lastReviewAt ? dbLoc.lastReviewAt : ''),
+      // In Porter mode the Places "latest" date comes from featured reviews, so trust the DB (Porter) date instead
+      lastReviewAt: syncInfo.porterSheetId
+        ? dbLoc?.lastReviewAt || ''
+        : liveStat?.lastReviewAt || (!isOldMockup && dbLoc?.lastReviewAt ? dbLoc.lastReviewAt : ''),
       mapsUrl: def.mapsUrl,
     };
   });
@@ -1168,9 +1142,12 @@ export async function loadGbpPageDataFast(): Promise<{
     const dbForLoc = dbReviews.filter(r => r.locationId === locId);
     const liveForLoc = livePlaces?.reviewsByLoc?.[locId] || [];
 
-    // If Porter sheet is active and DB has Porter rows, prioritize DB rows
-    if (syncInfo.sheetId && dbForLoc.some(r => r.source === 'Porter Metrics Sheet')) {
-      mergedReviews.push(...dbForLoc.slice(0, MAX_REVIEWS_PER_BUSINESS));
+    // Porter mode: newest reviews + owner replies come only from the Porter sheet (plus manual entries);
+    // Places "featured" reviews are skipped because they are neither the newest nor carry replies
+    if (syncInfo.porterSheetId || dbForLoc.some(r => r.source === PORTER_SOURCE)) {
+      mergedReviews.push(
+        ...dbForLoc.filter(r => r.source !== 'Google Maps API').slice(0, MAX_REVIEWS_PER_BUSINESS)
+      );
       continue;
     }
 
@@ -1215,7 +1192,8 @@ export async function loadGbpPageDataFast(): Promise<{
   const sheetSuffix =
     syncInfo.sheetId && syncInfo.lastSyncOk === true ? ' · บันทึกลง Google Sheet อัตโนมัติ' : '';
 
-  const effectiveSyncInfo: GbpSyncInfo = {
+  // Porter mode reports the real sheet sync result (time + message) instead of the hourly Places cache
+  const effectiveSyncInfo: GbpSyncInfo = syncInfo.porterSheetId ? syncInfo : {
     ...syncInfo,
     lastSyncedAt: livePlaces?.fetchedAt || syncInfo.lastSyncedAt || null,
     lastSyncOk: hasSheetError
