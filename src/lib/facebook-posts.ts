@@ -10,7 +10,7 @@ import { bangkokDateKey } from './bangkok-date';
  * 7–9 days old; older posts (e.g. a first backfill) are kept but never recorded as D+7.
  */
 export const FACEBOOK_POST_FIELDS = [
-  'post_id', 'post_created_time', 'post_message', 'post_total_media_view_unique', 'post_reactions_total', 'post_comments_total',
+  'post_id', 'post_created_time', 'post_message', 'post_total_media_view_unique', 'post_reactions_total', 'post_comments_total', 'permalink_url',
 ] as const;
 export const D7_SNAPSHOT = 'D+7';
 export const D7_MIN_DAYS = 7;
@@ -24,7 +24,23 @@ export interface FacebookPostRow {
   reach: number | null;
   reactions: number | null;
   comments: number | null;
+  /** Reel/video number from Windsor's permalink (facebook.com/reel/<n>); null for ordinary posts. */
+  videoId: string | null;
 }
+
+/**
+ * The reel/video number in a Facebook link: /reel/<n>, /videos/<n> or watch?v=<n>. Ordinary post
+ * links (/posts/pfbid…, the target of share/p links) carry an encoded id Windsor does not give, so
+ * those posts are still matched by text.
+ */
+export function videoIdFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const match = url.match(/facebook\.com\/(?:[^?#]*\/)?(?:reel|videos)\/(\d{6,})/i) ?? url.match(/facebook\.com\/watch\/?\?(?:[^#]*&)?v=(\d{6,})/i);
+  return match ? match[1] : null;
+}
+
+/** share/r (reel) and share/v (video) links redirect to a reel URL, so their number can be looked up. */
+export const isVideoShareLink = (url: string | null | undefined) => /facebook\.com\/share\/[rv]\//i.test(url ?? '');
 
 const count = (value: unknown): number | null => {
   const n = Number(value);
@@ -47,6 +63,7 @@ export function normalizeFacebookPosts(data: unknown): FacebookPostRow[] {
       reach: count(raw.post_total_media_view_unique),
       reactions: count(raw.post_reactions_total),
       comments: count(raw.post_comments_total),
+      videoId: videoIdFromUrl(typeof raw.permalink_url === 'string' ? raw.permalink_url : null),
     });
   }
   return [...posts.values()];
@@ -114,6 +131,22 @@ export function matchPosts(posts: Pick<FacebookPostRow, 'id' | 'createdTime' | '
     if (ambiguous.has(pair.post) || matches.has(pair.post) || used.has(pair.content)) continue;
     matches.set(pair.post, pair.content);
     used.add(pair.content);
+  }
+  return matches;
+}
+
+/**
+ * Exact pairs by link: a post whose reel number equals the number in a content item's link. Each
+ * post and each content item is paired once; content items already taken are skipped.
+ */
+export function matchByVideo(posts: Pick<FacebookPostRow, 'id' | 'videoId'>[], contentVideos: Map<string, string>, taken = new Set<string>()): Map<string, string> {
+  const byVideo = new Map<string, string>();
+  for (const [contentId, videoId] of contentVideos) if (!taken.has(contentId) && !byVideo.has(videoId)) byVideo.set(videoId, contentId);
+  const matches = new Map<string, string>();
+  const used = new Set<string>();
+  for (const post of posts) {
+    const contentId = post.videoId ? byVideo.get(post.videoId) : undefined;
+    if (contentId && !used.has(contentId)) { matches.set(post.id, contentId); used.add(contentId); }
   }
   return matches;
 }

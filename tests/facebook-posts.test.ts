@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backfillAction, backfillParts, backfillRange, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
+import { backfillAction, backfillParts, backfillRange, isVideoShareLink, matchByVideo, videoIdFromUrl, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
 import { ManualAdsError, parseManualAds, skippedPlatforms } from '../src/lib/manual-ads';
 import { brandOf } from '../src/lib/ads-data';
 
@@ -15,7 +15,7 @@ test('Windsor rows become posts; bad rows are dropped and counts kept as numbers
   ]);
   assert.equal(posts.length, 1);
   assert.deepEqual({ ...posts[0], createdTime: posts[0].createdTime.toISOString() }, {
-    id: '111_222', pageId: '111', createdTime: '2026-10-01T10:00:09.000Z', message: 'ซ้ำ', reach: 250, reactions: null, comments: null,
+    id: '111_222', pageId: '111', createdTime: '2026-10-01T10:00:09.000Z', message: 'ซ้ำ', reach: 250, reactions: null, comments: null, videoId: null,
   });
   assert.throws(() => normalizeFacebookPosts({ error: 'x' }));
 });
@@ -123,4 +123,30 @@ test('backfill parts: a month in runs of 7 days, cut at today', () => {
   ]);
   assert.deepEqual(backfillParts('2026-11', '2026-11-09'), [{ from: '2026-11-01', to: '2026-11-07' }, { from: '2026-11-08', to: '2026-11-09' }]);
   assert.deepEqual(backfillParts('2026-12', '2026-11-09'), []);
+});
+
+test('reel number from Facebook links; ordinary post links have none', () => {
+  assert.equal(videoIdFromUrl('https://www.facebook.com/reel/2893962230973462/?rdid=x&share_url=y'), '2893962230973462');
+  assert.equal(videoIdFromUrl('https://www.facebook.com/reel/1136055478772168/'), '1136055478772168');
+  assert.equal(videoIdFromUrl('https://www.facebook.com/3MGoodfilm/videos/987654321012345/'), '987654321012345');
+  assert.equal(videoIdFromUrl('https://www.facebook.com/watch/?v=123456789012'), '123456789012');
+  assert.equal(videoIdFromUrl('https://www.facebook.com/1439578268371426/posts/1411114034551183'), null);
+  assert.equal(videoIdFromUrl('https://www.facebook.com/3MGoodfilm/posts/pfbid0nVBEPVbph'), null);
+  assert.equal(videoIdFromUrl('https://www.facebook.com/share/r/1LDbaccVKo/'), null);
+  assert.equal(videoIdFromUrl(null), null);
+  assert.equal(isVideoShareLink('https://www.facebook.com/share/r/1LDbaccVKo/'), true);
+  assert.equal(isVideoShareLink('https://www.facebook.com/share/v/1Ab/'), true);
+  assert.equal(isVideoShareLink('https://www.facebook.com/share/p/14tHa8e7hYk/'), false);
+});
+
+test('Windsor permalink gives the post its reel number, and link pairs are exact and one to one', () => {
+  const [reel, post] = normalizeFacebookPosts([
+    { post_id: 'p_1', post_created_time: '2026-10-30T09:46:51+0000', post_message: 'x', permalink_url: 'https://www.facebook.com/reel/2893962230973462/' },
+    { post_id: 'p_2', post_created_time: '2026-10-30T08:00:08+0000', post_message: 'y', permalink_url: 'https://www.facebook.com/1439578268371426/posts/1438684171794169' },
+  ]);
+  assert.equal(reel.videoId, '2893962230973462');
+  assert.equal(post.videoId, null);
+  const videos = new Map([['c1', '2893962230973462'], ['c2', '2893962230973462'], ['c3', '111111111']]);
+  assert.deepEqual([...matchByVideo([reel, post], videos)], [['p_1', 'c1']]);
+  assert.deepEqual([...matchByVideo([reel], videos, new Set(['c1']))], [['p_1', 'c2']]);
 });

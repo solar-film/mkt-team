@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import { bangkokDateKey } from './bangkok-date';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
-import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, backfillAction, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays } from './facebook-posts';
+import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, backfillAction, d7Due, isVideoShareLink, matchByVideo, matchPosts, normalizeFacebookPosts, postAgeDays, videoIdFromUrl } from './facebook-posts';
 
 export const FACEBOOK_SYNC_PLATFORM = 'facebook_organic';
 // Long enough that a post seen on day 7 is still re-read on day 9 if a night's run fails.
@@ -9,6 +9,19 @@ export const FACEBOOK_LOOKBACK_DAYS = 12;
 // Leaves time for saving and matching inside the 60-second request, so a slow Windsor reply is
 // reported as an error instead of the request being cut off.
 const WINDSOR_WAIT_MS = 40_000;
+const SHARE_LINK_WAIT_MS = 5_000;
+
+/** A content link's reel number: read from the link itself, or from where a share/r|v link redirects. */
+async function contentVideoId(link: string | null): Promise<string | null> {
+  const direct = videoIdFromUrl(link);
+  if (direct || !link || !isVideoShareLink(link)) return direct;
+  try {
+    const response = await fetch(link, { redirect: 'manual', cache: 'no-store', headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(SHARE_LINK_WAIT_MS) });
+    return videoIdFromUrl(response.headers.get('location'));
+  } catch {
+    return null; // the post can still be matched by its text
+  }
+}
 
 export interface FacebookSyncResult { ok: boolean; posts: number; matched: number; d7: number; message: string | null }
 
@@ -34,17 +47,25 @@ export async function syncFacebookPosts(from: string, to: string, trigger: 'cron
         platform: 'Facebook',
         publishDate: { gte: new Date(Math.min(...days) - 2 * 86_400_000), lte: new Date(Math.max(...days) + 2 * 86_400_000) },
       },
-      select: { id: true, title: true, publishDate: true },
+      select: { id: true, title: true, publishDate: true, link: true },
     }) : [];
     const taken = new Set((await prisma.facebookPost.findMany({
       where: { contentId: { in: contents.map(c => c.id) } }, select: { contentId: true },
     })).map(p => p.contentId!));
     const unmatched = posts.filter(p => !existing.get(p.id)?.contentId);
-    const matches = matchPosts(unmatched, contents, taken);
+    // Reels and videos are paired exactly by the number in the content's link; the rest by text and day.
+    const videos = new Map<string, string>();
+    await Promise.all(contents.filter(c => !taken.has(c.id)).map(async c => {
+      const videoId = await contentVideoId(c.link);
+      if (videoId) videos.set(c.id, videoId);
+    }));
+    const byLink = matchByVideo(unmatched, videos, taken);
+    const byText = matchPosts(unmatched.filter(p => !byLink.has(p.id)), contents, new Set([...taken, ...byLink.values()]));
+    const matches = new Map([...byLink, ...byText]);
 
     await prisma.$transaction(posts.map(post => {
       const contentId = existing.get(post.id)?.contentId ?? matches.get(post.id) ?? null;
-      const matchedBy = existing.get(post.id)?.matchedBy ?? (matches.has(post.id) ? 'auto' : null);
+      const matchedBy = existing.get(post.id)?.matchedBy ?? (byLink.has(post.id) ? 'link' : matches.has(post.id) ? 'auto' : null);
       const data = { pageId: post.pageId, createdTime: post.createdTime, message: post.message, reach: post.reach, reactions: post.reactions, comments: post.comments, contentId, matchedBy, fetchedAt: now };
       return prisma.facebookPost.upsert({ where: { id: post.id }, create: { id: post.id, ...data }, update: data });
     }));
