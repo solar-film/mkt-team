@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export const MAX_REVIEWS_PER_BUSINESS = 10;
+const MAX_REVIEWS_PER_BUSINESS = 10;
 
 export interface GbpLocationSummary {
   id: string;
