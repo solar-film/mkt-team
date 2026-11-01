@@ -12,7 +12,6 @@ import AccountMenuItems from '@/components/AccountMenuItems';
 import {
   HiChartBarSquare,
   HiClipboardDocumentList,
-  HiChartBar,
   HiDocumentText,
   HiUserGroup,
   HiChatBubbleLeftRight,
@@ -55,7 +54,6 @@ const navLinks = [
   { group: 'จัดการงาน/KPI', path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { group: 'จัดการงาน/KPI', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { group: 'จัดการงาน/KPI', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
-  { group: 'จัดการงาน/KPI', path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
   { group: 'จัดการงาน/KPI', path: '/kpi-hub', label: 'สรุปผลงาน & ประเมิน', icon: <HiTableCells /> },
   { group: 'จัดการงาน/KPI', path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
   { group: 'ข้อมูลตลาด', path: '/market', label: 'ภาพรวมค่าโฆษณา', icon: <HiBanknotes /> },
@@ -70,10 +68,12 @@ const navLinks = [
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
 ];
-const MOBILE_BAR = new Set(['/', '/reports', '/calendar', '/tasks', '/ideas', '/kpis']);
+const MOBILE_BAR = new Set(['/', '/reports', '/calendar', '/tasks', '/ideas', '/kpi-hub']);
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const currentPath = usePathname();
+  // เป้าหมาย KPI is no longer in the menu; it opens from สรุปผลงาน & ประเมิน, which stays highlighted there.
+  const pathname = currentPath === '/kpis' ? '/kpi-hub' : currentPath;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 

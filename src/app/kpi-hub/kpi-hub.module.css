@@ -21,6 +21,13 @@
 }
 
 /* ---------- month picker and notice ---------- */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .monthPicker {
   display: flex;
   align-items: center;

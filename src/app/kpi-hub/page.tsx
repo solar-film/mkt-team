@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-  HiCheckBadge, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles,
+  HiChartBar, HiCheckBadge, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles,
 } from 'react-icons/hi2';
 import styles from './kpi-hub.module.css';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -62,10 +62,14 @@ export default function KpiHubPage() {
           <h1>สรุปผลงาน &amp; ประเมิน</h1>
           <p className={styles.muted}>ผลงานทีมการตลาด ส่งตรงเวลา · คุณภาพ · ผลคอนเทนต์ · KPI รายคน · ประเมินโดยมะลิ (AI)</p>
         </div>
-        <div className={styles.monthPicker} role="group" aria-label="เลือกเดือน">
-          <button type="button" className={styles.iconButton} onClick={() => shift(-1)} aria-label="เดือนก่อน"><HiChevronLeft /></button>
-          <span className={styles.monthLabel}>{THAI_MONTHS[period.month - 1]} {period.year + 543}</span>
-          <button type="button" className={styles.iconButton} onClick={() => shift(1)} aria-label="เดือนถัดไป"><HiChevronRight /></button>
+        <div className={styles.headerActions}>
+          {/* เป้าหมาย KPI left the main menu; it is reached from here. */}
+          <Link href="/kpis" className="btn btn-secondary"><HiChartBar aria-hidden /> เป้าหมาย KPI</Link>
+          <div className={styles.monthPicker} role="group" aria-label="เลือกเดือน">
+            <button type="button" className={styles.iconButton} onClick={() => shift(-1)} aria-label="เดือนก่อน"><HiChevronLeft /></button>
+            <span className={styles.monthLabel}>{THAI_MONTHS[period.month - 1]} {period.year + 543}</span>
+            <button type="button" className={styles.iconButton} onClick={() => shift(1)} aria-label="เดือนถัดไป"><HiChevronRight /></button>
+          </div>
         </div>
       </div>
 
