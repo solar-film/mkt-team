@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
+import { backfillAction, backfillRange, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
 import { ManualAdsError, parseManualAds, skippedPlatforms } from '../src/lib/manual-ads';
 import { brandOf } from '../src/lib/ads-data';
 
@@ -97,4 +97,21 @@ test('title score: exact start 2, word share otherwise, 0 without the first word
   assert.equal(titleScore('HONDA HR-V Super Hi-Kool BEYOND CERAMIC', text), 1);
   assert.equal(titleScore('TOYOTA HR-V Super Hi-Kool BEYOND CERAMIC', text), 0);
   assert.equal(titleScore('HI-CM 35', text), 0);
+});
+
+test('backfill keeps a typed reach, fills an empty or 0 one, creates a missing D+7', () => {
+  assert.equal(backfillAction(null), 'create');
+  assert.equal(backfillAction({ reach: null }), 'fill');
+  assert.equal(backfillAction({ reach: 0 }), 'fill');
+  assert.equal(backfillAction({ reach: 35 }), 'keep');
+});
+
+test('backfill month: whole month, cut at today, no future or malformed month', () => {
+  assert.deepEqual(backfillRange('2026-10', '2026-11-01'), { from: '2026-10-01', to: '2026-10-31' });
+  assert.deepEqual(backfillRange('2026-02', '2026-11-01'), { from: '2026-02-01', to: '2026-02-28' });
+  assert.deepEqual(backfillRange('2026-11', '2026-11-20'), { from: '2026-11-01', to: '2026-11-20' });
+  assert.equal(backfillRange('2026-12', '2026-11-20'), null);
+  assert.equal(backfillRange('2026-13', '2026-11-20'), null);
+  assert.equal(backfillRange('2024-12', '2026-11-20'), null);
+  assert.equal(backfillRange('10/2026', '2026-11-20'), null);
 });

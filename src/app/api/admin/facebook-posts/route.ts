@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { hasAdminSession } from '@/lib/admin-session';
 import { windsorConfigured } from '@/lib/windsor';
 import { invalidateWorkspace } from '@/lib/workspace-cache';
-import { D7_SNAPSHOT } from '@/lib/facebook-posts';
-import { facebookWindow, syncFacebookPosts } from '@/lib/facebook-sync';
+import { bangkokDateKey } from '@/lib/bangkok-date';
+import { D7_SNAPSHOT, backfillRange } from '@/lib/facebook-posts';
+import { backfillFacebookReach, facebookWindow, syncFacebookPosts } from '@/lib/facebook-sync';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -32,10 +33,18 @@ export async function GET(request: Request) {
   }, { headers });
 }
 
-/** Runs the nightly pull now. */
+/** Runs the nightly pull now, or with { month: "YYYY-MM" } fills that month's D+7 reach from Windsor. */
 export async function POST(request: Request) {
   if (!hasAdminSession(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
   if (!windsorConfigured()) return NextResponse.json({ error: 'ยังไม่ได้ตั้ง WINDSOR_API_KEY บน Vercel' }, { status: 503, headers });
+  const body = await request.json().catch(() => ({})) as { month?: unknown };
+  if (body.month !== undefined) {
+    const range = backfillRange(String(body.month), bangkokDateKey(new Date()));
+    if (!range) return NextResponse.json({ error: 'เดือนไม่ถูกต้อง' }, { status: 400, headers });
+    const result = await backfillFacebookReach(range.from, range.to);
+    if (result.created + result.filled + result.d7 > 0) invalidateWorkspace();
+    return NextResponse.json({ ...range, ...result }, { status: result.ok ? 200 : 502, headers });
+  }
   const { from, to } = facebookWindow();
   const result = await syncFacebookPosts(from, to, 'admin');
   if (result.d7 > 0) invalidateWorkspace();

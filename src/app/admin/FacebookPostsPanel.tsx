@@ -42,6 +42,27 @@ export function FacebookPostsPanel() {
     } finally { setRunning(false); }
   };
 
+  // Past months: fill D+7 reach from the page (empty or 0 only; typed numbers stay).
+  const [month, setMonth] = useState(() => {
+    const d = new Date(Date.now() + 7 * 3_600_000);
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  });
+  const backfill = async () => {
+    if (!confirm(`เติม Reach D+7 ของเดือน ${month} จาก Windsor?\n\n• คอนเทนต์ที่ยังไม่มี D+7 → สร้างใหม่\n• D+7 ที่ช่อง Reach ว่างหรือเป็น 0 → ใส่ค่าจากเพจ\n• Reach ที่กรอกไว้แล้ว (มากกว่า 0) → คงเดิม\n\nค่าที่ได้เป็นยอดสะสม ณ วันนี้ ไม่ใช่ยอดวันที่ 7 พอดี`)) return;
+    setRunning(true);
+    try {
+      const res = await fetchWorkspace("/api/admin/facebook-posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ month }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || data.error || "ดึงไม่สำเร็จ");
+      toast.success(`${month}: ได้ ${data.posts} โพสต์ · จับคู่ใหม่ ${data.matched} · สร้าง D+7 ${data.created} · เติม Reach ${data.filled} · คงค่าที่กรอก ${data.kept}`, { duration: 8000 });
+      void load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "ดึงไม่สำเร็จ");
+    } finally { setRunning(false); }
+  };
+
   const matched = posts.filter(p => p.contentTitle).length;
 
   return (
@@ -56,8 +77,16 @@ export function FacebookPostsPanel() {
         </div>
       </div>
       <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-text-secondary)" }}>
-        ทุกเช้า 06:30 ระบบดึงโพสต์ 3 เพจจาก Windsor แล้วจับคู่กับคอนเทนต์ Facebook ในระบบ (ข้อความต้นโพสต์ตรงกับชื่องาน และวันเผยแพร่ห่างไม่เกิน 1 วัน) · บันทึก Reach เป็น D+7 เมื่อโพสต์อายุ 7–9 วัน · โพสต์ที่จับคู่ไม่ได้ ตรวจชื่องานให้ตรงกับบรรทัดแรกของโพสต์ · 30 วันล่าสุด: จับคู่ได้ {matched} จาก {posts.length} โพสต์
+        ทุกเช้า 06:30 ระบบดึงโพสต์ทุกเพจที่ต่อไว้ใน Windsor แล้วจับคู่กับคอนเทนต์ Facebook ในระบบ (ข้อความต้นโพสต์ตรงกับชื่องาน และวันเผยแพร่ห่างไม่เกิน 1 วัน) · บันทึก Reach เป็น D+7 เมื่อโพสต์อายุ 7–9 วัน · โพสต์ที่จับคู่ไม่ได้ ตรวจชื่องานให้ตรงกับบรรทัดแรกของโพสต์ · 30 วันล่าสุด: จับคู่ได้ {matched} จาก {posts.length} โพสต์
       </p>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", padding: "0.75rem", borderRadius: "8px", background: "var(--color-surface-hover)" }}>
+        <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>เติม Reach ย้อนหลัง</span>
+        <input type="month" className="form-input" style={{ width: "auto", padding: "0.3rem 0.5rem" }} value={month} onChange={e => setMonth(e.target.value)} aria-label="เดือนที่จะเติม Reach" />
+        <button className="btn btn-secondary btn-sm" disabled={running || configured === false || !month} onClick={() => void backfill()}>
+          {running ? "กำลังดึง…" : "เติม Reach เดือนนี้จาก Windsor"}
+        </button>
+        <span style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะช่องว่างหรือ 0 · สร้าง D+7 ให้คอนเทนต์ที่ยังไม่มี · ค่าที่กรอกไว้คงเดิม · เป็นยอดสะสม ณ วันที่ดึง</span>
+      </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
           <thead>

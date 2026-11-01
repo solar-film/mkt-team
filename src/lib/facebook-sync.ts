@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import { bangkokDateKey } from './bangkok-date';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
-import { D7_SNAPSHOT, FACEBOOK_POST_FIELDS, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays } from './facebook-posts';
+import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, backfillAction, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays } from './facebook-posts';
 
 export const FACEBOOK_SYNC_PLATFORM = 'facebook_organic';
 // Long enough that a post seen on day 7 is still re-read on day 9 if a night's run fails.
@@ -69,6 +69,58 @@ export async function syncFacebookPosts(from: string, to: string, trigger: 'cron
     await prisma.adSyncRun.update({ where: { id: run.id }, data: { ok: false, message, finishedAt: new Date() } }).catch(() => {});
     return { ok: false, posts: 0, matched: 0, d7: 0, message };
   }
+}
+
+export interface FacebookBackfillResult extends FacebookSyncResult { created: number; filled: number; kept: number; young: number }
+
+/**
+ * Fills D+7 reach for a past window from Windsor (admin button): pulls and matches posts like the
+ * nightly run, then for every matched post at least 7 days old applies backfillAction — create a
+ * D+7, fill an empty/0 reach, or keep a typed one. Each written row says it is the running total.
+ */
+export async function backfillFacebookReach(from: string, to: string, now = new Date()): Promise<FacebookBackfillResult> {
+  const sync = await syncFacebookPosts(from, to, 'admin', now);
+  const empty = { ...sync, created: 0, filled: 0, kept: 0, young: 0 };
+  if (!sync.ok) return empty;
+
+  const posts = await prisma.facebookPost.findMany({
+    where: { createdTime: { gte: new Date(`${from}T00:00:00+07:00`), lte: new Date(`${to}T23:59:59+07:00`) }, contentId: { not: null }, reach: { not: null } },
+  });
+  const ready = posts.filter(post => postAgeDays(post.createdTime, now) >= D7_MIN_DAYS);
+  const metrics = new Map((await prisma.contentMetric.findMany({
+    where: { contentId: { in: ready.map(p => p.contentId!) }, snapshot: D7_SNAPSHOT },
+    select: { id: true, contentId: true, reach: true, likes: true, comments: true, note: true },
+  })).map(m => [m.contentId, m]));
+
+  const dayLabel = bangkokDateKey(now);
+  const note = (age: number) => `Reach จาก Windsor ย้อนหลัง: ยอดสะสม ณ ${dayLabel} (โพสต์อายุ ${age} วัน) ไม่ใช่ยอดวันที่ 7 พอดี`;
+  const writes = [];
+  const counts = { created: 0, filled: 0, kept: 0 };
+  for (const post of ready) {
+    const existing = metrics.get(post.contentId!) ?? null;
+    const action = backfillAction(existing);
+    const age = postAgeDays(post.createdTime, now);
+    if (action === 'create') {
+      counts.created++;
+      writes.push(prisma.contentMetric.create({
+        data: { contentId: post.contentId!, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments, source: 'windsor', note: note(age) },
+      }));
+    } else if (action === 'fill' && existing) {
+      counts.filled++;
+      // Only the empty numbers are filled; likes/comments a member typed stay.
+      writes.push(prisma.contentMetric.update({
+        where: { id: existing.id },
+        data: {
+          reach: post.reach,
+          likes: existing.likes ?? post.reactions,
+          comments: existing.comments ?? post.comments,
+          note: existing.note ? `${existing.note} · ${note(age)}` : note(age),
+        },
+      }));
+    } else counts.kept++;
+  }
+  if (writes.length) await prisma.$transaction(writes);
+  return { ...sync, ...counts, young: posts.length - ready.length };
 }
 
 /** The nightly window: the last FACEBOOK_LOOKBACK_DAYS Thai days up to today. */
