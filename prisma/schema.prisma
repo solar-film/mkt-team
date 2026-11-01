@@ -48,6 +48,10 @@ model Task {
   waitingOn    String?
   firstReview  String?
   reviseReason String?
+  // มะลิ (AI) suggestion for the first review; the Admin decides (see src/lib/ai-review.ts)
+  aiReview     String?
+  aiReviewNote String?
+  aiReviewedAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -98,6 +102,10 @@ model Content {
   firstReview  String?
   reviseReason String?
   promotion    String?
+  // มะลิ (AI) suggestion for the first review; the Admin decides (see src/lib/ai-review.ts)
+  aiReview     String?
+  aiReviewNote String?
+  aiReviewedAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   @@index([memberIds], type: Gin)

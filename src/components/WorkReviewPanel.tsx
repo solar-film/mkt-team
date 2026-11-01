@@ -13,6 +13,10 @@ export interface WorkReviewValues {
   firstReview?: string | null;
   reviseReason?: string | null;
   promotion?: string | null;
+  /** มะลิ (AI) suggestion, set through /api/kpi-hub/ai-reviews; read-only here. */
+  aiReview?: string | null;
+  aiReviewNote?: string | null;
+  aiReviewedAt?: string | null;
 }
 
 /** "ผลงาน KPI" inside a task/content popup: the facts KPI กลาง counts. */
@@ -134,6 +138,20 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
           </label>
         )}
       </div>
+      {values.aiReview && (
+        <div role="note" style={{ border: '1px solid #c7d2fe', background: '#eef2ff', borderRadius: '10px', padding: '0.6rem 0.8rem', fontSize: '0.85rem', lineHeight: 1.6 }}>
+          <strong style={{ color: values.aiReview === 'pass' ? '#15803d' : '#c2410c' }}>
+            มะลิ (AI) แนะนำ: {FIRST_REVIEW[values.aiReview as keyof typeof FIRST_REVIEW] ?? values.aiReview}
+          </strong>
+          {values.aiReviewedAt && (
+            <span style={{ color: 'var(--color-text-secondary)', marginLeft: '0.4rem', fontSize: '0.78rem' }}>
+              ตรวจเมื่อ {new Date(values.aiReviewedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+            </span>
+          )}
+          {values.aiReviewNote && <p style={{ margin: '0.25rem 0 0', whiteSpace: 'pre-wrap' }}>{values.aiReviewNote}</p>}
+          <small style={{ color: 'var(--color-text-secondary)' }}>เป็นคำแนะนำ ผลตรวจจริงให้ Admin เลือกเอง</small>
+        </div>
+      )}
       <label style={field}>
         <span style={label}>สถานะรอ (ถ้าช้าเพราะรอคนอื่น เช่น "รอรูปจากช่าง")</span>
         <input type="text" className="form-input" maxLength={200} value={form.waitingOn} placeholder="เว้นว่างถ้าไม่ได้รอใคร" onChange={e => setForm({ ...form, waitingOn: e.target.value })} />

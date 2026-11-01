@@ -55,6 +55,9 @@ export interface UnifiedItem {
   firstReview?: string | null;
   reviseReason?: string | null;
   promotion?: string | null;
+  aiReview?: string | null;
+  aiReviewNote?: string | null;
+  aiReviewedAt?: string | null;
 }
 
 export interface TeamMember {

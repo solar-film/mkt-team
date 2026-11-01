@@ -9,11 +9,12 @@ export async function proxy(request: NextRequest) {
 
   // ยกเว้น (Bypass) API บางตัวที่ต้องให้เซิร์ฟเวอร์ต่างประเทศเรียกเข้ามาได้
   // เช่น LINE Webhook (มักมาจากญี่ปุ่น) และ Vercel Cron Jobs (มักมาจากอเมริกา)
-  // /api/kpi-hub/evaluations รับผลประเมินจากมะลิ ตรวจ token ในตัว route เอง
+  // /api/kpi-hub/evaluations และ /api/kpi-hub/ai-reviews รับงานจากมะลิ ตรวจ token ในตัว route เอง
   if (
     pathname === '/api/line-webhook' ||
     pathname.startsWith('/api/cron/') ||
-    pathname === '/api/kpi-hub/evaluations'
+    pathname === '/api/kpi-hub/evaluations' ||
+    pathname === '/api/kpi-hub/ai-reviews'
   ) {
     return NextResponse.next();
   }
