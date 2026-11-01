@@ -3,49 +3,20 @@ import { prisma } from '@/lib/prisma';
 import {
   DEFAULT_LOCATIONS,
   ensureGbpTables,
-  fetchLiveGooglePlacesData,
   getGbpSyncInfo,
+  loadGbpPageDataFast,
   MAX_REVIEWS_PER_BUSINESS,
-  maybeAutoSyncGbpSheet,
   saveGbpSheetConfig,
   syncGbpReviews,
   syncPorterGbpSheet,
-  type GbpLocationSummary,
-  type GbpReviewItem,
 } from '@/lib/gbp-sync';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 export async function GET() {
   try {
-    await ensureGbpTables();
-    await maybeAutoSyncGbpSheet();
-
-    const [locations, reviews, syncInfo] = await Promise.all([
-      prisma.$queryRawUnsafe<GbpLocationSummary[]>(
-        `SELECT "id", "name", "businessKey", "address", "owner", "rating",
-                "totalReviews", "repliedCount", "lastReviewAt", "mapsUrl"
-         FROM "GbpLocation"
-         ORDER BY "id" ASC;`
-      ),
-      prisma.$queryRawUnsafe<GbpReviewItem[]>(
-        `SELECT "id", "locationId", "reviewerName", "rating", "comment",
-                "reviewDate", "replyText", "repliedBy", "source"
-         FROM (
-           SELECT *,
-                  ROW_NUMBER() OVER (
-                    PARTITION BY "locationId"
-                    ORDER BY "reviewDate" DESC, "createdAt" DESC
-                  ) AS rn
-           FROM "GbpReview"
-         ) ranked
-         WHERE rn <= ${MAX_REVIEWS_PER_BUSINESS}
-         ORDER BY "locationId" ASC, "reviewDate" DESC, "createdAt" DESC;`
-      ),
-      getGbpSyncInfo(),
-    ]);
-
+    const { locations, reviews, syncInfo } = await loadGbpPageDataFast();
     return NextResponse.json({
       locations,
       reviews,
@@ -53,42 +24,14 @@ export async function GET() {
       syncInfo,
     });
   } catch (error) {
-    console.error('Failed to load GBP data from DB, trying direct Google Places API:', error);
-    try {
-      const { stats, reviewsByLoc } = await fetchLiveGooglePlacesData();
-      const locations = DEFAULT_LOCATIONS.map(loc => ({
-        ...loc,
-        rating: stats[loc.id]?.rating ?? loc.rating,
-        totalReviews: stats[loc.id]?.totalReviews ?? loc.totalReviews,
-        lastReviewAt: stats[loc.id]?.lastReviewAt || loc.lastReviewAt,
-      }));
-      const reviews = Object.values(reviewsByLoc).flat();
-      return NextResponse.json({
-        locations,
-        reviews,
-        maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
-        syncInfo: {
-          mode: 'places_api',
-          sheetId: '',
-          sheetUrl: '',
-          serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || '',
-          configured: true,
-          lastSyncedAt: new Date().toISOString(),
-          lastSyncOk: true,
-          lastSyncMessage: `ดึงจาก Google Maps สำเร็จ ${reviews.length} รีวิว`,
-          scheduleText: 'ดึงจาก Google Maps อัตโนมัติทุกวัน 07:00 น.',
-        },
-        fallback: true,
-      });
-    } catch {
-      return NextResponse.json({
-        locations: DEFAULT_LOCATIONS,
-        reviews: [],
-        maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
-        syncInfo: null,
-        fallback: true,
-      });
-    }
+    console.error('Failed to load GBP data:', error);
+    return NextResponse.json({
+      locations: DEFAULT_LOCATIONS,
+      reviews: [],
+      maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
+      syncInfo: null,
+      fallback: true,
+    });
   }
 }
 
@@ -112,11 +55,14 @@ export async function POST(request: NextRequest) {
       }
       const result = await syncPorterGbpSheet();
       const syncInfo = await getGbpSyncInfo();
-      return NextResponse.json({
-        success: result.ok,
-        ...result,
-        syncInfo,
-      }, { status: result.ok ? 200 : 400 });
+      return NextResponse.json(
+        {
+          success: result.ok,
+          ...result,
+          syncInfo,
+        },
+        { status: result.ok ? 200 : 400 }
+      );
     }
 
     if (body.kind === 'sync-sheet') {
@@ -181,35 +127,27 @@ export async function PUT(request: NextRequest) {
       const { id, replyText, repliedBy } = body;
       if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-      const existing = await prisma.$queryRawUnsafe<{ locationId: string; replyText: string }[]>(
-        `SELECT "locationId", "replyText" FROM "GbpReview" WHERE "id" = $1 LIMIT 1;`,
-        id
-      );
-      const prevHadReply = Boolean(existing?.[0]?.replyText?.trim());
       const nextReply = (replyText || '').trim();
-      const nextHasReply = Boolean(nextReply);
+      const nextRepliedBy = (repliedBy || '').trim();
 
       await prisma.$executeRawUnsafe(
-        `UPDATE "GbpReview"
-         SET "replyText" = $2,
-             "repliedBy" = $3
-         WHERE "id" = $1;`,
+        `INSERT INTO "GbpReview" (
+          "id", "locationId", "reviewerName", "rating", "comment",
+          "reviewDate", "replyText", "repliedBy", "source"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT ("id") DO UPDATE
+        SET "replyText" = EXCLUDED."replyText",
+            "repliedBy" = EXCLUDED."repliedBy";`,
         id,
+        body.locationId || 'loc-car',
+        body.reviewerName || 'ลูกค้า Google Maps',
+        Number(body.rating) || 5,
+        body.comment || '',
+        body.reviewDate || new Date().toISOString().slice(0, 10),
         nextReply,
-        (repliedBy || '').trim()
+        nextRepliedBy,
+        body.source || 'Google Maps API'
       );
-
-      if (existing?.[0]?.locationId && prevHadReply !== nextHasReply) {
-        const delta = nextHasReply ? 1 : -1;
-        await prisma.$executeRawUnsafe(
-          `UPDATE "GbpLocation"
-           SET "repliedCount" = GREATEST(0, "repliedCount" + $2),
-               "updatedAt" = CURRENT_TIMESTAMP
-           WHERE "id" = $1;`,
-          existing[0].locationId,
-          delta
-        );
-      }
 
       return NextResponse.json({ success: true });
     }

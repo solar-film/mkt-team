@@ -318,6 +318,12 @@ export default function GbpReviewsPage() {
         body: JSON.stringify({
           kind: 'review-reply',
           id: replyTarget.id,
+          locationId: replyTarget.locationId,
+          reviewerName: replyTarget.reviewerName,
+          rating: replyTarget.rating,
+          comment: replyTarget.comment,
+          reviewDate: replyTarget.reviewDate,
+          source: replyTarget.source,
           replyText: replyForm.replyText,
           repliedBy: replyForm.repliedBy,
         }),
