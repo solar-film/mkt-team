@@ -17,6 +17,7 @@ import {
   HiCheckCircle,
   HiExclamationCircle,
   HiClipboardDocument,
+  HiTableCells,
 } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import Modal from '@/components/Modal';
@@ -406,11 +407,11 @@ export default function GbpReviewsPage() {
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <span className={styles.eyebrow}>
-            <HiStar size={14} /> Google Maps Official API → ดึงเข้าฐานข้อมูลอัตโนมัติทุกวัน
+            <HiStar size={14} /> Google Maps Official API → ฐานข้อมูล &amp; Google Sheet อัตโนมัติ
           </span>
           <h1 className={styles.pageTitle}>รีวิวบน Google Maps</h1>
           <p className={styles.pageSubtitle}>
-            ดึงคะแนนดาว ยอดรีวิวสะสมจริง และ {MAX_PER_BUSINESS} รีวิวล่าสุดของแต่ละธุรกิจเข้าฐานข้อมูลอัตโนมัติทุกเช้า 07:00 น.
+            ดึงคะแนนดาว ยอดรีวิวสะสมจริง และ {MAX_PER_BUSINESS} รีวิวล่าสุดของแต่ละธุรกิจเข้าฐานข้อมูลและเก็บลง Google Sheet อัตโนมัติทุกเช้า 07:00 น.
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -427,30 +428,76 @@ export default function GbpReviewsPage() {
               fontWeight: 600,
             }}
           >
-            <HiArrowPath size={16} /> {syncing ? 'กำลังดึงจาก Google Maps…' : 'ดึงรีวิวล่าสุดเดี๋ยวนี้'}
+            <HiArrowPath size={16} /> {syncing ? 'กำลังซิงก์ข้อมูล…' : 'ดึงรีวิวล่าสุดเดี๋ยวนี้'}
           </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setIsSheetModalOpen(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              borderRadius: '12px',
-              fontWeight: 600,
-            }}
-          >
-            <HiCog6Tooth size={16} />
-            {syncInfo?.sheetId ? 'ตั้งค่าชีต Porter' : 'ผูกชีต Porter (เสริม)'}
-          </button>
+
+          {syncInfo?.sheetUrl ? (
+            <>
+              <a
+                href={syncInfo.sheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.42rem',
+                  padding: '0.56rem 1rem',
+                  borderRadius: '12px',
+                  border: '1px solid #86efac',
+                  backgroundColor: '#f0fdf4',
+                  color: '#15803d',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                <HiTableCells size={17} /> เปิด Google Sheet เก็บข้อมูล <HiArrowTopRightOnSquare size={15} />
+              </a>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsSheetModalOpen(true)}
+                title="เปลี่ยนลิงก์หรือตั้งค่า Google Sheet"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                <HiCog6Tooth size={16} /> ตั้งค่าชีต
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSheetModalOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.42rem',
+                padding: '0.56rem 1rem',
+                borderRadius: '12px',
+                border: '1px solid #86efac',
+                backgroundColor: '#f0fdf4',
+                color: '#15803d',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <HiTableCells size={17} /> ผูก Google Sheet เก็บข้อมูล
+            </button>
+          )}
+
           <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
             <HiPlus size={18} /> บันทึกรีวิวเสริม
           </button>
         </div>
       </div>
 
-      {/* Auto-Sync Status Strip */}
+      {/* Auto-Sync & Google Sheet Link Strip */}
       <div
         style={{
           width: '100%',
@@ -476,7 +523,7 @@ export default function GbpReviewsPage() {
           <span>
             <strong>
               {syncInfo?.sheetId
-                ? 'ดึงอัตโนมัติทำงานอยู่ (Google Maps API + Porter Sheet):'
+                ? 'ดึงอัตโนมัติทำงานอยู่ (Google Maps → ฐานข้อมูล + Google Sheet):'
                 : 'ดึงอัตโนมัติจาก Google Maps ทำงานอยู่:'}
             </strong>{' '}
             ซิงก์ล่าสุด {formatThaiSyncTime(syncInfo?.lastSyncedAt || null)}
@@ -484,16 +531,66 @@ export default function GbpReviewsPage() {
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {syncInfo?.sheetUrl && (
-            <a
-              href={syncInfo.sheetUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.openLink}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {syncInfo?.sheetUrl ? (
+            <>
+              <a
+                href={syncInfo.sheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.38rem',
+                  padding: '0.34rem 0.85rem',
+                  borderRadius: '999px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #86efac',
+                  color: '#15803d',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                <HiTableCells size={15} /> เปิด Google Sheet ที่เก็บข้อมูล <HiArrowTopRightOnSquare size={14} />
+              </a>
+              <button
+                type="button"
+                onClick={() => setIsSheetModalOpen(true)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#475569',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                เปลี่ยนลิงก์
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSheetModalOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.38rem',
+                padding: '0.34rem 0.85rem',
+                borderRadius: '999px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #16a34a',
+                color: '#15803d',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
             >
-              เปิด Google Sheet <HiArrowTopRightOnSquare size={15} />
-            </a>
+              <HiTableCells size={15} /> + ใส่ลิงก์ Google Sheet เก็บข้อมูลที่นี่
+            </button>
           )}
         </div>
       </div>
@@ -668,8 +765,22 @@ export default function GbpReviewsPage() {
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
               10 รีวิวล่าสุด แยกแต่ละธุรกิจ
             </h2>
-            <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              ข้อมูลรีวิวที่ดึงมาเก็บไว้ในฐานข้อมูล (แสดงธุรกิจละ {MAX_PER_BUSINESS} รายการล่าสุด)
+            <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0', display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+              <span>ข้อมูลรีวิวที่ดึงมาเก็บไว้ในฐานข้อมูล (แสดงธุรกิจละ {MAX_PER_BUSINESS} รายการล่าสุด)</span>
+              {syncInfo?.sheetUrl && (
+                <>
+                  <span>·</span>
+                  <a
+                    href={syncInfo.sheetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.openLink}
+                    style={{ fontSize: '0.84rem' }}
+                  >
+                    เปิดตาราง Google Sheet <HiArrowTopRightOnSquare size={14} />
+                  </a>
+                </>
+              )}
             </p>
           </div>
 
@@ -801,7 +912,7 @@ export default function GbpReviewsPage() {
                         fontSize: '0.88rem',
                       }}
                     >
-                      ยังไม่มีรีวิวในฐานข้อมูลสำหรับ {brand.shortTitle} (ผูก Google Sheet ด้านบนเพื่อให้ระบบดึงเข้าอัตโนมัติ)
+                      ไม่พบรายการรีวิวที่ตรงกับเงื่อนไขการค้นหาสำหรับ {brand.shortTitle}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -922,14 +1033,51 @@ export default function GbpReviewsPage() {
         )}
       </div>
 
-      {/* Modal: Configure Porter Metrics -> Google Sheet Auto-Sync */}
+      {/* Modal: Configure Google Sheet Auto-Export & Storage Link */}
       <Modal
         isOpen={isSheetModalOpen}
         onClose={() => setIsSheetModalOpen(false)}
-        title="ตั้งค่าดึงรีวิวอัตโนมัติ (Porter Metrics → Google Sheet → ฐานข้อมูล)"
+        title="ตั้งค่าลิงก์ Google Sheet สำหรับเก็บข้อมูลรีวิวอัตโนมัติ"
         maxWidth="620px"
       >
         <form onSubmit={handleSaveSheetAndSync}>
+          {syncInfo?.sheetUrl && (
+            <div
+              style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #86efac',
+                borderRadius: '12px',
+                padding: '0.75rem 1rem',
+                marginBottom: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#166534' }}>
+                ไฟล์ Google Sheet ที่ผูกเก็บข้อมูลอยู่ปัจจุบัน:
+              </span>
+              <a
+                href={syncInfo.sheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  color: '#15803d',
+                  textDecoration: 'underline',
+                }}
+              >
+                <HiTableCells size={16} /> เปิด Google Sheet <HiArrowTopRightOnSquare size={14} />
+              </a>
+            </div>
+          )}
+
           <div
             style={{
               backgroundColor: '#f8fafc',
@@ -938,27 +1086,29 @@ export default function GbpReviewsPage() {
               padding: '1rem',
               marginBottom: '1rem',
               fontSize: '0.85rem',
-              lineHeight: 1.6,
+              lineHeight: 1.65,
               color: '#334155',
             }}
           >
-            <div style={{ fontWeight: 700, color: '#0f2942', marginBottom: '0.4rem' }}>
-              วิธีตั้งค่าครั้งเดียว แล้วระบบดึงเข้าฐานข้อมูลเองทุกวัน (ฟรี 100%):
+            <div style={{ fontWeight: 700, color: '#0f2942', marginBottom: '0.45rem' }}>
+              ตั้งค่าครั้งเดียว เว็บจะส่งคะแนนและรีวิวทั้ง 3 ธุรกิจลง Google Sheet ให้อัตโนมัติทุกวัน (ไม่ต้องใช้ Porter):
             </div>
-            <ol style={{ margin: 0, paddingLeft: '1.2rem', display: 'grid', gap: '0.35rem' }}>
+            <ol style={{ margin: 0, paddingLeft: '1.2rem', display: 'grid', gap: '0.45rem' }}>
               <li>
-                สร้างไฟล์ Google Sheet 1 ไฟล์ แล้วเปิดส่วนเสริม <b>Extensions → Porter Metrics → Launch</b>{' '}
-                เลือกแหล่งข้อมูล <b>Google Business Profile</b> (เลือกทั้ง 3 สถานที่ในแท็บเดียว หรือแยกแท็บ{' '}
-                <code>GFS</code>, <code>MHL</code>, <code>CAR</code> ก็ได้)
+                สร้างไฟล์ Google Sheet ว่าง 1 ไฟล์ 👉{' '}
+                <a
+                  href="https://sheets.new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#034aad', fontWeight: 700, textDecoration: 'underline' }}
+                >
+                  คลิกสร้าง Google Sheet ใหม่ (sheets.new) ↗
+                </a>{' '}
+                แล้วตั้งชื่อไฟล์ตามต้องการ (เช่น <code>รีวิว Google Maps - Good Group</code>)
               </li>
               <li>
-                เลือกฟิลด์รีวิวใน Porter (เช่น <code>Location Name</code>, <code>Date</code>, <code>Reviewer</code>,{' '}
-                <code>Star Rating</code>, <code>Review Comment</code>, <code>Review Reply Comment</code> รวมถึง{' '}
-                <code>Total Reviews</code>, <code>Average Rating</code>) และตั้งเวลา{' '}
-                <b>Schedule Refresh = Daily (รายวัน)</b>
-              </li>
-              <li>
-                กดปุ่ม <b>Share (แชร์)</b> ใน Google Sheet แล้วเพิ่มอีเมลระบบของเว็บด้านล่างเป็น <b>Viewer (ผู้มีสิทธิ์อ่าน)</b>:
+                กดปุ่ม <b>Share (แชร์)</b> มุมขวาบนของ Google Sheet → วางอีเมลระบบด้านล่าง แล้วเลือกสิทธิ์เป็น{' '}
+                <b style={{ color: '#15803d' }}>Editor (ผู้แก้ไข / เอดิเตอร์)</b> เพื่อให้เว็บสร้างแท็บและเขียนข้อมูลลงชีตได้:
                 {syncInfo?.serviceAccountEmail ? (
                   <div
                     style={{
@@ -998,7 +1148,11 @@ export default function GbpReviewsPage() {
                   </div>
                 ) : null}
               </li>
-              <li>วางลิงก์ Google Sheet ด้านล่าง แล้วกด <b>บันทึกและดึงข้อมูลทันที</b></li>
+              <li>
+                คัดลอกลิงก์ URL ของ Google Sheet มาวางในช่องด้านล่าง แล้วกด <b>บันทึกลิงก์และส่งข้อมูลลงชีตทันที</b>{' '}
+                (ระบบจะสร้าง 4 แท็บ <code>สรุปคะแนน 3 ธุรกิจ</code>, <code>MHL CAR</code>, <code>GOODFILM</code>,{' '}
+                <code>MHL อาคาร</code> พร้อมอัปเดตข้อมูลให้ทุกเช้า 07:00 น.)
+              </li>
             </ol>
           </div>
 
@@ -1018,7 +1172,7 @@ export default function GbpReviewsPage() {
               ยกเลิก
             </button>
             <button type="submit" className="btn btn-primary" disabled={savingSheet}>
-              {savingSheet ? 'กำลังเชื่อมและดึงข้อมูล…' : 'บันทึกและดึงข้อมูลทันที'}
+              {savingSheet ? 'กำลังเชื่อมและบันทึกข้อมูลลงชีต…' : 'บันทึกลิงก์และส่งข้อมูลลงชีตทันที'}
             </button>
           </div>
         </form>

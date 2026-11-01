@@ -8,7 +8,7 @@ import {
   MAX_REVIEWS_PER_BUSINESS,
   saveGbpSheetConfig,
   syncGbpReviews,
-  syncPorterGbpSheet,
+  syncLinkedSheetIfConfigured,
 } from '@/lib/gbp-sync';
 
 export const dynamic = 'force-dynamic';
@@ -49,11 +49,11 @@ export async function POST(request: NextRequest) {
           success: true,
           cleared: true,
           ...result,
-          message: 'สลับกลับไปใช้การดึงอัตโนมัติจาก Google Maps API โดยตรงแล้ว',
+          message: 'ยกเลิกการผูกลิงก์ Google Sheet แล้ว (ระบบยังคงดึงรีวิวเข้าฐานข้อมูลอัตโนมัติทุกวัน)',
           syncInfo,
         });
       }
-      const result = await syncPorterGbpSheet();
+      const result = await syncGbpReviews();
       const syncInfo = await getGbpSyncInfo();
       return NextResponse.json(
         {
@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
       reviewDate
     );
 
+    await syncLinkedSheetIfConfigured();
     return NextResponse.json({ success: true, id });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to process request';
@@ -149,6 +150,7 @@ export async function PUT(request: NextRequest) {
         body.source || 'Google Maps API'
       );
 
+      await syncLinkedSheetIfConfigured();
       return NextResponse.json({ success: true });
     }
 
@@ -169,6 +171,7 @@ export async function PUT(request: NextRequest) {
         Number(repliedCount) || 0,
         lastReviewAt || ''
       );
+      await syncLinkedSheetIfConfigured();
       return NextResponse.json({ success: true });
     }
 
@@ -190,6 +193,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.$executeRawUnsafe(`DELETE FROM "GbpReview" WHERE "id" = $1;`, id);
+    await syncLinkedSheetIfConfigured();
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to delete review';

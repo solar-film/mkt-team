@@ -859,6 +859,194 @@ export async function syncGooglePlacesDirect(): Promise<{
   }
 }
 
+/**
+ * Exports all 3 businesses' live summary stats and 10 latest reviews into 4 clean tabs
+ * ('สรุปคะแนน 3 ธุรกิจ', 'MHL CAR', 'GOODFILM', 'MHL อาคาร') in the linked Google Sheet.
+ */
+export async function exportGbpDataToSheet(
+  sheetId: string,
+  locations: GbpLocationSummary[],
+  reviews: GbpReviewItem[]
+): Promise<{ ok: boolean; message: string }> {
+  if (!sheetId) return { ok: false, message: 'ยังไม่ได้ระบุรหัส Google Sheet' };
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+    return { ok: false, message: 'ยังไม่มีข้อมูล Service Account ในเซิร์ฟเวอร์' };
+  }
+
+  const client = new JWT({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+
+  const desiredTabs = ['สรุปคะแนน 3 ธุรกิจ', 'MHL CAR', 'GOODFILM', 'MHL อาคาร'];
+
+  try {
+    const metaRes = await client.request<{
+      sheets?: { properties?: { sheetId?: number; title?: string } }[];
+    }>({
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=sheets.properties(sheetId,title)`,
+      timeout: 10000,
+    });
+
+    const existingSheets = metaRes.data.sheets || [];
+    const existingTitles = new Set(existingSheets.map(s => s.properties?.title).filter(Boolean));
+    const batchRequests: Record<string, unknown>[] = [];
+
+    // Rename default blank Sheet1 / แผ่นงาน1 to the summary tab if none of our tabs exist yet
+    const firstSheet = existingSheets[0]?.properties;
+    const isDefaultSingleTab =
+      existingSheets.length === 1 &&
+      firstSheet?.sheetId != null &&
+      firstSheet.title &&
+      /^(Sheet1|แผ่นงาน1|ชีต1)$/i.test(firstSheet.title) &&
+      !existingTitles.has(desiredTabs[0]);
+
+    if (isDefaultSingleTab) {
+      batchRequests.push({
+        updateSheetProperties: {
+          properties: { sheetId: firstSheet!.sheetId, title: desiredTabs[0] },
+          fields: 'title',
+        },
+      });
+      existingTitles.add(desiredTabs[0]);
+    }
+
+    for (const tabTitle of desiredTabs) {
+      if (!existingTitles.has(tabTitle)) {
+        batchRequests.push({ addSheet: { properties: { title: tabTitle } } });
+      }
+    }
+
+    if (batchRequests.length > 0) {
+      await client.request({
+        method: 'POST',
+        url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}:batchUpdate`,
+        data: { requests: batchRequests },
+        timeout: 10000,
+      });
+    }
+
+    const nowThai = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+    const summaryRows: (string | number)[][] = [
+      [
+        'รหัสธุรกิจ',
+        'ชื่อธุรกิจ',
+        'ชื่อหมุดบน Google Maps',
+        'คะแนนดาวเฉลี่ย',
+        'รีวิวสะสมทั้งหมด',
+        'จำนวนรีวิวล่าสุดในชีต',
+        'วันที่รีวิวล่าสุด',
+        'ผู้ดูแล',
+        'ลิงก์ Google Maps',
+        'อัปเดตล่าสุดเมื่อ',
+      ],
+      ...locations.map(loc => {
+        const locRevs = reviews.filter(r => r.locationId === loc.id).slice(0, MAX_REVIEWS_PER_BUSINESS);
+        const label =
+          loc.businessKey === 'CAR'
+            ? 'MHL CAR (ศูนย์ฟิล์มรถยนต์)'
+            : loc.businessKey === 'GFS'
+            ? 'GOODFILM (GFS B2B / B2C)'
+            : 'MHL อาคาร (มโหฬารฟิล์ม)';
+        return [
+          loc.businessKey,
+          label,
+          loc.name,
+          loc.rating,
+          loc.totalReviews,
+          locRevs.length,
+          locRevs[0]?.reviewDate || loc.lastReviewAt || '-',
+          loc.owner,
+          loc.mapsUrl,
+          nowThai,
+        ];
+      }),
+    ];
+
+    const buildReviewRows = (locId: string): (string | number)[][] => {
+      const list = reviews.filter(r => r.locationId === locId).slice(0, MAX_REVIEWS_PER_BUSINESS);
+      return [
+        ['ลำดับ', 'วันที่รีวิว', 'ชื่อผู้รีวิว', 'คะแนนดาว', 'ข้อความรีวิว', 'คำตอบกลับของทีม', 'ผู้ตอบกลับ', 'แหล่งข้อมูล'],
+        ...list.map((r, idx) => [
+          idx + 1,
+          r.reviewDate,
+          r.reviewerName,
+          r.rating,
+          r.comment,
+          r.replyText || '',
+          r.repliedBy || '',
+          r.source || 'Google Maps API',
+        ]),
+      ];
+    };
+
+    await client.request({
+      method: 'POST',
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values:batchClear`,
+      data: {
+        ranges: desiredTabs.map(t => `'${t}'!A1:J100`),
+      },
+      timeout: 10000,
+    });
+
+    await client.request({
+      method: 'POST',
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values:batchUpdate`,
+      data: {
+        valueInputOption: 'USER_ENTERED',
+        data: [
+          { range: `'สรุปคะแนน 3 ธุรกิจ'!A1`, values: summaryRows },
+          { range: `'MHL CAR'!A1`, values: buildReviewRows('loc-car') },
+          { range: `'GOODFILM'!A1`, values: buildReviewRows('loc-gfs') },
+          { range: `'MHL อาคาร'!A1`, values: buildReviewRows('loc-mhl') },
+        ],
+      },
+      timeout: 12000,
+    });
+
+    return {
+      ok: true,
+      message: `บันทึกคะแนนและรีวิวทั้ง 3 ธุรกิจ (${reviews.length} รีวิว) ลง Google Sheet เรียบร้อยแล้ว`,
+    };
+  } catch (error: unknown) {
+    const status =
+      (error as { status?: number }).status ??
+      (error as { response?: { status?: number } }).response?.status;
+    const rawMsg = error instanceof Error ? error.message : String(error);
+
+    if (status === 403 || rawMsg.includes('403') || rawMsg.includes('permission')) {
+      // Check if we at least have Viewer access (e.g. user shared as Viewer instead of Editor)
+      try {
+        const roClient = new JWT({
+          email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+        });
+        await roClient.request({
+          url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=properties.title`,
+          timeout: 6000,
+        });
+        return {
+          ok: false,
+          message:
+            'ชีตนี้แชร์เป็นสิทธิ์อ่านอย่างเดียว (Viewer) กรุณาเปลี่ยนสิทธิ์ของอีเมลระบบเป็น Editor (ผู้แก้ไข) เพื่อให้เว็บเขียนข้อมูลรีวิวลงชีตให้อัตโนมัติค่ะ',
+        };
+      } catch {
+        return {
+          ok: false,
+          message:
+            'ยังไม่ได้แชร์สิทธิ์ Google Sheet ให้อีเมลระบบ กรุณากดปุ่ม Share ในชีตแล้วเพิ่มอีเมลระบบเป็น Editor (ผู้แก้ไข) ค่ะ',
+        };
+      }
+    }
+    if (status === 404 || rawMsg.includes('404')) {
+      return { ok: false, message: 'ไม่พบไฟล์ Google Sheet จากลิงก์ที่ระบุ' };
+    }
+    return { ok: false, message: `เขียนข้อมูลลง Google Sheet ไม่สำเร็จ: ${rawMsg.slice(0, 140)}` };
+  }
+}
+
 export async function syncGbpReviews(): Promise<{
   ok: boolean;
   imported: number;
@@ -866,25 +1054,56 @@ export async function syncGbpReviews(): Promise<{
   message: string;
 }> {
   revalidateTag(PLACES_CACHE_TAG, { expire: 0 });
+  const directRes = await syncGooglePlacesDirect();
   const info = await getGbpSyncInfo();
-  if (info.sheetId) {
-    const sheetRes = await syncPorterGbpSheet();
-    try {
-      const { stats } = await fetchLiveGooglePlacesData();
-      for (const [locId, s] of Object.entries(stats)) {
-        await prisma.$executeRawUnsafe(
-          `UPDATE "GbpLocation" SET "rating" = $2, "totalReviews" = $3, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = $1;`,
-          locId,
-          s.rating,
-          s.totalReviews
-        );
-      }
-    } catch {
-      // Non-fatal
+
+  if (info.sheetId && directRes.ok) {
+    const { locations, reviews } = await loadGbpPageDataFast();
+    const expRes = await exportGbpDataToSheet(info.sheetId, locations, reviews);
+    if (expRes.ok) {
+      const combinedMsg = `${directRes.message} · บันทึกลง Google Sheet แล้ว`;
+      await prisma
+        .$executeRawUnsafe(
+          `UPDATE "GbpSyncConfig"
+           SET "lastSyncedAt" = CURRENT_TIMESTAMP,
+               "lastSyncOk" = true,
+               "lastSyncMessage" = $1,
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE "id" = 'default';`,
+          combinedMsg
+        )
+        .catch(() => {});
+      return { ...directRes, message: combinedMsg };
     }
-    return sheetRes;
+    // Fallback: if user linked a read-only Porter Metrics sheet with existing rows, import from it
+    const porterRes = await syncPorterGbpSheet();
+    if (porterRes.ok && porterRes.imported > 0) {
+      return porterRes;
+    }
+    await prisma
+      .$executeRawUnsafe(
+        `UPDATE "GbpSyncConfig"
+         SET "lastSyncedAt" = CURRENT_TIMESTAMP,
+             "lastSyncOk" = false,
+             "lastSyncMessage" = $1,
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE "id" = 'default';`,
+        expRes.message
+      )
+      .catch(() => {});
+    return { ...directRes, ok: false, message: expRes.message };
   }
-  return syncGooglePlacesDirect();
+
+  return directRes;
+}
+
+/** Keeps the linked Google Sheet updated whenever staff add/reply/delete reviews on the web. */
+export async function syncLinkedSheetIfConfigured(): Promise<void> {
+  const info = await getGbpSyncInfo();
+  if (!info.sheetId) return;
+  const { locations, reviews } = await loadGbpPageDataFast();
+  if (reviews.some(r => r.source === 'Porter Metrics Sheet')) return;
+  await exportGbpDataToSheet(info.sheetId, locations, reviews).catch(() => {});
 }
 
 /**
@@ -992,12 +1211,22 @@ export async function loadGbpPageDataFast(): Promise<{
   }
 
   const totalCount = mergedReviews.length;
+  const hasSheetError = Boolean(syncInfo.sheetId && syncInfo.lastSyncOk === false && syncInfo.lastSyncMessage);
+  const sheetSuffix =
+    syncInfo.sheetId && syncInfo.lastSyncOk === true ? ' · บันทึกลง Google Sheet อัตโนมัติ' : '';
+
   const effectiveSyncInfo: GbpSyncInfo = {
     ...syncInfo,
     lastSyncedAt: livePlaces?.fetchedAt || syncInfo.lastSyncedAt || null,
-    lastSyncOk: livePlaces ? true : syncInfo.lastSyncOk ?? (liveError ? false : null),
-    lastSyncMessage: livePlaces
-      ? `ดึงจาก Google Maps สำเร็จ ${totalCount} รีวิว (CAR ${mergedReviews.filter(r => r.locationId === 'loc-car').length}, GFS ${mergedReviews.filter(r => r.locationId === 'loc-gfs').length}, MHL ${mergedReviews.filter(r => r.locationId === 'loc-mhl').length})`
+    lastSyncOk: hasSheetError
+      ? false
+      : livePlaces
+      ? true
+      : syncInfo.lastSyncOk ?? (liveError ? false : null),
+    lastSyncMessage: hasSheetError
+      ? syncInfo.lastSyncMessage
+      : livePlaces
+      ? `ดึงจาก Google Maps สำเร็จ ${totalCount} รีวิว (CAR ${mergedReviews.filter(r => r.locationId === 'loc-car').length}, GFS ${mergedReviews.filter(r => r.locationId === 'loc-gfs').length}, MHL ${mergedReviews.filter(r => r.locationId === 'loc-mhl').length})${sheetSuffix}`
       : syncInfo.lastSyncMessage || (liveError ? `Google Maps API: ${liveError}` : null),
   };
 
