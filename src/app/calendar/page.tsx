@@ -604,7 +604,7 @@ export default function CalendarPage() {
       {/* -------------------- DESKTOP VIEW -------------------- */}
       <div className="desktop-only">
         <div className="page-header" style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem' }}>ปฏิทินงาน</h1>
             <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '0.2rem' }}>
               <button 
@@ -623,7 +623,7 @@ export default function CalendarPage() {
             <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setEventForm({ title: '', date: '', time: '', type: 'event' }); setEventDays([]); setIsModalOpen(true); }}>
               <HiPlus /> เพิ่มรายการใหม่
             </button>
-            {typeFilterChips}
+            <div style={{ marginLeft: 'auto' }}>{typeFilterChips}</div>
           </div>
         </div>
 

@@ -45,21 +45,21 @@ interface Member {
 }
 
 // Grouped in menu order; the desktop sidebar shows a foldable heading where the group changes.
-// Groups start folded except the one holding the current page.
+// Groups start folded except "งาน" and the one holding the current page.
 // The mobile bottom bar shows the MOBILE_BAR links and puts the rest under "เพิ่มเติม".
 const navLinks = [
   { group: 'ภาพรวม', path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
   { group: 'ภาพรวม', path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
-  { group: 'ข้อมูลตลาด', path: '/market', label: 'ภาพรวมค่าโฆษณา', icon: <HiBanknotes /> },
-  { group: 'ข้อมูลตลาด', path: '/market/google', label: 'Google Ads', icon: <SiGoogleads /> },
-  { group: 'ข้อมูลตลาด', path: '/market/facebook', label: 'Facebook Ads', icon: <SiFacebook /> },
-  { group: 'ข้อมูลตลาด', path: '/market/chatgpt', label: 'ChatGPT Ads', icon: <SiOpenai /> },
-  { group: 'ข้อมูลตลาด', path: '/market/analysis', label: 'วิเคราะห์โฆษณา', icon: <HiPresentationChartLine /> },
   { group: 'งาน', path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { group: 'งาน', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { group: 'งาน', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
   { group: 'งาน', path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
   { group: 'งาน', path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
+  { group: 'ข้อมูลตลาด', path: '/market', label: 'ภาพรวมค่าโฆษณา', icon: <HiBanknotes /> },
+  { group: 'ข้อมูลตลาด', path: '/market/google', label: 'Google Ads', icon: <SiGoogleads /> },
+  { group: 'ข้อมูลตลาด', path: '/market/facebook', label: 'Facebook Ads', icon: <SiFacebook /> },
+  { group: 'ข้อมูลตลาด', path: '/market/chatgpt', label: 'ChatGPT Ads', icon: <SiOpenai /> },
+  { group: 'ข้อมูลตลาด', path: '/market/analysis', label: 'วิเคราะห์โฆษณา', icon: <HiPresentationChartLine /> },
   { group: 'ทีม & ธุรกิจ', path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
   { group: 'ทีม & ธุรกิจ', path: '/company', label: 'โครงสร้างธุรกิจ', icon: <HiBuildingOffice2 /> },
   { group: 'ทีม & ธุรกิจ', path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
@@ -78,7 +78,7 @@ export default function Sidebar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMore, setShowMobileMore] = useState(false);
   const activeGroup = navLinks.find(link => link.path === pathname)?.group;
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroup ? [activeGroup] : []));
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroup ? ['งาน', activeGroup] : ['งาน']));
 
   // Opening another page unfolds its group so the highlighted link stays visible.
   useEffect(() => {
