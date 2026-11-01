@@ -357,3 +357,38 @@ model AdKeyword {
   @@unique([kind, month, accountId, text, matchType])
   @@index([month, kind])
 }
+
+// Daily contacts (one customer once per day) per channel account, for the ข้อมูลการติดต่อ pages.
+// LINE / Facebook / Instagram are copied from GOOD CRM's intake counts (src/lib/contact-sync.ts);
+// phone rows come from uploaded call-log files. A pull or upload replaces its own date window.
+model ContactDaily {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  month       String
+  channel     String
+  company     String
+  account     String
+  contacts    Int      @default(0)
+  newContacts Int?
+  source      String
+  syncedAt    DateTime @default(now())
+
+  @@unique([channel, company, account, date])
+  @@index([month])
+}
+
+// One row per GOOD CRM pull or call-log upload: freshness and the reason a pull failed.
+model ContactSyncRun {
+  id         String    @id @default(cuid())
+  source     String
+  trigger    String
+  dateFrom   DateTime  @db.Date
+  dateTo     DateTime  @db.Date
+  ok         Boolean   @default(false)
+  rows       Int       @default(0)
+  message    String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([source, startedAt])
+}

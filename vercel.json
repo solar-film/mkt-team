@@ -1,7 +1,9 @@
 {
   "buildCommand": "node scripts/check-release-env.cjs && npm run build -- --webpack",
   "git": {
-    "deploymentEnabled": { "main": false }
+    "deploymentEnabled": {
+      "main": false
+    }
   },
   "crons": [
     {
@@ -11,7 +13,13 @@
     {
       "path": "/api/cron/ads-sync",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/contacts-sync",
+      "schedule": "0 17 * * *"
     }
   ],
-  "regions": ["sin1"]
+  "regions": [
+    "sin1"
+  ]
 }
