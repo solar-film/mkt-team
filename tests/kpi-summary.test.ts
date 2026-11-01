@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { monthQueryRange, percent, summarizeMonth, type ReviewItem } from '../src/lib/kpi-summary';
+import { kpiScore, monthQueryRange, percent, summarizeMonth, type ReviewItem } from '../src/lib/kpi-summary';
 import { parseWorkReview, submittedAtForStatus, WorkReviewError } from '../src/lib/work-review';
 import { EvaluationInputError, parseEvaluations } from '../src/lib/member-evaluation';
 
@@ -156,4 +156,13 @@ test('D+7 reach counts for every published post, marked organic/paid or not', ()
     base({ kind: 'content', status: 'todo', due: th('2026-11-04'), reach7: 999 }),
   ]);
   assert.deepEqual(s.members[0].reach7, { all: 200, organic: null, paid: 100, posts: 2 });
+});
+
+test('KPI score = done capped at each target over the sum of targets', () => {
+  // NON, Oct 69: over-target lines count only up to their target.
+  const non = [[2, 4], [2, 10], [6, 4], [1, 4], [1, 4], [7, 4], [4, 4], [1, 4]].map(([current, target]) => ({ current, target }));
+  assert.deepEqual(kpiScore(non), { done: 19, total: 38 });
+  assert.equal(percent(kpiScore(non)), 50);
+  assert.deepEqual(kpiScore([{ current: 5, target: 0 }, { current: -1, target: 3 }]), { done: 0, total: 3 });
+  assert.equal(percent(kpiScore([])), null);
 });

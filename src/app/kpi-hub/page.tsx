@@ -10,7 +10,7 @@ import styles from './kpi-hub.module.css';
 import MemberAvatar from '@/components/MemberAvatar';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { bangkokDateKey } from '@/lib/bangkok-date';
-import { percent, type KpiHubSummary, type MemberSummary, type Ratio } from '@/lib/kpi-summary';
+import { kpiScore, percent, type KpiHubSummary, type MemberSummary, type Ratio } from '@/lib/kpi-summary';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -248,9 +248,20 @@ function KpiCards({ members }: { members: MemberSummary[] }) {
       </div>
       {withKpis.length === 0 ? <p className={styles.empty}>ยังไม่มีเป้า KPI ของเดือนนี้</p> : (
         <div className={styles.kpiGrid}>
-          {withKpis.map(m => (
+          {withKpis.map(m => {
+            const score = kpiScore(m.kpis);
+            const scorePct = percent(score);
+            return (
             <article key={m.memberId} className={styles.kpiPerson}>
-              <header className={styles.who}><MemberAvatar name={m.name} size="sm" /><b>{m.name}</b></header>
+              <header className={styles.kpiHead}>
+                <span className={styles.who}><MemberAvatar name={m.name} size="sm" /><b>{m.name}</b></span>
+                {scorePct !== null && (
+                  <span className={styles.kpiScore} title="คะแนน KPI = รวมผลงาน (ไม่เกินเป้าแต่ละข้อ) ÷ รวมเป้า">
+                    <b className={scorePct >= 100 ? styles.scoreDone : undefined}>{scorePct}%</b>
+                    <small>คะแนน KPI · {score.done}/{score.total}</small>
+                  </span>
+                )}
+              </header>
               <ul>
                 {m.kpis.map(k => {
                   const pct = k.target > 0 ? Math.round((k.current / k.target) * 100) : 0;
@@ -265,7 +276,8 @@ function KpiCards({ members }: { members: MemberSummary[] }) {
                 })}
               </ul>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

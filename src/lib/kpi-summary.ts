@@ -101,6 +101,17 @@ export function kpiCurrent(kpi: { id: string; memberId: string; current: number 
 
 export const percent = (ratio: Ratio): number | null => (ratio.total ? Math.round((ratio.done / ratio.total) * 100) : null);
 
+/**
+ * KPI score of one person: work done, capped at each KPI's target, over the sum of targets
+ * (the rule มะลิ used for the Oct 69 evaluation, chosen by the user 1 Nov 69).
+ * A KPI with a big target weighs more; going over one target does not make up for another.
+ */
+export function kpiScore(kpis: Pick<MemberKpi, 'current' | 'target'>[]): Ratio {
+  return kpis.reduce((score, kpi) => (kpi.target > 0
+    ? { done: score.done + Math.min(Math.max(kpi.current, 0), kpi.target), total: score.total + kpi.target }
+    : score), { done: 0, total: 0 });
+}
+
 export function summarizeMonth(input: {
   year: number;
   month: number;
