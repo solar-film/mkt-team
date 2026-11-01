@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { HiRefresh } from "react-icons/hi";
 import { fetchWorkspace } from "@/lib/workspace-fetch";
+import { PAGE_METRIC_SOURCE } from "@/lib/facebook-posts";
 
 type Post = {
   id: string; createdTime: string; firstLine: string; reach: number | null;
@@ -116,7 +117,7 @@ export function FacebookPostsPanel() {
                 <td style={cell}>{p.firstLine || "—"}</td>
                 <td style={cell}>{p.reach === null ? "—" : p.reach.toLocaleString("th-TH")}</td>
                 <td style={{ ...cell, color: p.contentTitle ? "inherit" : "#b45309" }}>{p.contentTitle ?? "จับคู่ไม่ได้"}</td>
-                <td style={cell}>{p.d7 ? `${p.d7.reach?.toLocaleString("th-TH") ?? "—"}${p.d7.source === "windsor" ? "" : " (กรอกเอง)"}` : "—"}</td>
+                <td style={cell}>{p.d7 ? `${p.d7.reach?.toLocaleString("th-TH") ?? "—"}${p.d7.source === PAGE_METRIC_SOURCE ? "" : " (กรอกเอง)"}` : "—"}</td>
               </tr>
             ))}
           </tbody>

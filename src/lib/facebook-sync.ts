@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import { bangkokDateKey } from './bangkok-date';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
-import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, backfillAction, d7Due, isVideoShareLink, matchByVideo, matchPosts, normalizeFacebookPosts, postAgeDays, videoIdFromUrl } from './facebook-posts';
+import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, PAGE_METRIC_SOURCE, backfillAction, d7Due, isVideoShareLink, matchByVideo, matchPosts, normalizeFacebookPosts, postAgeDays, videoIdFromUrl } from './facebook-posts';
 
 export const FACEBOOK_SYNC_PLATFORM = 'facebook_organic';
 // Long enough that a post seen on day 7 is still re-read on day 9 if a night's run fails.
@@ -76,7 +76,7 @@ export async function syncFacebookPosts(from: string, to: string, trigger: 'cron
     const recorded = due.length ? await prisma.contentMetric.createMany({
       data: due.map(({ post, contentId }) => ({
         contentId, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments,
-        source: 'windsor', note: `ดึงอัตโนมัติจากเพจ Facebook (Windsor) ตอนโพสต์อายุ ${postAgeDays(post.createdTime, now)} วัน`,
+        source: PAGE_METRIC_SOURCE, note: `ดึงอัตโนมัติจากเพจ Facebook (Windsor) ตอนโพสต์อายุ ${postAgeDays(post.createdTime, now)} วัน`,
       })),
       skipDuplicates: true,
     }) : { count: 0 };
@@ -127,7 +127,7 @@ export async function backfillFacebookReach(from: string, to: string, now = new 
     if (action === 'create') {
       counts.created++;
       writes.push(prisma.contentMetric.create({
-        data: { contentId: post.contentId!, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments, source: 'windsor', note: note(age) },
+        data: { contentId: post.contentId!, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments, source: PAGE_METRIC_SOURCE, note: note(age) },
       }));
     } else if (action === 'fill' && existing) {
       counts.filled++;

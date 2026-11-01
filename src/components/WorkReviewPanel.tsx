@@ -6,6 +6,7 @@ import { HiChartBar } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import { FIRST_REVIEW, PROMOTION, REVISE_REASON } from '@/lib/work-review';
+import { PAGE_METRIC_SOURCE } from '@/lib/facebook-posts';
 
 export interface WorkReviewValues {
   submittedAt?: string | null;
@@ -132,7 +133,7 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
               value={reach.typed} disabled={reach.status !== 'ready'}
               placeholder={reach.status === 'loading' ? 'กำลังโหลด…' : reach.status === 'failed' ? 'โหลดไม่สำเร็จ' : 'ยอด Reach วันที่ 7 หลังโพสต์'}
               onChange={e => setReach({ ...reach, typed: e.target.value.replace(/[^\d,]/g, '') })} />
-            {reach.saved != null && reach.source === 'windsor' && (
+            {reach.saved != null && reach.source === PAGE_METRIC_SOURCE && (
               <small style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>ดึงอัตโนมัติจาก Facebook · แก้ได้ถ้าไม่ถูก</small>
             )}
           </label>

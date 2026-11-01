@@ -150,3 +150,10 @@ test('Windsor permalink gives the post its reel number, and link pairs are exact
   assert.deepEqual([...matchByVideo([reel, post], videos)], [['p_1', 'c1']]);
   assert.deepEqual([...matchByVideo([reel], videos, new Set(['c1']))], [['p_1', 'c2']]);
 });
+
+test('page D+7 figures use a source the live database accepts', async () => {
+  const { PAGE_METRIC_SOURCE } = await import('../src/lib/facebook-posts');
+  // ContentMetric_source_check on the live database (read 1 Nov 69).
+  assert.ok(['manual', 'import', 'api'].includes(PAGE_METRIC_SOURCE));
+  assert.notEqual(PAGE_METRIC_SOURCE, 'manual');
+});

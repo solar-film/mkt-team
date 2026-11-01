@@ -13,6 +13,12 @@ export const FACEBOOK_POST_FIELDS = [
   'post_id', 'post_created_time', 'post_message', 'post_total_media_view_unique', 'post_reactions_total', 'post_comments_total', 'permalink_url',
 ] as const;
 export const D7_SNAPSHOT = 'D+7';
+/**
+ * Source of D+7 figures pulled from the Facebook pages (Windsor). The live database only accepts
+ * 'manual', 'import' and 'api' for ContentMetric.source (checked 1 Nov 69; the user chose 'api'
+ * over changing the database), so page figures are 'api' and typed ones stay 'manual'.
+ */
+export const PAGE_METRIC_SOURCE = 'api';
 export const D7_MIN_DAYS = 7;
 export const D7_MAX_DAYS = 9;
 
