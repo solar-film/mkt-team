@@ -152,6 +152,18 @@ function formatThaiSyncTime(iso: string | null): string {
   });
 }
 
+function GoogleSheetIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" fill="#0F9D58" />
+      <path d="M14 2v6h6L14 2Z" fill="#87CEAC" />
+      <rect x="7.5" y="11" width="9" height="7.5" rx="0.8" stroke="#ffffff" strokeWidth="1.5" />
+      <line x1="7.5" y1="14.75" x2="16.5" y2="14.75" stroke="#ffffff" strokeWidth="1.3" />
+      <line x1="11.5" y1="11" x2="11.5" y2="18.5" stroke="#ffffff" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
 export default function GbpReviewsPage() {
   const [locations, setLocations] = useState<GbpLocation[]>(INITIAL_LOCATIONS);
   const [reviews, setReviews] = useState<GbpReview[]>([]);
@@ -431,78 +443,18 @@ export default function GbpReviewsPage() {
             <HiArrowPath size={16} /> {syncing ? 'กำลังซิงก์ข้อมูล…' : 'ดึงรีวิวล่าสุดเดี๋ยวนี้'}
           </button>
 
-          {syncInfo?.sheetUrl ? (
-            <>
-              <a
-                href={syncInfo.sheetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.42rem',
-                  padding: '0.56rem 1rem',
-                  borderRadius: '12px',
-                  border: '1px solid #86efac',
-                  backgroundColor: '#f0fdf4',
-                  color: '#15803d',
-                  fontSize: '0.875rem',
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                }}
-              >
-                <HiTableCells size={17} /> เปิด Google Sheet เก็บข้อมูล <HiArrowTopRightOnSquare size={15} />
-              </a>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setIsSheetModalOpen(true)}
-                title="เปลี่ยนลิงก์หรือตั้งค่า Google Sheet"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  borderRadius: '12px',
-                  fontWeight: 600,
-                }}
-              >
-                <HiCog6Tooth size={16} /> ตั้งค่าชีต
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsSheetModalOpen(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.42rem',
-                padding: '0.56rem 1rem',
-                borderRadius: '12px',
-                border: '1px solid #86efac',
-                backgroundColor: '#f0fdf4',
-                color: '#15803d',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              <HiTableCells size={17} /> ผูก Google Sheet เก็บข้อมูล
-            </button>
-          )}
-
           <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
             <HiPlus size={18} /> บันทึกรีวิวเสริม
           </button>
         </div>
       </div>
 
-      {/* Auto-Sync & Google Sheet Link Strip */}
+      {/* Auto-Sync & Google Sheet Icon Strip */}
       <div
         style={{
           width: '100%',
           marginBottom: '1.5rem',
-          padding: '0.85rem 1.2rem',
+          padding: '0.62rem 1rem',
           borderRadius: '14px',
           border: syncInfo?.lastSyncOk === false ? '1px solid #fed7aa' : '1px solid #bbf7d0',
           backgroundColor: syncInfo?.lastSyncOk === false ? '#fff7ed' : '#f0fdf4',
@@ -510,86 +462,73 @@ export default function GbpReviewsPage() {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '0.75rem',
-          flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.86rem', color: '#0f2942' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.84rem', color: '#0f2942', minWidth: 0 }}>
           {syncInfo?.lastSyncOk === false ? (
-            <HiExclamationCircle size={20} color="#ea580c" style={{ flexShrink: 0 }} />
+            <HiExclamationCircle size={19} color="#ea580c" style={{ flexShrink: 0 }} />
           ) : (
-            <HiCheckCircle size={20} color="#16a34a" style={{ flexShrink: 0 }} />
+            <HiCheckCircle size={19} color="#16a34a" style={{ flexShrink: 0 }} />
           )}
 
           <span>
-            <strong>
-              {syncInfo?.sheetId
-                ? 'ดึงอัตโนมัติทำงานอยู่ (Google Maps → ฐานข้อมูล + Google Sheet):'
-                : 'ดึงอัตโนมัติจาก Google Maps ทำงานอยู่:'}
-            </strong>{' '}
-            ซิงก์ล่าสุด {formatThaiSyncTime(syncInfo?.lastSyncedAt || null)}
-            {syncInfo?.lastSyncMessage ? ` · ${syncInfo.lastSyncMessage}` : ' · อัปเดตเข้าฐานข้อมูลอัตโนมัติทุกวัน 07:00 น.'}
+            <strong>ซิงก์อัตโนมัติล่าสุด:</strong> {formatThaiSyncTime(syncInfo?.lastSyncedAt || null)}
+            {syncInfo?.lastSyncMessage ? ` · ${syncInfo.lastSyncMessage}` : ' · อัปเดตทุกวัน 07:00 น.'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
           {syncInfo?.sheetUrl ? (
             <>
               <a
                 href={syncInfo.sheetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                title="เปิด Google Sheet ที่เก็บข้อมูลรีวิว"
+                aria-label="เปิด Google Sheet ที่เก็บข้อมูลรีวิว"
                 style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '8px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #bbf7d0',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.38rem',
-                  padding: '0.34rem 0.85rem',
-                  borderRadius: '999px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #86efac',
-                  color: '#15803d',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
+                  justifyContent: 'center',
                   textDecoration: 'none',
                 }}
               >
-                <HiTableCells size={15} /> เปิด Google Sheet ที่เก็บข้อมูล <HiArrowTopRightOnSquare size={14} />
+                <GoogleSheetIcon size={16} />
               </a>
               <button
                 type="button"
                 onClick={() => setIsSheetModalOpen(true)}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: '#475569',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
+                title="เปลี่ยนหรือตั้งค่าลิงก์ Google Sheet"
+                aria-label="เปลี่ยนหรือตั้งค่าลิงก์ Google Sheet"
+                className={styles.iconBtn}
               >
-                เปลี่ยนลิงก์
+                <HiCog6Tooth size={15} />
               </button>
             </>
           ) : (
             <button
               type="button"
               onClick={() => setIsSheetModalOpen(true)}
+              title="ผูก Google Sheet เก็บข้อมูลรีวิว"
+              aria-label="ผูก Google Sheet เก็บข้อมูลรีวิว"
               style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '8px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #bbf7d0',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.38rem',
-                padding: '0.34rem 0.85rem',
-                borderRadius: '999px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #16a34a',
-                color: '#15803d',
-                fontSize: '0.82rem',
-                fontWeight: 700,
+                justifyContent: 'center',
                 cursor: 'pointer',
               }}
             >
-              <HiTableCells size={15} /> + ใส่ลิงก์ Google Sheet เก็บข้อมูลที่นี่
+              <GoogleSheetIcon size={16} />
             </button>
           )}
         </div>
@@ -765,22 +704,8 @@ export default function GbpReviewsPage() {
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
               10 รีวิวล่าสุด แยกแต่ละธุรกิจ
             </h2>
-            <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0', display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-              <span>ข้อมูลรีวิวที่ดึงมาเก็บไว้ในฐานข้อมูล (แสดงธุรกิจละ {MAX_PER_BUSINESS} รายการล่าสุด)</span>
-              {syncInfo?.sheetUrl && (
-                <>
-                  <span>·</span>
-                  <a
-                    href={syncInfo.sheetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.openLink}
-                    style={{ fontSize: '0.84rem' }}
-                  >
-                    เปิดตาราง Google Sheet <HiArrowTopRightOnSquare size={14} />
-                  </a>
-                </>
-              )}
+            <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
+              ข้อมูลรีวิวที่ดึงมาเก็บไว้ในฐานข้อมูล (แสดงธุรกิจละ {MAX_PER_BUSINESS} รายการล่าสุด)
             </p>
           </div>
 
