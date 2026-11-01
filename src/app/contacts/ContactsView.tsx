@@ -560,7 +560,8 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
   const refresh = async () => {
     setSyncing(true);
     setSyncNote(null);
-    const res = await fetchWorkspace('/api/contacts/sync', { method: 'POST' });
+    // Every browser write must be JSON (src/lib/browser-request.ts), even with nothing to send.
+    const res = await fetchWorkspace('/api/contacts/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const body = await res.json().catch(() => ({}));
     setSyncing(false);
     setSyncNote(res.ok ? `ดึงแล้ว ${count(body.rows)} แถว (${body.from} ถึง ${body.to})` : body.error || body.message || 'ดึงข้อมูลไม่สำเร็จ');
