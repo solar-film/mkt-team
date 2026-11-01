@@ -6,6 +6,9 @@ import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, backfillAction, d7Due, 
 export const FACEBOOK_SYNC_PLATFORM = 'facebook_organic';
 // Long enough that a post seen on day 7 is still re-read on day 9 if a night's run fails.
 export const FACEBOOK_LOOKBACK_DAYS = 12;
+// Leaves time for saving and matching inside the 60-second request, so a slow Windsor reply is
+// reported as an error instead of the request being cut off.
+const WINDSOR_WAIT_MS = 40_000;
 
 export interface FacebookSyncResult { ok: boolean; posts: number; matched: number; d7: number; message: string | null }
 
@@ -19,7 +22,7 @@ const isoDay = (value: string) => new Date(`${value}T00:00:00.000Z`);
 export async function syncFacebookPosts(from: string, to: string, trigger: 'cron' | 'admin', now = new Date()): Promise<FacebookSyncResult> {
   const run = await prisma.adSyncRun.create({ data: { platform: FACEBOOK_SYNC_PLATFORM, trigger, dateFrom: isoDay(from), dateTo: isoDay(to) } });
   try {
-    const posts = normalizeFacebookPosts(await fetchWindsorConnector(FACEBOOK_SYNC_PLATFORM, from, to, [...FACEBOOK_POST_FIELDS]));
+    const posts = normalizeFacebookPosts(await fetchWindsorConnector(FACEBOOK_SYNC_PLATFORM, from, to, [...FACEBOOK_POST_FIELDS], WINDSOR_WAIT_MS));
     const existing = new Map((await prisma.facebookPost.findMany({
       where: { id: { in: posts.map(p => p.id) } }, select: { id: true, contentId: true, matchedBy: true },
     })).map(p => [p.id, p]));

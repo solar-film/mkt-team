@@ -147,3 +147,22 @@ export function backfillRange(month: string, today: string): { from: string; to:
   const end = `${month}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
   return { from, to: end < today ? end : today };
 }
+
+/**
+ * A backfill month in runs of at most BACKFILL_PART_DAYS days. A whole month of four pages with
+ * post text takes Windsor close to a minute, past the 60-second limit of one request, so the admin
+ * page pulls it part by part.
+ */
+export const BACKFILL_PART_DAYS = 7;
+export function backfillParts(month: string, today: string): { from: string; to: string }[] {
+  const range = backfillRange(month, today);
+  if (!range) return [];
+  const parts: { from: string; to: string }[] = [];
+  for (let day = Number(range.from.slice(8)); ; day += BACKFILL_PART_DAYS) {
+    const from = `${month}-${String(day).padStart(2, '0')}`;
+    if (from > range.to) break;
+    const end = `${month}-${String(day + BACKFILL_PART_DAYS - 1).padStart(2, '0')}`;
+    parts.push({ from, to: end < range.to ? end : range.to });
+  }
+  return parts;
+}

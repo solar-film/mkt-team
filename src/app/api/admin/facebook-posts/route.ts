@@ -4,7 +4,7 @@ import { hasAdminSession } from '@/lib/admin-session';
 import { windsorConfigured } from '@/lib/windsor';
 import { invalidateWorkspace } from '@/lib/workspace-cache';
 import { bangkokDateKey } from '@/lib/bangkok-date';
-import { D7_SNAPSHOT, backfillRange } from '@/lib/facebook-posts';
+import { D7_SNAPSHOT, backfillParts } from '@/lib/facebook-posts';
 import { backfillFacebookReach, facebookWindow, syncFacebookPosts } from '@/lib/facebook-sync';
 
 export const dynamic = 'force-dynamic';
@@ -33,17 +33,21 @@ export async function GET(request: Request) {
   }, { headers });
 }
 
-/** Runs the nightly pull now, or with { month: "YYYY-MM" } fills that month's D+7 reach from Windsor. */
+/**
+ * Runs the nightly pull now, or with { month: "YYYY-MM", part } fills one part (up to 7 days) of
+ * that month's D+7 reach from Windsor; the reply says how many parts the month has.
+ */
 export async function POST(request: Request) {
   if (!hasAdminSession(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
   if (!windsorConfigured()) return NextResponse.json({ error: 'ยังไม่ได้ตั้ง WINDSOR_API_KEY บน Vercel' }, { status: 503, headers });
-  const body = await request.json().catch(() => ({})) as { month?: unknown };
+  const body = await request.json().catch(() => ({})) as { month?: unknown; part?: unknown };
   if (body.month !== undefined) {
-    const range = backfillRange(String(body.month), bangkokDateKey(new Date()));
-    if (!range) return NextResponse.json({ error: 'เดือนไม่ถูกต้อง' }, { status: 400, headers });
-    const result = await backfillFacebookReach(range.from, range.to);
+    const parts = backfillParts(String(body.month), bangkokDateKey(new Date()));
+    const part = Number(body.part ?? 0);
+    if (!parts.length || !Number.isInteger(part) || part < 0 || part >= parts.length) return NextResponse.json({ error: 'เดือนไม่ถูกต้อง' }, { status: 400, headers });
+    const result = await backfillFacebookReach(parts[part].from, parts[part].to);
     if (result.created + result.filled + result.d7 > 0) invalidateWorkspace();
-    return NextResponse.json({ ...range, ...result }, { status: result.ok ? 200 : 502, headers });
+    return NextResponse.json({ ...parts[part], part, parts: parts.length, ...result }, { status: result.ok ? 200 : 502, headers });
   }
   const { from, to } = facebookWindow();
   const result = await syncFacebookPosts(from, to, 'admin');

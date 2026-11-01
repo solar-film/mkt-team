@@ -27,8 +27,11 @@ const safeMessage = safeWindsorMessage;
 const fetchWindsor = (platform: Platform, from: string, to: string, fields = WINDSOR_FIELDS[platform].fields) =>
   fetchWindsorConnector(platform, from, to, fields);
 
-/** Any Windsor connector (ads platforms, facebook_organic, …); the rows array or an error. */
-export async function fetchWindsorConnector(platform: string, from: string, to: string, fields: readonly string[]): Promise<unknown> {
+/**
+ * Any Windsor connector (ads platforms, facebook_organic, …); the rows array or an error.
+ * timeoutMs lets a caller that still has database work to do stop waiting earlier.
+ */
+export async function fetchWindsorConnector(platform: string, from: string, to: string, fields: readonly string[], timeoutMs = FETCH_TIMEOUT_MS): Promise<unknown> {
   const params = new URLSearchParams({
     api_key: process.env.WINDSOR_API_KEY!.trim(),
     date_from: from,
@@ -37,7 +40,7 @@ export async function fetchWindsorConnector(platform: string, from: string, to: 
   });
   const response = await fetch(`${WINDSOR_URL}/${platform}?${params}`, {
     cache: 'no-store',
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const body = await response.json().catch(() => null) as { data?: unknown; error?: unknown } | null;
   if (!response.ok || !body || body.error) {

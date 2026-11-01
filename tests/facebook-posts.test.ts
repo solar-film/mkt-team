@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backfillAction, backfillRange, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
+import { backfillAction, backfillParts, backfillRange, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
 import { ManualAdsError, parseManualAds, skippedPlatforms } from '../src/lib/manual-ads';
 import { brandOf } from '../src/lib/ads-data';
 
@@ -114,4 +114,13 @@ test('backfill month: whole month, cut at today, no future or malformed month', 
   assert.equal(backfillRange('2026-13', '2026-11-20'), null);
   assert.equal(backfillRange('2024-12', '2026-11-20'), null);
   assert.equal(backfillRange('10/2026', '2026-11-20'), null);
+});
+
+test('backfill parts: a month in runs of 7 days, cut at today', () => {
+  assert.deepEqual(backfillParts('2026-10', '2026-11-01'), [
+    { from: '2026-10-01', to: '2026-10-07' }, { from: '2026-10-08', to: '2026-10-14' }, { from: '2026-10-15', to: '2026-10-21' },
+    { from: '2026-10-22', to: '2026-10-28' }, { from: '2026-10-29', to: '2026-10-31' },
+  ]);
+  assert.deepEqual(backfillParts('2026-11', '2026-11-09'), [{ from: '2026-11-01', to: '2026-11-07' }, { from: '2026-11-08', to: '2026-11-09' }]);
+  assert.deepEqual(backfillParts('2026-12', '2026-11-09'), []);
 });

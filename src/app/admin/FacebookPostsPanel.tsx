@@ -16,6 +16,7 @@ export function FacebookPostsPanel() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -52,15 +53,29 @@ export function FacebookPostsPanel() {
   const backfill = async () => {
     if (!confirm(`เติม Reach D+7 ของเดือน ${month} จาก Windsor?\n\n• คอนเทนต์ที่ยังไม่มี D+7 → สร้างใหม่\n• D+7 ที่ช่อง Reach ว่างหรือเป็น 0 → ใส่ค่าจากเพจ\n• Reach ที่กรอกไว้แล้ว (มากกว่า 0) → คงเดิม\n\nค่าที่ได้เป็นยอดสะสม ณ วันนี้ ไม่ใช่ยอดวันที่ 7 พอดี`)) return;
     setRunning(true);
+    // One request per week of the month (a whole month is too slow for one request); stop at the first failure.
+    const total = { posts: 0, matched: 0, created: 0, filled: 0, kept: 0 };
+    let part = 0;
+    let parts = 1;
     try {
-      const res = await fetchWorkspace("/api/admin/facebook-posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ month }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || data.error || "ดึงไม่สำเร็จ");
-      toast.success(`${month}: ได้ ${data.posts} โพสต์ · จับคู่ใหม่ ${data.matched} · สร้าง D+7 ${data.created} · เติม Reach ${data.filled} · คงค่าที่กรอก ${data.kept}`, { duration: 8000 });
-      void load();
+      while (part < parts) {
+        setProgress(parts > 1 ? `${part + 1}/${parts}` : `${part + 1}`);
+        const res = await fetchWorkspace("/api/admin/facebook-posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ month, part }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(`ช่วงที่ ${part + 1}: ${data.message || data.error || (res.status === 504 ? "ใช้เวลานานเกิน 60 วินาที" : "ดึงไม่สำเร็จ")}`);
+        for (const key of Object.keys(total) as (keyof typeof total)[]) total[key] += Number(data[key]) || 0;
+        parts = data.parts;
+        part++;
+      }
+      toast.success(`${month}: ได้ ${total.posts} โพสต์ · จับคู่ใหม่ ${total.matched} · สร้าง D+7 ${total.created} · เติม Reach ${total.filled} · คงค่าที่กรอก ${total.kept}`, { duration: 10000 });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "ดึงไม่สำเร็จ");
-    } finally { setRunning(false); }
+      const done = part ? ` (สำเร็จแล้ว ${part} ช่วง: สร้าง ${total.created} · เติม ${total.filled})` : "";
+      toast.error(`${error instanceof Error ? error.message : "ดึงไม่สำเร็จ"}${done}`, { duration: 10000 });
+    } finally {
+      setRunning(false);
+      setProgress("");
+      void load();
+    }
   };
 
   const matched = posts.filter(p => p.contentTitle).length;
@@ -83,7 +98,7 @@ export function FacebookPostsPanel() {
         <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>เติม Reach ย้อนหลัง</span>
         <input type="month" className="form-input" style={{ width: "auto", padding: "0.3rem 0.5rem" }} value={month} onChange={e => setMonth(e.target.value)} aria-label="เดือนที่จะเติม Reach" />
         <button className="btn btn-secondary btn-sm" disabled={running || configured === false || !month} onClick={() => void backfill()}>
-          {running ? "กำลังดึง…" : "เติม Reach เดือนนี้จาก Windsor"}
+          {running ? (progress ? `กำลังดึงช่วง ${progress}…` : "กำลังดึง…") : "เติม Reach เดือนนี้จาก Windsor"}
         </button>
         <span style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะช่องว่างหรือ 0 · สร้าง D+7 ให้คอนเทนต์ที่ยังไม่มี · ค่าที่กรอกไว้คงเดิม · เป็นยอดสะสม ณ วันที่ดึง</span>
       </div>
