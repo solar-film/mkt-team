@@ -17,6 +17,10 @@
     {
       "path": "/api/cron/contacts-sync",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/facebook-posts",
+      "schedule": "30 23 * * *"
     }
   ],
   "regions": [

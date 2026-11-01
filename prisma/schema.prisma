@@ -392,3 +392,21 @@ model ContactSyncRun {
 
   @@index([source, startedAt])
 }
+
+/// Facebook page posts copied from Windsor (facebook_organic) to fill each content item's D+7 reach.
+/// contentId is the matched Content row (no foreign key: a deleted content just leaves the post unmatched).
+model FacebookPost {
+  id          String   @id
+  pageId      String
+  createdTime DateTime
+  message     String   @default("")
+  reach       Int?
+  reactions   Int?
+  comments    Int?
+  contentId   String?
+  matchedBy   String?
+  fetchedAt   DateTime @default(now())
+
+  @@index([createdTime])
+  @@index([contentId])
+}

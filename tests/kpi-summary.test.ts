@@ -65,7 +65,7 @@ test('published content splits organic/paid and averages D+7 reach per side', ()
     base({ kind: 'content', status: 'todo', due: th('2026-11-05'), promotion: 'paid' }),
   ]);
   assert.deepEqual(s.members[0].published, { organic: 2, paid: 1, unknown: 1 });
-  assert.deepEqual(s.members[0].reach7, { organic: 201, paid: null, posts: 2 });
+  assert.deepEqual(s.members[0].reach7, { all: 201, organic: 201, paid: null, posts: 2 });
   assert.deepEqual(s.team.published, { organic: 2, paid: 1, unknown: 1 });
 });
 
@@ -147,4 +147,13 @@ test('team totals leave out work assigned only to people not on the list (the Ad
   assert.deepEqual(s.team.onTime, { done: 1, total: 1 });
   assert.deepEqual(s.team.firstPass, { done: 0, total: 0 });
   assert.deepEqual(s.members.map(m => m.name), ['แต้ว', 'นน']);
+});
+
+test('D+7 reach counts for every published post, marked organic/paid or not', () => {
+  const s = run([
+    base({ kind: 'content', status: 'done', due: th('2026-11-02'), reach7: 300 }),
+    base({ kind: 'content', status: 'done', due: th('2026-11-03'), promotion: 'paid', reach7: 100 }),
+    base({ kind: 'content', status: 'todo', due: th('2026-11-04'), reach7: 999 }),
+  ]);
+  assert.deepEqual(s.members[0].reach7, { all: 200, organic: null, paid: 100, posts: 2 });
 });

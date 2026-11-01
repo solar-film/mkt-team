@@ -43,7 +43,8 @@ export interface MemberSummary {
   waiting: number;
   firstPass: Ratio;
   published: { organic: number; paid: number; unknown: number };
-  reach7: { organic: number | null; paid: number | null; posts: number };
+  /** Average D+7 reach per post: every post, and split by organic/paid where a member marked it. */
+  reach7: { all: number | null; organic: number | null; paid: number | null; posts: number };
   kpis: MemberKpi[];
   evaluation: Evaluation | null;
 }
@@ -122,7 +123,7 @@ export function summarizeMonth(input: {
     const onTime: Ratio = { done: 0, total: 0 };
     const firstPass: Ratio = { done: 0, total: 0 };
     const published = { organic: 0, paid: 0, unknown: 0 };
-    const reach: Record<'organic' | 'paid', number[]> = { organic: [], paid: [] };
+    const reach: Record<'all' | 'organic' | 'paid', number[]> = { all: [], organic: [], paid: [] };
     let waiting = 0;
 
     for (const item of mine) {
@@ -142,7 +143,10 @@ export function summarizeMonth(input: {
       if (item.kind === 'content' && isContentDone(item.status)) {
         const side = item.promotion === 'organic' || item.promotion === 'paid' ? item.promotion : null;
         published[side ?? 'unknown']++;
-        if (side && typeof item.reach7 === 'number') reach[side].push(item.reach7);
+        if (typeof item.reach7 === 'number') {
+          reach.all.push(item.reach7);
+          if (side) reach[side].push(item.reach7);
+        }
       }
     }
 
@@ -157,7 +161,7 @@ export function summarizeMonth(input: {
       waiting,
       firstPass,
       published,
-      reach7: { organic: average(reach.organic), paid: average(reach.paid), posts: reach.organic.length + reach.paid.length },
+      reach7: { all: average(reach.all), organic: average(reach.organic), paid: average(reach.paid), posts: reach.all.length },
       kpis: input.kpis.filter(k => k.memberId === member.id).map(({ memberId: _, ...kpi }) => kpi),
       evaluation: evaluation && { summary: evaluation.summary, strengths: evaluation.strengths, improvements: evaluation.improvements, nextSteps: evaluation.nextSteps, source: evaluation.source, updatedAt: evaluation.updatedAt },
     };

@@ -182,12 +182,13 @@ function QualityChart({ members }: { members: MemberSummary[] }) {
 }
 
 function ReachChart({ members }: { members: MemberSummary[] }) {
-  const rows = members.map(m => ({ name: m.name, organic: m.reach7.organic, paid: m.reach7.paid }));
-  const empty = rows.every(r => r.organic === null && r.paid === null);
+  // One series: few posts are marked organic/paid yet, so splitting would hide most of them.
+  const rows = members.map(m => ({ name: m.name, all: m.reach7.all }));
+  const empty = rows.every(r => r.all === null);
   return (
     <article className={styles.card}>
       <h2>Reach เฉลี่ยต่อโพสต์ @ 7 วัน</h2>
-      <p className={styles.muted}>เทียบโพสต์ที่อายุครบ 7 วันเท่ากัน แยก Organic / Paid · ยังไม่ตั้งเป้า (เฟส 2)</p>
+      <p className={styles.muted}>เทียบโพสต์ที่อายุครบ 7 วันเท่ากัน · Facebook ดึงอัตโนมัติจากเพจ ช่องทางอื่นกรอกเอง · ยังไม่ตั้งเป้า (เฟส 2)</p>
       {empty ? <p className={styles.empty}>ยังไม่มีสถิติ D+7 ของคอนเทนต์เดือนนี้</p> : (
         <div className={styles.chart} role="img" aria-label="กราฟ Reach เฉลี่ยต่อโพสต์ที่ 7 วันรายคน">
           <ResponsiveContainer width="100%" height="100%">
@@ -196,9 +197,7 @@ function ReachChart({ members }: { members: MemberSummary[] }) {
               <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} interval={0} />
               <YAxis tickLine={false} axisLine={false} fontSize={11} width={44} tickFormatter={v => Number(v).toLocaleString('th-TH', { notation: 'compact' })} />
               <Tooltip content={<ChartTip unit="" />} cursor={{ fill: 'rgba(3,74,173,0.05)' }} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} itemSorter={null} />
-              <Bar dataKey="organic" name="Organic" fill="var(--kpi-series-1)" radius={[4, 4, 0, 0]} maxBarSize={26} />
-              <Bar dataKey="paid" name="Paid" fill="var(--kpi-series-2)" radius={[4, 4, 0, 0]} maxBarSize={26} />
+              <Bar dataKey="all" name="Reach เฉลี่ย" fill="var(--kpi-series-1)" radius={[4, 4, 0, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -216,7 +215,7 @@ function MemberTable({ members }: { members: MemberSummary[] }) {
           <thead>
             <tr>
               <th>ผู้รับผิดชอบ</th><th>ส่งตรงเวลา</th><th>รอข้อมูล/อนุมัติ</th><th>ผ่านบรีฟรอบแรก</th>
-              <th>Organic</th><th>Paid</th><th>Reach @7 วัน (Organic)</th>
+              <th>Organic</th><th>Paid</th><th>Reach @7 วัน (เฉลี่ย)</th>
             </tr>
           </thead>
           <tbody>
@@ -228,7 +227,7 @@ function MemberTable({ members }: { members: MemberSummary[] }) {
                 <td>{ratioText(m.firstPass)}</td>
                 <td>{m.published.organic}</td>
                 <td>{m.published.paid}</td>
-                <td>{m.reach7.organic === null ? '—' : m.reach7.organic.toLocaleString('th-TH')}</td>
+                <td>{m.reach7.all === null ? '—' : `${m.reach7.all.toLocaleString('th-TH')} (${m.reach7.posts} โพสต์)`}</td>
               </tr>
             ))}
           </tbody>

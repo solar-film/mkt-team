@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { PLATFORMS } from '@/lib/ads-data';
-import { windsorConfigured } from '@/lib/windsor';
+import { syncedPlatforms, windsorConfigured } from '@/lib/windsor';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +22,8 @@ export async function GET() {
       prisma.adSyncRun.findMany({ distinct: ['platform'], orderBy: { startedAt: 'desc' } }),
       prisma.adSyncRun.findMany({ where: { ok: true }, distinct: ['platform'], orderBy: { startedAt: 'desc' } }),
     ]);
-    const ads: AdsSyncLive[] = PLATFORMS.map(platform => {
+    // A platform typed in by hand has no Windsor pull to report on.
+    const ads: AdsSyncLive[] = syncedPlatforms().map(platform => {
       const last = runs.find(run => run.platform === platform);
       const lastOk = okRuns.find(run => run.platform === platform);
       return {

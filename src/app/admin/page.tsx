@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { HiTrash, HiOutlineDatabase, HiLogout, HiRefresh } from "react-icons/hi";
 import { LoginLogPanel, PinPanel } from "./SecurityPanels";
 import { AdsSyncPanel } from "./AdsSyncPanel";
+import { ManualAdsPanel } from "./ManualAdsPanel";
+import { FacebookPostsPanel } from "./FacebookPostsPanel";
 
 type TableName = "events" | "tasks" | "kpis" | "contents" | "ideas" | "meetings" | "members";
 type AdminTab = TableName | "pins" | "logins" | "ads";
@@ -154,7 +156,13 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      {activeTab === "pins" ? <PinPanel /> : activeTab === "logins" ? <LoginLogPanel /> : activeTab === "ads" ? <AdsSyncPanel /> : (
+      {activeTab === "pins" ? <PinPanel /> : activeTab === "logins" ? <LoginLogPanel /> : activeTab === "ads" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <AdsSyncPanel />
+          <ManualAdsPanel />
+          <FacebookPostsPanel />
+        </div>
+      ) : (
       <div className="card" style={{ overflowX: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h3 style={{ margin: 0 }}>ตาราง: {activeTab}</h3>

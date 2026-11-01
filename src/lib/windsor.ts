@@ -3,6 +3,7 @@ import {
   daysInMonth, KEYWORD_FIELDS, KEYWORD_KINDS, normalizeKeywordRows, normalizeWindsorRows, PLATFORMS, shiftMonth, WINDSOR_FIELDS,
   type Platform,
 } from './ads-data';
+import { MANUAL_ACCOUNT_ID, skippedPlatforms } from './manual-ads';
 
 // Windsor.ai REST API: https://connectors.windsor.ai/{connector}?api_key=…&date_from=…&date_to=…&fields=…
 // The key travels in the query string (Windsor accepts no header), so URLs are never logged or stored.
@@ -14,14 +15,20 @@ export const windsorConfigured = () => Boolean(process.env.WINDSOR_API_KEY?.trim
 const isoDay = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
 /** Error text safe to show and store: no API key, one line, bounded length. */
-function safeMessage(error: unknown): string {
+export function safeWindsorMessage(error: unknown): string {
   const key = process.env.WINDSOR_API_KEY?.trim();
   let message = error instanceof Error ? error.message : String(error);
   if (key) message = message.split(key).join('***');
   return message.replace(/\s+/g, ' ').slice(0, 300);
 }
 
-async function fetchWindsor(platform: Platform, from: string, to: string, fields = WINDSOR_FIELDS[platform].fields): Promise<unknown> {
+const safeMessage = safeWindsorMessage;
+
+const fetchWindsor = (platform: Platform, from: string, to: string, fields = WINDSOR_FIELDS[platform].fields) =>
+  fetchWindsorConnector(platform, from, to, fields);
+
+/** Any Windsor connector (ads platforms, facebook_organic, …); the rows array or an error. */
+export async function fetchWindsorConnector(platform: string, from: string, to: string, fields: readonly string[]): Promise<unknown> {
   const params = new URLSearchParams({
     api_key: process.env.WINDSOR_API_KEY!.trim(),
     date_from: from,
@@ -85,7 +92,8 @@ export async function syncPlatform(platform: Platform, from: string, to: string,
   try {
     const rows = normalizeWindsorRows(platform, await fetchWindsor(platform, from, to));
     await prisma.$transaction([
-      prisma.adDaily.deleteMany({ where: { platform, date: { gte: isoDay(from), lte: isoDay(to) } } }),
+      // Typed-in rows are not Windsor's to replace.
+      prisma.adDaily.deleteMany({ where: { platform, accountId: { not: MANUAL_ACCOUNT_ID }, date: { gte: isoDay(from), lte: isoDay(to) } } }),
       prisma.adDaily.createMany({
         data: rows.map(({ date, ...row }) => ({ ...row, date: isoDay(date), month: date.slice(0, 7) })),
       }),
@@ -102,5 +110,11 @@ export async function syncPlatform(platform: Platform, from: string, to: string,
   }
 }
 
+/** Platforms Windsor still pulls; the rest are typed in by the admin (see manual-ads.ts). */
+export const syncedPlatforms = (): Platform[] => {
+  const skip = skippedPlatforms();
+  return PLATFORMS.filter(platform => !skip.has(platform));
+};
+
 export const syncAllPlatforms = (from: string, to: string, trigger: 'cron' | 'admin') =>
-  Promise.all(PLATFORMS.map(platform => syncPlatform(platform, from, to, trigger)));
+  Promise.all(syncedPlatforms().map(platform => syncPlatform(platform, from, to, trigger)));

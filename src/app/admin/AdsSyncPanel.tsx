@@ -12,7 +12,7 @@ type Run = {
 
 const cell: React.CSSProperties = { padding: "0.5rem 0.75rem", verticalAlign: "top" };
 const thisMonth = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }).slice(0, 7);
-const label = (platform: string) => PLATFORM_INFO[platform as Platform]?.label ?? platform;
+const label = (platform: string) => platform === "facebook_organic" ? "โพสต์ Facebook" : PLATFORM_INFO[platform as Platform]?.label ?? platform;
 
 /** Pulls past months from Windsor one platform-month at a time, so no request runs long. */
 export function AdsSyncPanel() {
