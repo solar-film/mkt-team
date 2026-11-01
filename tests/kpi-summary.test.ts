@@ -138,3 +138,13 @@ test('content with the older "published" status counts as published', () => {
   const s = run([base({ kind: 'content', status: 'published', due: th('2026-11-02'), promotion: 'organic' })]);
   assert.equal(s.team.published.organic, 1);
 });
+
+test('team totals leave out work assigned only to people not on the list (the Admin)', () => {
+  const s = run([
+    base({ memberId: 'admin', memberIds: ['admin'], due: th('2026-11-02'), submittedAt: th('2026-11-01'), firstReview: 'pass' }),
+    base({ memberId: 'a', memberIds: ['a', 'admin'], due: th('2026-11-03'), submittedAt: th('2026-11-03') }),
+  ]);
+  assert.deepEqual(s.team.onTime, { done: 1, total: 1 });
+  assert.deepEqual(s.team.firstPass, { done: 0, total: 0 });
+  assert.deepEqual(s.members.map(m => m.name), ['แต้ว', 'นน']);
+});

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { bangkokDateKey } from '@/lib/bangkok-date';
-import { HIDDEN_KPI_NAMES, kpiCurrent, monthQueryRange, summarizeMonth, type LinkedWork, type ReviewItem } from '@/lib/kpi-summary';
+import { EVALUATION_EXCLUDED_ROLE, HIDDEN_KPI_NAMES, kpiCurrent, monthQueryRange, summarizeMonth, type LinkedWork, type ReviewItem } from '@/lib/kpi-summary';
 import { withAvatarUrls, MEMBER_LIST_SELECT } from '@/lib/member-avatar';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,8 @@ export async function GET(request: Request) {
     const range = monthQueryRange(year, month);
     const linkedSelect = { kpiId: true, status: true, memberId: true, memberIds: true } as const;
     const [members, tasks, contents, kpis, evaluations, linkedTasks, linkedContents] = await Promise.all([
-      prisma.teamMember.findMany({ where: { id: { not: 'all' }, status: { not: 'inactive' } }, select: MEMBER_LIST_SELECT, orderBy: { name: 'asc' } }),
+      // The Admin manages the team and is not evaluated on this page (user decision 1 Nov 69).
+      prisma.teamMember.findMany({ where: { id: { not: 'all' }, status: { not: 'inactive' }, role: { not: EVALUATION_EXCLUDED_ROLE } }, select: MEMBER_LIST_SELECT, orderBy: { name: 'asc' } }),
       prisma.task.findMany({ where: { deadline: range }, select: { ...REVIEW_SELECT, deadline: true } }),
       prisma.content.findMany({
         where: { publishDate: range },

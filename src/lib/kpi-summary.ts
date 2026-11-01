@@ -81,6 +81,9 @@ const assignees = (item: { memberId: string; memberIds: string[] }) => (item.mem
 /** Work that can count towards a KPI (any month: KPI ids are per month already). */
 export interface LinkedWork { kind: 'task' | 'content'; kpiId: string | null; status: string; memberId: string; memberIds: string[] }
 
+/** The Admin manages the team and is not listed or evaluated on KPI กลาง. */
+export const EVALUATION_EXCLUDED_ROLE = 'Admin';
+
 /** KPIs the old page leaves out of the per-person list. */
 export const HIDDEN_KPI_NAMES = new Set(['งานทั่วไป']);
 
@@ -160,7 +163,9 @@ export function summarizeMonth(input: {
     };
   });
 
-  // Shared work appears under each assignee but is one piece of work for the team totals.
+  // Shared work appears under each assignee but is one piece of work for the team totals;
+  // work nobody on the list is assigned to (e.g. only the Admin) stays out of them.
+  const listed = new Set(input.members.map(member => member.id));
   const team = {
     onTime: { done: 0, total: 0 },
     firstPass: { done: 0, total: 0 },
@@ -169,7 +174,7 @@ export function summarizeMonth(input: {
   };
   for (const item of input.items) {
     const day = inMonth(item);
-    if (!day) continue;
+    if (!day || !assignees(item).some(id => listed.has(id))) continue;
     if (timed(day)) {
       if (item.waitingOn) team.waiting++;
       else {
