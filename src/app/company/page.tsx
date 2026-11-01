@@ -22,7 +22,7 @@ const HIDDEN_TABS: readonly TabId[] = ['ads', 'sales'];
 const TABS = ALL_TABS.filter(t => !HIDDEN_TABS.includes(t.id));
 
 const BY_KEY = Object.fromEntries(BUSINESSES.map(b => [b.key, b])) as Record<BusinessKey, Business>;
-const CHANNEL_SHORT: Record<string, string> = { 'Facebook Ads': 'FB', 'Google Ads': 'Google' };
+const CHANNEL_SHORT: Record<string, string> = { 'Facebook Ads': 'FB', 'Google Ads': 'Google', 'ChatGPT Ads': 'ChatGPT' };
 
 /** Sheet figures, or a placeholder while loading ("…") or when the sheet cannot be read ("—"). */
 function figure(state: StatsState, render: (stats: CompanyStats) => ReactNode): ReactNode {

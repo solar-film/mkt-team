@@ -11,6 +11,8 @@ test('business comes from the ad account name, and from the campaign on the shar
   assert.equal(brandOf('FB75-Filmmaholan'), 'MHL อาคาร');
   assert.equal(brandOf('Goodfilm Example Ads'), 'GFS B2C');
   assert.equal(brandOf('goodfilmshop.com (GFS B2B) example'), 'GFS B2B');
+  assert.equal(brandOf('3m-goodfilm.com'), 'GFS B2B');
+  assert.equal(brandOf('goodfilmshop.com, example'), 'GFS B2C');
   assert.equal(brandOf('GOODFILM CO.,LTD', 'B2B ขอราคาส่ง'), 'GFS B2B');
   assert.equal(brandOf('GOODFILM CO.,LTD', 'เข้าชมเว็บไซต์-ขายส่ง'), 'GFS B2B');
   assert.equal(brandOf('GOODFILM CO.,LTD', 'การโปรโมท https://facebook.com/3MGoodfilm'), 'GFS B2B');

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { businessFigures, CompanyStatsFormatError, daysLeftInYear, parseCompanyStats, sheetNumber } from '../src/lib/company-stats';
+import { businessFigures, CompanyStatsFormatError, daysLeftInYear, parseCompanyStats, sheetNumber, withWindsorSpend } from '../src/lib/company-stats';
 
 const require = createRequire(import.meta.url);
 const json = (value: unknown) => JSON.stringify(value);
@@ -127,7 +127,7 @@ test('days left run to 31 December', () => {
   assert.equal(daysLeftInYear('2026-10-22'), 70);
 });
 
-function loadRoute(options: { env: Record<string, string>; sheet: () => Promise<unknown> }) {
+function loadRoute(options: { env: Record<string, string>; sheet: () => Promise<unknown>; db?: unknown }) {
   const exports: Record<string, () => Promise<Response>> = {};
   const compiled = ts.transpileModule(readFileSync('src/app/api/company-stats/route.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -141,6 +141,9 @@ function loadRoute(options: { env: Record<string, string>; sheet: () => Promise<
       if (name === 'next/server') return require(name);
       if (name === 'next/cache') return { unstable_cache: (fn: () => unknown) => fn };
       if (name === '@/lib/company-stats') return require('../src/lib/company-stats.ts');
+      if (name === '@/lib/ads-data') return require('../src/lib/ads-data.ts');
+      // No pulled ad data unless a test supplies one: the sheet's own spend figures stay.
+      if (name === '@/lib/prisma') return { prisma: options.db ?? { adDaily: { aggregate: async () => ({ _max: { date: null } }) } } };
       if (name === 'google-auth-library') {
         return { JWT: class { request(opts: { url: string }) { requests.push(opts.url); return options.sheet(); } } };
       }
@@ -174,4 +177,60 @@ test('sheet problems are reported by code only, without account details', async 
   assert.equal((await (await unconfigured.route.GET()).json()).error, 'not_configured');
   const changed = loadRoute({ env: ENV, sheet: async () => ({ data: { valueRanges: [{ values: [['other']] }, { values: [] }] } }) });
   assert.equal((await (await changed.route.GET()).json()).error, 'sheet_format');
+});
+
+// Made-up Windsor spend: two months last year, two this year (data through 15 Feb).
+const SPEND = [
+  { business: 'GFS B2B', channel: 'Facebook Ads', month: '2025-01', spend: 100 },
+  { business: 'GFS B2C', channel: 'Google Ads', month: '2025-02', spend: 300 },
+  { business: 'GFS B2C', channel: 'Google Ads', month: '2026-01', spend: 400 },
+  { business: 'GFS B2C', channel: 'Google Ads', month: '2026-02', spend: 50 },
+  { business: 'GFS B2C', channel: 'ChatGPT Ads', month: '2026-02', spend: 20 },
+  { business: 'MHL CAR', channel: 'Facebook Ads', month: '2026-02', spend: 70 },
+  { business: 'อื่น ๆ', channel: 'Facebook Ads', month: '2026-02', spend: 999 },
+];
+
+test('Windsor spend replaces the sheet ad figures; targets, budgets and sales stay', () => {
+  const sheet = parseCompanyStats(SUMMARY, SALES, SETTINGS, MONTHLY);
+  const stats = withWindsorSpend(sheet, SPEND, '2026-02-15');
+  assert.equal(stats.adsSource, 'windsor');
+  assert.equal(stats.adsThrough, '2026-02-15');
+  assert.equal(stats.dataThrough, sheet.dataThrough);
+  assert.deepEqual(stats.sales, sheet.sales);
+  const row = (business: string, channel: string) => stats.adSpend.find(r => r.business === business && r.channel === channel);
+  assert.deepEqual(row('GFS B2C', 'Google Ads'), { business: 'GFS B2C', channel: 'Google Ads', month: 50, ytd: 450, lastYear: 300 });
+  assert.deepEqual(row('GFS B2B', 'Facebook Ads'), { business: 'GFS B2B', channel: 'Facebook Ads', month: 0, ytd: 0, lastYear: 100 });
+  assert.equal(row('GFS B2C', 'ChatGPT Ads')?.ytd, 20, 'extra channel listed where it has spend');
+  assert.equal(row('MHL CAR', 'ChatGPT Ads'), undefined, 'extra channel hidden where it has none');
+  assert.equal(stats.adSpend.some(r => r.business === 'อื่น ๆ'), false);
+  assert.equal(stats.compareThroughMonth, 1);
+  assert.deepEqual(stats.adCompare.find(r => r.business === 'GFS B2C' && r.channel === 'Google Ads'), { business: 'GFS B2C', channel: 'Google Ads', thisYear: 400, lastYear: 0 });
+  for (const budget of stats.budgets) {
+    const before = sheet.budgets.find(b => b.business === budget.business)!;
+    assert.equal(budget.budget, before.budget);
+    assert.equal(budget.left, budget.budget - budget.used);
+  }
+  const gfs = stats.budgets.find(b => b.business.startsWith('GFS'));
+  if (gfs) assert.equal(gfs.used, 470);
+  assert.ok(Math.abs(stats.adsYearPct - 46 / 365) < 1e-9);
+  assert.equal(businessFigures(stats, 'b2c').spentYtd, 470);
+});
+
+test('the route uses Windsor spend when ads have been pulled, else the sheet', async () => {
+  const sheetData = async () => ({ data: { valueRanges: [{ values: SUMMARY }, { values: SALES }, { values: SETTINGS }, { values: MONTHLY }] } });
+  const db = {
+    adDaily: {
+      aggregate: async () => ({ _max: { date: new Date('2026-02-15T00:00:00Z') } }),
+      groupBy: async () => [
+        { platform: 'google_ads', accountName: 'goodfilmshop.com example', campaignName: 'x', month: '2026-02', _sum: { spend: 50 } },
+        { platform: 'facebook', accountName: 'GOODFILM CO.,LTD', campaignName: 'B2B example', month: '2026-02', _sum: { spend: 7 } },
+      ],
+    },
+  };
+  const withAds = await (await loadRoute({ env: ENV, sheet: sheetData, db }).route.GET()).json();
+  assert.equal(withAds.adsSource, 'windsor');
+  assert.equal(withAds.adSpend.find((r: { business: string; channel: string }) => r.business === 'GFS B2B' && r.channel === 'Facebook Ads').ytd, 7);
+  const failing = { adDaily: { aggregate: async () => { throw new Error('db down'); } } };
+  const fallback = await (await loadRoute({ env: ENV, sheet: sheetData, db: failing }).route.GET()).json();
+  assert.equal(fallback.adsSource, 'sheet');
 });

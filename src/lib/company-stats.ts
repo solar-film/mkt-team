@@ -29,6 +29,12 @@ export interface CompanyStats {
   /** Last fully finished month (1..12) used for the year-on-year comparison; 0 when none. */
   compareThroughMonth: number;
   adCompare: AdCompareRow[];
+  /** Where the ad-spend figures come from: the sheet, or the site's own Windsor pulls (since 1 Nov 2026). */
+  adsSource: 'sheet' | 'windsor';
+  /** Last day the ad-spend figures cover; sales keep `dataThrough`. */
+  adsThrough: string;
+  /** Share of the year elapsed at `adsThrough`, 0..1. */
+  adsYearPct: number;
 }
 
 export class CompanyStatsFormatError extends Error {
@@ -173,6 +179,71 @@ export function parseCompanyStats(summary: Rows, salesByMonth: Rows, settings: R
     sourceNote: summary.map(row => text(row[0])).find(cell => cell.startsWith('ที่มา')) ?? null,
     compareThroughMonth,
     adCompare: compareThroughMonth ? compareAdSpend(monthlyAds, adSpend, year, compareThroughMonth) : [],
+    adsSource: 'sheet', adsThrough: dataThrough, adsYearPct: yearPct,
+  };
+}
+
+/** Monthly ad spend of one business on one channel, as pulled from Windsor into the site's database. */
+export interface SpendRow { business: string; channel: string; month: string; spend: number }
+
+const SPEND_BUSINESSES = ['GFS B2B', 'GFS B2C', 'MHL อาคาร', 'MHL CAR'];
+const BASE_CHANNELS = ['Facebook Ads', 'Google Ads'];
+
+/** Share of the year elapsed at the end of `isoDate`. */
+function yearElapsed(isoDate: string): number {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const day = (Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / 86_400_000 + 1;
+  return day / ((Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1)) / 86_400_000);
+}
+
+/**
+ * Replaces the sheet's ad-spend figures with the site's own Windsor pulls (the sheet's feed stopped
+ * on 30 Oct 2026). Targets, budgets and sales stay from the sheet. Spend through `adsThrough`;
+ * budget groups are matched by name, "GFS (B2B+B2C)" summing both GFS businesses. Channels other
+ * than Facebook and Google (e.g. ChatGPT Ads) are listed only where they have spend.
+ */
+export function withWindsorSpend(stats: CompanyStats, rows: SpendRow[], adsThrough: string): CompanyStats {
+  const year = Number(adsThrough.slice(0, 4));
+  const thisMonth = adsThrough.slice(0, 7);
+  const through = lastCompleteMonth(adsThrough);
+  const extra = [...new Set(rows.filter(row => row.spend && !BASE_CHANNELS.includes(row.channel)).map(row => row.channel))].sort();
+  const channels = [...BASE_CHANNELS, ...extra];
+
+  const sum = (business: string, channel: string, keep: (rowYear: number, rowMonth: number) => boolean) =>
+    rows.reduce((total, row) => {
+      if (row.business !== business || row.channel !== channel || row.month > thisMonth) return total;
+      return keep(Number(row.month.slice(0, 4)), Number(row.month.slice(5, 7))) ? total + row.spend : total;
+    }, 0);
+
+  const adSpend: AdSpendRow[] = [];
+  const adCompare: AdCompareRow[] = [];
+  for (const business of SPEND_BUSINESSES) {
+    for (const channel of channels) {
+      const ytd = sum(business, channel, y => y === year);
+      const lastYear = sum(business, channel, y => y === year - 1);
+      if (extra.includes(channel) && !ytd && !lastYear) continue;
+      adSpend.push({ business, channel, month: sum(business, channel, (y, m) => y === year && m === Number(thisMonth.slice(5))), ytd, lastYear });
+      adCompare.push({
+        business, channel,
+        thisYear: sum(business, channel, (y, m) => y === year && m <= through),
+        lastYear: sum(business, channel, (y, m) => y === year - 1 && m <= through),
+      });
+    }
+  }
+
+  const members = (group: string) => (group.startsWith('GFS') ? ['GFS B2B', 'GFS B2C'] : [group]);
+  const budgets = stats.budgets.map(budget => {
+    const own = adSpend.filter(row => members(budget.business).includes(row.business));
+    const used = own.reduce((total, row) => total + row.ytd, 0);
+    return {
+      ...budget, used, usedPct: budget.budget ? used / budget.budget : 0, left: budget.budget - used,
+      lastYear: own.reduce((total, row) => total + row.lastYear, 0),
+    };
+  });
+
+  return {
+    ...stats, adSpend, budgets, compareThroughMonth: through, adCompare,
+    adsSource: 'windsor', adsThrough, adsYearPct: yearElapsed(adsThrough),
   };
 }
 

@@ -75,8 +75,11 @@ export function SourceNote({ stats }: { stats: CompanyStats }) {
     <div className={styles.hint}>
       <b>ที่มาของตัวเลข</b>
       <ul className={styles.sourceList}>
-        <li>รวบรวมในชีต “Good Group · ยอดใช้โฆษณา {stats.year + 543} (อัปเดตอัตโนมัติ)” ที่มะลิอัปเดตทุกเช้า · ข้อมูลถึง {thaiDate(stats.dataThrough)} · ชีตอัปเดตเมื่อ {thaiDate(stats.updatedAt)} น. · เว็บดึงใหม่ทุก 30 นาที</li>
-        {stats.sourceNote && <li>เป้าขาย งบ Ads และค่าโฆษณา — {stats.sourceNote.replace(/^ที่มา:\s*/, '')}</li>}
+        {stats.adsSource === 'windsor' && (
+          <li>ค่าโฆษณาที่ใช้จริง — Facebook / Google / ChatGPT Ads ผ่าน Windsor.ai เว็บดึงเองทุกเช้า 06:00 · ข้อมูลถึง {thaiDate(stats.adsThrough)}</li>
+        )}
+        <li>{stats.adsSource === 'windsor' ? 'เป้าขาย งบ Ads และยอดขาย' : 'ตัวเลขทั้งหมด'} — รวบรวมในชีต “Good Group · ยอดใช้โฆษณา {stats.year + 543} (อัปเดตอัตโนมัติ)” · ข้อมูลถึง {thaiDate(stats.dataThrough)} · ชีตอัปเดตเมื่อ {thaiDate(stats.updatedAt)} น. · เว็บดึงใหม่ทุก 30 นาที</li>
+        {stats.sourceNote && <li>{stats.adsSource === 'windsor' ? 'ในชีต' : 'เป้าขาย งบ Ads และค่าโฆษณา'} — {stats.sourceNote.replace(/^ที่มา:\s*/, '')}</li>}
         {stats.sales.filter(row => row.sources.length).map(row => (
           <li key={row.business}>ยอดขาย {row.business} — {salesSourceText(row)}</li>
         ))}
@@ -138,7 +141,7 @@ function YearCompareCard({ stats }: { stats: CompanyStats }) {
         })}
       </div>
       <div className={styles.hint}>
-        เทียบเฉพาะเดือนที่ครบแล้ว ({MONTH_RANGE(through)}) เพราะชีตเก็บค่าโฆษณาเป็นรายเดือน · MHL อาคาร ปี {stats.year + 542} รวมบัญชี Facebook เดิม “FB75-Filmmaholan” แล้ว · ปีที่แล้วบัญชี Facebook MHLCAR อาจมีแอดของ MHL อาคารปนอยู่ ควรตรวจก่อนสรุปผล
+        เทียบเฉพาะเดือนที่ครบแล้ว ({MONTH_RANGE(through)}) · MHL อาคาร ปี {stats.year + 542} รวมบัญชี Facebook เดิม “FB75-Filmmaholan” แล้ว · ปีที่แล้วบัญชี Facebook MHLCAR อาจมีแอดของ MHL อาคารปนอยู่ ควรตรวจก่อนสรุปผล
       </div>
     </div>
   );
@@ -153,23 +156,23 @@ function AdsView({ stats }: { stats: CompanyStats }) {
       <div className={styles.mcard}>
         <h3>ค่าโฆษณา · งบทั้งปี vs ใช้จริง ปี {stats.year + 543}</h3>
         <div className={styles.bigline}>
-          <small className={styles.muted}>ใช้จริงถึง {thaiDate(stats.dataThrough)}</small>
+          <small className={styles.muted}>ใช้จริงถึง {thaiDate(stats.adsThrough)}</small>
           <strong>{baht(used)} บาท</strong>
           <small className={styles.muted}>จากงบ {baht(budget)}</small>
         </div>
         <div className={styles.legend}>
           <span><i style={{ background: 'var(--color-text-secondary)' }} />แถบสี = ใช้ไปแล้ว</span>
-          <span><i className={styles.legendMark} />เส้นดำ = เวลาผ่านไป {percent(stats.yearPct)} ของปี</span>
+          <span><i className={styles.legendMark} />เส้นดำ = เวลาผ่านไป {percent(stats.adsYearPct)} ของปี</span>
         </div>
         <div className={styles.bars}>
           {stats.budgets.map(row => {
-            const fast = row.usedPct > stats.yearPct;
+            const fast = row.usedPct > stats.adsYearPct;
             return (
               <div key={row.business} className={styles.brow}>
                 <span className={styles.browLabel}>{row.business}</span>
                 <div className={styles.btrack} title={`${row.business} ใช้ ${baht(row.used)} จาก ${baht(row.budget)} บาท`}>
                   <div className={styles.bfill} style={{ width: `${Math.min(100, row.usedPct * 100)}%`, background: businessColor(row.business) }}>{percent(row.usedPct)}</div>
-                  <span className={styles.mark} style={{ left: `${stats.yearPct * 100}%` }} />
+                  <span className={styles.mark} style={{ left: `${stats.adsYearPct * 100}%` }} />
                 </div>
                 <span className={styles.bsub}>
                   ใช้ {baht(row.used)} / {baht(row.budget)} · เหลือ {baht(row.left)}{' '}
@@ -188,7 +191,7 @@ function AdsView({ stats }: { stats: CompanyStats }) {
           <table className={`${styles.table} ${styles.mini}`}>
             <thead>
               <tr>
-                <th>ธุรกิจ</th><th>ช่องทาง</th><th>เดือนนี้</th><th>ปี {stats.year + 543} ถึง {thaiDate(stats.dataThrough)}</th>
+                <th>ธุรกิจ</th><th>ช่องทาง</th><th>เดือนนี้</th><th>ปี {stats.year + 543} ถึง {thaiDate(stats.adsThrough)}</th>
                 {through > 0 && <><th>{MONTH_RANGE(through)} {String(stats.year + 543).slice(2)}</th><th>{MONTH_RANGE(through)} {String(stats.year + 542).slice(2)}</th><th>เทียบปีที่แล้ว</th></>}
                 <th>ปี {stats.year + 542} ทั้งปี</th>
               </tr>
@@ -209,7 +212,7 @@ function AdsView({ stats }: { stats: CompanyStats }) {
             </tbody>
           </table>
         </div>
-        <small className={styles.muted}>หน่วยบาท · เดือนนี้ = 1 ถึง {thaiDate(stats.dataThrough)}{through > 0 ? ` · เทียบปีที่แล้วใช้ ${MONTH_RANGE(through)} ของทั้งสองปี (+ = ใช้มากขึ้น)` : ''} · TikTok / LINE Ads ยังไม่เชื่อม</small>
+        <small className={styles.muted}>หน่วยบาท · เดือนนี้ = 1 ถึง {thaiDate(stats.adsThrough)}{through > 0 ? ` · เทียบปีที่แล้วใช้ ${MONTH_RANGE(through)} ของทั้งสองปี (+ = ใช้มากขึ้น)` : ''} · TikTok / LINE Ads ยังไม่เชื่อม</small>
       </div>
 
       {through > 0 && <YearCompareCard stats={stats} />}

@@ -53,7 +53,8 @@ export function brandOf(accountName: string, campaignName = ''): Brand {
   if (/car/.test(name)) return 'MHL CAR';
   if (/maholan|mhl|มโหฬาร/.test(name)) return 'MHL อาคาร';
   if (/goodfilm|gfs|กู๊ดฟิล์ม/.test(name)) {
-    if (/b2b/.test(name)) return 'GFS B2B';
+    // 3m-goodfilm.com is the wholesale site (owner confirmed 1 Nov 2026).
+    if (/b2b|^3m-?goodfilm/.test(name)) return 'GFS B2B';
     if (/goodfilmco/.test(name) && GFS_B2B_CAMPAIGN.test(squash(campaignName))) return 'GFS B2B';
     return 'GFS B2C';
   }

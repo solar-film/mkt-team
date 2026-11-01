@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { JWT } from 'google-auth-library';
-import { CompanyStatsFormatError, parseCompanyStats, type CompanyStats } from '@/lib/company-stats';
+import { CompanyStatsFormatError, parseCompanyStats, withWindsorSpend, type CompanyStats, type SpendRow } from '@/lib/company-stats';
+import { prisma } from '@/lib/prisma';
+import { brandOf, isPlatform, PLATFORM_INFO } from '@/lib/ads-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,11 +52,41 @@ async function readSheet(): Promise<CompanyStats> {
 // Server-side Data Cache only; failures are not cached, so a fix in the sheet shows on the next try.
 const cachedStats = unstable_cache(readSheet, ['company-stats-v2'], { revalidate: CACHE_SECONDS });
 
+/**
+ * Ad spend per business, channel and month from the site's Windsor pulls (this year and last), and
+ * the last day pulled. Null when nothing has been pulled or the read fails: the sheet's figures stay.
+ */
+async function windsorSpend(): Promise<{ rows: SpendRow[]; through: string } | null> {
+  try {
+    const latest = await prisma.adDaily.aggregate({ _max: { date: true } });
+    const last = latest._max.date;
+    if (!last) return null;
+    const through = last.toISOString().slice(0, 10);
+    const year = Number(through.slice(0, 4));
+    const groups = await prisma.adDaily.groupBy({
+      by: ['platform', 'accountName', 'campaignName', 'month'],
+      where: { month: { gte: `${year - 1}-01`, lte: through.slice(0, 7) } },
+      _sum: { spend: true },
+    });
+    const rows: SpendRow[] = groups.filter(group => isPlatform(group.platform)).map(group => ({
+      business: brandOf(group.accountName, group.campaignName),
+      channel: PLATFORM_INFO[group.platform as keyof typeof PLATFORM_INFO].label,
+      month: group.month,
+      spend: group._sum.spend ?? 0,
+    }));
+    return { rows, through };
+  } catch (error) {
+    console.error('Company stats: Windsor spend read failed', error instanceof Error ? error.message : 'unknown error');
+    return null;
+  }
+}
+
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
 
 export async function GET() {
   try {
-    return NextResponse.json(await cachedStats(), { headers: NO_STORE });
+    const [stats, spend] = await Promise.all([cachedStats(), windsorSpend()]);
+    return NextResponse.json(spend ? withWindsorSpend(stats, spend.rows, spend.through) : stats, { headers: NO_STORE });
   } catch (error) {
     const code: FailureCode = error instanceof StatsFailure ? error.code : 'unavailable';
     if (!(error instanceof StatsFailure)) console.error('Company stats failed', error instanceof Error ? error.message : error);
