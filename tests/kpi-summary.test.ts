@@ -110,3 +110,14 @@ test('KPI กลาง shows no money: no price, cost, sales or spend in its cod
   const text = files.map(file => readFileSync(file, 'utf8')).join('\n');
   assert.doesNotMatch(text, /ราคา|ต้นทุน|ยอดขาย|฿|บาท|adSpend|spend/);
 });
+
+test('months before hand-in tracking began are not timed (no false 0%)', () => {
+  const s = summarizeMonth({
+    year: 2026, month: 10, today: '2026-11-20', members, kpis: [], evaluations: [],
+    items: [base({ due: th('2026-10-10'), status: 'done' }), base({ kind: 'content', status: 'done', due: th('2026-10-12') })],
+  });
+  assert.deepEqual(s.team.onTime, { done: 0, total: 0 });
+  assert.deepEqual(s.members[0].onTime, { done: 0, total: 0 });
+  assert.equal(s.team.published.unknown, 1, 'published counts still show for old months');
+  assert.equal(s.trackingStart, '2026-11-01');
+});

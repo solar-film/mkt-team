@@ -97,7 +97,9 @@ function Report({ data }: { data: KpiHubSummary }) {
         <StatTile
           icon={<HiClock />} label="ส่งงานตรงเวลา" value={percent(team.onTime)}
           detail={team.onTime.total ? `${team.onTime.done} จาก ${team.onTime.total} งานที่ถึงกำหนด` : NO_DATA}
-          note={`นับถึง ${thaiDay(data.countedThrough)}${team.waiting ? ` · แยกงานรอข้อมูล/รออนุมัติ ${team.waiting} งาน` : ''}`}
+          note={data.countedThrough < data.trackingStart
+            ? `เริ่มบันทึกวันส่งจริง ${thaiDay(data.trackingStart)} เดือนก่อนหน้านั้นจึงไม่มีข้อมูล`
+            : `นับถึง ${thaiDay(data.countedThrough)}${team.waiting ? ` · แยกงานรอข้อมูล/รออนุมัติ ${team.waiting} งาน` : ''}`}
         />
         <StatTile
           icon={<HiCheckBadge />} label="ผ่านบรีฟรอบแรก" value={percent(team.firstPass)}

@@ -53,9 +53,13 @@ export interface KpiHubSummary {
   year: number;
   /** Last day counted for "due" work: today for the current month, the month end otherwise. */
   countedThrough: string;
+  trackingStart: string;
   team: { onTime: Ratio; firstPass: Ratio; waiting: number; published: { organic: number; paid: number; unknown: number } };
   members: MemberSummary[];
 }
+
+/** Hand-in dates are recorded from this Thai day on; earlier work has none, so it is not timed. */
+export const TRACKING_START = '2026-11-01';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -89,6 +93,7 @@ export function summarizeMonth(input: {
     const day = item.due ? bangkokDateKey(item.due) : '';
     return day >= first && day <= last ? day : null;
   };
+  const timed = (day: string) => day >= TRACKING_START && day <= countedThrough;
 
   const members: MemberSummary[] = input.members.map(member => {
     const mine = input.items.filter(item => assignees(item).includes(member.id));
@@ -101,7 +106,7 @@ export function summarizeMonth(input: {
     for (const item of mine) {
       const day = inMonth(item);
       if (!day) continue;
-      if (day <= countedThrough) {
+      if (timed(day)) {
         if (item.waitingOn) waiting++;
         else {
           onTime.total++;
@@ -146,7 +151,7 @@ export function summarizeMonth(input: {
   for (const item of input.items) {
     const day = inMonth(item);
     if (!day) continue;
-    if (day <= countedThrough) {
+    if (timed(day)) {
       if (item.waitingOn) team.waiting++;
       else {
         team.onTime.total++;
@@ -163,5 +168,5 @@ export function summarizeMonth(input: {
     }
   }
 
-  return { month: input.month, year: input.year, countedThrough, team, members };
+  return { month: input.month, year: input.year, countedThrough, trackingStart: TRACKING_START, team, members };
 }
