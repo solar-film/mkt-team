@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   HiPlus,
@@ -8,11 +8,10 @@ import {
   HiPencilSquare,
   HiOutlineTrash,
   HiMagnifyingGlass,
-  HiCheckBadge,
   HiStar,
   HiMapPin,
-  HiChatBubbleLeftEllipsis,
-  HiClock,
+  HiUser,
+  HiCalendarDays,
 } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import Modal from '@/components/Modal';
@@ -43,6 +42,43 @@ interface GbpReview {
   repliedBy: string;
   source: string;
 }
+
+const BUSINESS_BRAND: Record<
+  string,
+  {
+    shortTitle: string;
+    badgeLabel: string;
+    logoSrc: string;
+    logoBg: string;
+    color: string;
+    softBg: string;
+  }
+> = {
+  GFS: {
+    shortTitle: 'GOODFILM (GFS B2B / B2C)',
+    badgeLabel: 'บริษัท กู๊ดฟิล์ม จำกัด',
+    logoSrc: '/brands/goodfilm.webp',
+    logoBg: '#1b437c',
+    color: '#034aad',
+    softBg: '#e3eeff',
+  },
+  MHL: {
+    shortTitle: 'MHL อาคาร (มโหฬารฟิล์ม)',
+    badgeLabel: 'ติดตั้งฟิล์มอาคาร',
+    logoSrc: '/brands/maholan.webp',
+    logoBg: '#ffffff',
+    color: '#c2620a',
+    softBg: '#fdf0e3',
+  },
+  CAR: {
+    shortTitle: 'MHL CAR (ศูนย์ฟิล์มรถยนต์)',
+    badgeLabel: 'ศูนย์ฟิล์มรถยนต์ บางนา-ลาซาล',
+    logoSrc: '/brands/mhl-carfilm.webp',
+    logoBg: '#000000',
+    color: '#c8202f',
+    softBg: '#fde8ea',
+  },
+};
 
 const INITIAL_LOCATIONS: GbpLocation[] = [
   {
@@ -148,7 +184,7 @@ export default function GbpReviewsPage() {
         body: JSON.stringify(reviewForm),
       });
       if (res.ok) {
-        toast.success('บันทึกรีวิว Google Business Profile เรียบร้อย');
+        toast.success('บันทึกรีวิวบน Google Maps เรียบร้อย');
         setIsReviewModalOpen(false);
         setReviewForm({
           locationId: 'loc-car',
@@ -208,7 +244,7 @@ export default function GbpReviewsPage() {
         }),
       });
       if (res.ok) {
-        toast.success(`อัปเดตสถิติรีวิวของ ${locEditTarget.name} เรียบร้อย`);
+        toast.success(`อัปเดตคะแนนของ ${locEditTarget.name} เรียบร้อย`);
         setLocEditTarget(null);
         fetchData();
       }
@@ -251,29 +287,17 @@ export default function GbpReviewsPage() {
     );
   });
 
-  const totalReviewsAll = locations.reduce((acc, l) => acc + Number(l.totalReviews || 0), 0);
-  const totalRepliedAll = locations.reduce((acc, l) => acc + Number(l.repliedCount || 0), 0);
-  const totalUnrepliedAll = Math.max(0, totalReviewsAll - totalRepliedAll);
-  const weightedRating =
-    totalReviewsAll > 0
-      ? (
-          locations.reduce((acc, l) => acc + Number(l.rating || 5) * Number(l.totalReviews || 0), 0) /
-          totalReviewsAll
-        ).toFixed(2)
-      : '4.90';
-  const replyPercent = totalReviewsAll > 0 ? Math.round((totalRepliedAll / totalReviewsAll) * 100) : 100;
-
   return (
     <div className={styles.page}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <span className={styles.eyebrow}>
-            <HiStar size={14} /> Google Business Profile · 1 บัญชี / 3 สถานที่
+            <HiStar size={14} /> Google Business Profile · แยกตามธุรกิจ
           </span>
           <h1 className={styles.pageTitle}>รีวิวบน Google Maps</h1>
           <p className={styles.pageSubtitle}>
-            ติดตามคะแนนดาวและบันทึกการตอบกลับรีวิวทั้ง 3 สถานที่ (GOODFILM, มโหฬารฟิล์ม อาคาร, MHL CARFILM)
+            คะแนนรีวิวและสถานะการตอบกลับแยกแต่ละธุรกิจ (GOODFILM, MHL อาคาร, MHL CAR)
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -294,163 +318,143 @@ export default function GbpReviewsPage() {
             เปิด Porter Metrics <HiArrowTopRightOnSquare size={16} />
           </a>
           <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
-            <HiPlus size={18} /> บันทึกรีวิว GBP ใหม่
+            <HiPlus size={18} /> บันทึกรีวิวใหม่
           </button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className={styles.summaryGrid}>
-        <div className={styles.summaryCard}>
-          <div className={styles.summaryIcon} style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
-            <HiStar />
-          </div>
-          <div>
-            <div className={styles.summaryValue} style={{ color: '#b45309' }}>{weightedRating} ★</div>
-            <div className={styles.summaryLabel}>คะแนนเฉลี่ยรวม 3 สถานที่</div>
-          </div>
-        </div>
+      {/* Top Score Cards Separated by Business (3 Businesses across 100% width) */}
+      <div className={styles.businessGrid}>
+        {locations.map(loc => {
+          const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
+          const total = Number(loc.totalReviews || 0);
+          const replied = Number(loc.repliedCount || 0);
+          const unreplied = Math.max(0, total - replied);
+          const replyPct = total > 0 ? Math.round((replied / total) * 100) : 100;
+          const isSelected = selectedLocFilter === loc.id;
+          const fullStars = Math.round(Number(loc.rating || 5));
 
-        <div className={styles.summaryCard}>
-          <div className={styles.summaryIcon} style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}>
-            <HiChatBubbleLeftEllipsis />
-          </div>
-          <div>
-            <div className={styles.summaryValue}>{totalReviewsAll}</div>
-            <div className={styles.summaryLabel}>รีวิวสะสมทั้งหมด (3 สถานที่)</div>
-          </div>
-        </div>
-
-        <div className={styles.summaryCard}>
-          <div className={styles.summaryIcon} style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>
-            <HiCheckBadge />
-          </div>
-          <div>
-            <div className={styles.summaryValue} style={{ color: '#059669' }}>{replyPercent}%</div>
-            <div className={styles.summaryLabel}>อัตราการตอบกลับ ({totalRepliedAll}/{totalReviewsAll})</div>
-          </div>
-        </div>
-
-        <div className={styles.summaryCard}>
-          <div
-            className={styles.summaryIcon}
-            style={{
-              backgroundColor: totalUnrepliedAll > 0 ? '#fff7ed' : '#f1f5f9',
-              color: totalUnrepliedAll > 0 ? '#ea580c' : '#64748b',
-            }}
-          >
-            <HiClock />
-          </div>
-          <div>
-            <div
-              className={styles.summaryValue}
-              style={{ color: totalUnrepliedAll > 0 ? '#ea580c' : '#475569' }}
+          return (
+            <article
+              key={loc.id}
+              className={`${styles.businessCard} ${isSelected ? styles.businessCardActive : ''}`}
+              style={{ '--biz-color': brand.color } as CSSProperties}
             >
-              {totalUnrepliedAll}
-            </div>
-            <div className={styles.summaryLabel}>รีวิวที่รอตอบกลับ</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 1: 3 Google Business Profile Locations */}
-      <div style={{ marginBottom: '2rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
-          }}
-        >
-          <div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              ภาพรวมรายสถานที่ (1 บัญชี / 3 สถานที่)
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              กดไอคอนดินสอเพื่อปรับปรุงยอดรีวิวสะสม หรือกดเปิด Google Maps เพื่อตรวจหน้าร้านจริง
-            </p>
-          </div>
-        </div>
-
-        <div className={styles.cardsGrid}>
-          {locations.map(loc => {
-            const unreplied = Math.max(0, loc.totalReviews - loc.repliedCount);
-            return (
-              <article key={loc.id} className={styles.card}>
-                <div className={styles.cardTop}>
-                  <h3 className={styles.cardTitle} style={{ fontSize: '1.1rem' }}>{loc.name}</h3>
-                  <span
-                    className={styles.statusBadge}
-                    style={{ backgroundColor: '#fef3c7', color: '#b45309', cursor: 'default' }}
-                  >
-                    ★ {Number(loc.rating).toFixed(1)}
+              {/* Business Logo + Name + Star Rating */}
+              <div className={styles.bizHeader}>
+                <div className={styles.bizIdentity}>
+                  <span className={styles.bizLogo} style={{ background: brand.logoBg }}>
+                    <img src={brand.logoSrc} alt={brand.shortTitle} />
                   </span>
-                </div>
-
-                <p className={styles.cardDesc} style={{ marginBottom: '0.75rem' }}>
-                  <HiMapPin style={{ verticalAlign: 'text-bottom', marginRight: '0.25rem' }} />
-                  {loc.address}
-                </p>
-
-                <div className={styles.flowContainer}>
-                  <span className={styles.flowPill}>รีวิวสะสม {loc.totalReviews} รายการ</span>
-                  <span className={styles.flowArrow}>→</span>
-                  <span className={styles.flowPill}>
-                    ตอบแล้ว {loc.repliedCount} รายการ {unreplied > 0 ? `(รอตอบ ${unreplied})` : '(ครบ 100%)'}
-                  </span>
-                </div>
-
-                <div className={styles.infoList}>
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>ผู้ดูแลหลัก</span>
-                    <span className={styles.infoValue}>{loc.owner}</span>
-                  </div>
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>รีวิวล่าสุด</span>
-                    <span className={styles.infoValue}>{loc.lastReviewAt || '-'}</span>
-                  </div>
-                </div>
-
-                <div className={styles.cardFooter}>
-                  <a
-                    href={loc.mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.openLink}
-                  >
-                    เปิด Google Maps <HiArrowTopRightOnSquare size={15} />
-                  </a>
-                  <div className={styles.footerRight}>
-                    <button
-                      type="button"
-                      className={styles.iconBtn}
-                      onClick={() => {
-                        setLocEditTarget(loc);
-                        setLocForm({
-                          rating: loc.rating,
-                          totalReviews: loc.totalReviews,
-                          repliedCount: loc.repliedCount,
-                          lastReviewAt: loc.lastReviewAt,
-                        });
-                      }}
-                      title="อัปเดตตัวเลขรีวิวสาขานี้"
+                  <div className={styles.bizTitleWrap}>
+                    <span
+                      className={styles.bizTag}
+                      style={{ backgroundColor: brand.softBg, color: brand.color }}
                     >
-                      <HiPencilSquare size={16} />
-                    </button>
+                      {brand.badgeLabel}
+                    </span>
+                    <h2 className={styles.bizName}>{brand.shortTitle}</h2>
                   </div>
                 </div>
-              </article>
-            );
-          })}
-        </div>
+
+                <div className={styles.scoreBox}>
+                  <div className={styles.scoreNumber}>
+                    {Number(loc.rating).toFixed(1)} <span style={{ fontSize: '1.25rem' }}>★</span>
+                  </div>
+                  <div className={styles.scoreStars} aria-hidden="true">
+                    {'★'.repeat(Math.min(5, Math.max(0, fullStars)))}
+                    {'☆'.repeat(Math.max(0, 5 - fullStars))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Key Figures per Business */}
+              <div className={styles.metricsStrip}>
+                <div className={styles.metricCell}>
+                  <span className={styles.metricValue}>{total}</span>
+                  <span className={styles.metricLabel}>รีวิวสะสมทั้งหมด</span>
+                </div>
+                <div className={styles.metricCell}>
+                  <span className={styles.metricValue} style={{ color: '#059669' }}>
+                    {replyPct}% <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>({replied})</small>
+                  </span>
+                  <span className={styles.metricLabel}>อัตราตอบกลับ</span>
+                </div>
+                <div className={styles.metricCell}>
+                  <span
+                    className={styles.metricValue}
+                    style={{ color: unreplied > 0 ? '#ea580c' : '#64748b' }}
+                  >
+                    {unreplied}
+                  </span>
+                  <span className={styles.metricLabel}>รอตอบกลับ</span>
+                </div>
+              </div>
+
+              {/* Address & Owner */}
+              <div className={styles.bizMeta}>
+                <div className={styles.bizMetaRow}>
+                  <HiMapPin style={{ flexShrink: 0, marginTop: '2px', color: '#64748b' }} />
+                  <span>{loc.address}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span className={styles.bizMetaRow}>
+                    <HiUser style={{ flexShrink: 0, marginTop: '2px', color: '#64748b' }} />
+                    ผู้ดูแล: <strong>{loc.owner}</strong>
+                  </span>
+                  <span className={styles.bizMetaRow}>
+                    <HiCalendarDays style={{ flexShrink: 0, marginTop: '2px', color: '#64748b' }} />
+                    ล่าสุด: {loc.lastReviewAt || '-'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Footer Actions */}
+              <div className={styles.bizFooter}>
+                <a
+                  href={loc.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.openLink}
+                >
+                  เปิด Google Maps <HiArrowTopRightOnSquare size={15} />
+                </a>
+
+                <div className={styles.footerRight}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLocFilter(isSelected ? 'ALL' : loc.id)}
+                    className={`${styles.filterBizBtn} ${isSelected ? styles.filterBizBtnActive : ''}`}
+                  >
+                    {isSelected ? 'แสดงทุกธุรกิจ' : `ดูรีวิว ${loc.businessKey}`}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.iconBtn}
+                    onClick={() => {
+                      setLocEditTarget(loc);
+                      setLocForm({
+                        rating: loc.rating,
+                        totalReviews: loc.totalReviews,
+                        repliedCount: loc.repliedCount,
+                        lastReviewAt: loc.lastReviewAt,
+                      });
+                    }}
+                    title="แก้ไขคะแนนและยอดรีวิวธุรกิจนี้"
+                  >
+                    <HiPencilSquare size={16} />
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
-      {/* Section 2: Recent GBP Reviews & Reply Log */}
+      {/* Reviews & Replies List (100% Width) */}
       <div
         style={{
+          width: '100%',
           backgroundColor: '#ffffff',
           border: '1px solid #e1ebf5',
           borderRadius: '20px',
@@ -470,10 +474,10 @@ export default function GbpReviewsPage() {
         >
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              รายการตรวจรีวิวลูกค้า &amp; การตอบกลับ
+              รายการรีวิวลูกค้า &amp; การตอบกลับ
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              บันทึกข้อความรีวิวจากลูกค้าและติดตามสถานะการตอบกลับของแต่ละธุรกิจ
+              เลือกกรองดูรีวิวแยกตามธุรกิจ หรือตรวจเฉพาะรายการที่ยังรอตอบกลับ
             </p>
           </div>
 
@@ -484,18 +488,22 @@ export default function GbpReviewsPage() {
                 onClick={() => setSelectedLocFilter('ALL')}
                 className={`${styles.filterTab} ${selectedLocFilter === 'ALL' ? styles.filterTabActive : ''}`}
               >
-                ทุกสถานที่ ({reviews.length})
+                ทุกธุรกิจ ({reviews.length})
               </button>
-              {locations.map(l => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => setSelectedLocFilter(l.id)}
-                  className={`${styles.filterTab} ${selectedLocFilter === l.id ? styles.filterTabActive : ''}`}
-                >
-                  {l.businessKey}
-                </button>
-              ))}
+              {locations.map(l => {
+                const brand = BUSINESS_BRAND[l.businessKey];
+                const count = reviews.filter(r => r.locationId === l.id).length;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => setSelectedLocFilter(l.id)}
+                    className={`${styles.filterTab} ${selectedLocFilter === l.id ? styles.filterTabActive : ''}`}
+                  >
+                    {brand?.shortTitle.split(' ')[0] === 'MHL' ? `MHL ${l.businessKey === 'CAR' ? 'CAR' : 'อาคาร'}` : 'GOODFILM'} ({count})
+                  </button>
+                );
+              })}
             </div>
 
             <div className={styles.filterTabs}>
@@ -525,7 +533,7 @@ export default function GbpReviewsPage() {
         </div>
 
         <div style={{ marginBottom: '1.1rem' }}>
-          <div className={styles.searchWrap} style={{ maxWidth: '100%' }}>
+          <div className={styles.searchWrap}>
             <HiMagnifyingGlass className={styles.searchIcon} size={18} />
             <input
               type="text"
@@ -557,6 +565,7 @@ export default function GbpReviewsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {filteredReviews.map(rev => {
               const loc = locations.find(l => l.id === rev.locationId);
+              const brand = loc ? BUSINESS_BRAND[loc.businessKey] : undefined;
               return (
                 <div
                   key={rev.id}
@@ -576,26 +585,23 @@ export default function GbpReviewsPage() {
                       flexWrap: 'wrap',
                     }}
                   >
-                    <div>
-                      <span style={{ fontWeight: 700, color: '#0f2942', marginRight: '0.5rem' }}>
-                        {rev.reviewerName}
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, color: '#0f2942' }}>{rev.reviewerName}</span>
                       <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.9rem' }}>
                         {'★'.repeat(rev.rating)}
                         {'☆'.repeat(Math.max(0, 5 - rev.rating))}
                       </span>
                       <span
                         style={{
-                          marginLeft: '0.6rem',
-                          fontSize: '0.78rem',
-                          padding: '0.15rem 0.55rem',
+                          fontSize: '0.76rem',
+                          padding: '0.15rem 0.6rem',
                           borderRadius: '999px',
-                          backgroundColor: '#eff6ff',
-                          color: '#1d4ed8',
-                          fontWeight: 600,
+                          backgroundColor: brand?.softBg || '#eff6ff',
+                          color: brand?.color || '#1d4ed8',
+                          fontWeight: 700,
                         }}
                       >
-                        {loc?.name || rev.locationId}
+                        {brand?.shortTitle || loc?.name || rev.locationId}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -677,22 +683,25 @@ export default function GbpReviewsPage() {
       <Modal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        title="บันทึกรีวิว Google Business Profile ใหม่"
+        title="บันทึกรีวิวบน Google Maps ใหม่"
         maxWidth="540px"
       >
         <form onSubmit={handleSaveReview}>
           <div className="form-group">
-            <label className="form-label">สถานที่ (1 บัญชี / 3 สถานที่) *</label>
+            <label className="form-label">เลือกธุรกิจ *</label>
             <select
               className="form-select"
               value={reviewForm.locationId}
               onChange={e => setReviewForm({ ...reviewForm, locationId: e.target.value })}
             >
-              {locations.map(loc => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
+              {locations.map(loc => {
+                const brand = BUSINESS_BRAND[loc.businessKey];
+                return (
+                  <option key={loc.id} value={loc.id}>
+                    {brand?.shortTitle || loc.name}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -737,7 +746,7 @@ export default function GbpReviewsPage() {
               className="form-input"
               rows={3}
               required
-              placeholder="คัดลอกข้อความรีวิวจาก Porter Metrics หรือ Google Maps..."
+              placeholder="คัดลอกข้อความรีวิวจาก Google Maps หรือ Porter Metrics..."
               value={reviewForm.comment}
               onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })}
             />
@@ -814,17 +823,17 @@ export default function GbpReviewsPage() {
         </form>
       </Modal>
 
-      {/* Modal: Edit Location Summary */}
+      {/* Modal: Edit Business Score Summary */}
       <Modal
         isOpen={!!locEditTarget}
         onClose={() => setLocEditTarget(null)}
-        title={`อัปเดตสถิติรีวิว: ${locEditTarget?.name || ''}`}
+        title={`อัปเดตคะแนนรีวิว: ${locEditTarget ? BUSINESS_BRAND[locEditTarget.businessKey]?.shortTitle || locEditTarget.name : ''}`}
         maxWidth="460px"
       >
         <form onSubmit={handleSaveLocation}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="form-label">คะแนนเฉลี่ย (เต็ม 5.0)</label>
+              <label className="form-label">คะแนนดาวเฉลี่ย (เต็ม 5.0)</label>
               <input
                 type="number"
                 step="0.1"
