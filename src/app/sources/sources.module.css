@@ -1,0 +1,176 @@
+.muted {
+  color: var(--color-text-secondary);
+}
+
+/* ---------- to-do strip ---------- */
+.todo {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radius-lg);
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.todo h2 {
+  font-size: 0.95rem;
+  margin: 0 0 0.4rem;
+}
+
+.todo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.dot {
+  display: inline-block;
+  margin-right: 0.4rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+}
+
+/* ---------- cards ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-success);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card_soon { border-top-color: var(--color-warning); }
+.card_problem { border-top-color: var(--color-danger); }
+.card_idle { border-top-color: var(--color-border); }
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.head h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.pill {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-full);
+  color: #fff;
+}
+
+.ok { background: var(--color-success); }
+.soon { background: var(--color-warning); }
+.problem { background: var(--color-danger); }
+.idle { background: var(--color-text-secondary); }
+
+.what {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.flow span {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.6rem;
+}
+
+.flow svg {
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+}
+
+.rows {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+}
+
+.rows > div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.5rem;
+}
+
+.rows dt {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-secondary);
+}
+
+.rows dd {
+  margin: 0;
+}
+
+.rows small {
+  color: var(--color-text-secondary);
+}
+
+.big {
+  font-size: 1rem;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.85rem;
+  background: var(--color-background);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+}
+
+.card_problem .note { color: var(--color-danger); }
+
+.foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.foot a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.foot small {
+  color: var(--color-text-secondary);
+}

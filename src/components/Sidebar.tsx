@@ -33,7 +33,8 @@ import {
   HiEllipsisHorizontal,
   HiBuildingOffice2,
   HiBanknotes,
-  HiPresentationChartLine
+  HiPresentationChartLine,
+  HiCircleStack
 } from 'react-icons/hi2';
 import { SiFacebook, SiGoogleads, SiOpenai } from 'react-icons/si';
 
@@ -62,6 +63,7 @@ const navLinks = [
   { group: 'ข้อมูลตลาด', path: '/market/analysis', label: 'วิเคราะห์โฆษณา', icon: <HiPresentationChartLine /> },
   { group: 'ทีม & ธุรกิจ', path: '/meetings', label: 'บันทึกประชุม', icon: <HiDocumentText /> },
   { group: 'ทีม & ธุรกิจ', path: '/company', label: 'โครงสร้างธุรกิจ', icon: <HiBuildingOffice2 /> },
+  { group: 'ทีม & ธุรกิจ', path: '/sources', label: 'แหล่งข้อมูล', icon: <HiCircleStack /> },
   { group: 'ทีม & ธุรกิจ', path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
