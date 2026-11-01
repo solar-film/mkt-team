@@ -21,6 +21,10 @@
     {
       "path": "/api/cron/facebook-posts",
       "schedule": "30 23 * * *"
+    },
+    {
+      "path": "/api/cron/gbp-reviews",
+      "schedule": "0 0 * * *"
     }
   ],
   "regions": [

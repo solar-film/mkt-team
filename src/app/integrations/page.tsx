@@ -13,7 +13,10 @@ import {
   HiMapPin,
   HiUser,
   HiCalendarDays,
-  HiArrowUpTray,
+  HiCog6Tooth,
+  HiCheckCircle,
+  HiExclamationCircle,
+  HiClipboardDocument,
 } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import Modal from '@/components/Modal';
@@ -43,6 +46,17 @@ interface GbpReview {
   replyText: string;
   repliedBy: string;
   source: string;
+}
+
+interface GbpSyncInfo {
+  sheetId: string;
+  sheetUrl: string;
+  serviceAccountEmail: string;
+  configured: boolean;
+  lastSyncedAt: string | null;
+  lastSyncOk: boolean | null;
+  lastSyncMessage: string | null;
+  scheduleText: string;
 }
 
 const MAX_PER_BUSINESS = 10;
@@ -123,16 +137,34 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
   },
 ];
 
+function formatThaiSyncTime(iso: string | null): string {
+  if (!iso) return 'ยังไม่เคยซิงก์';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('th-TH', {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function GbpReviewsPage() {
   const [locations, setLocations] = useState<GbpLocation[]>(INITIAL_LOCATIONS);
   const [reviews, setReviews] = useState<GbpReview[]>([]);
-  const [sheetConfigured, setSheetConfigured] = useState(false);
+  const [syncInfo, setSyncInfo] = useState<GbpSyncInfo | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [selectedLocFilter, setSelectedLocFilter] = useState<string>('ALL');
   const [replyFilter, setReplyFilter] = useState<'ALL' | 'UNREPLIED' | 'REPLIED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Auto-Sync Sheet Config Modal
+  const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
+  const [sheetUrlInput, setSheetUrlInput] = useState('');
+  const [savingSheet, setSavingSheet] = useState(false);
 
   // Add Single Review Modal
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -144,14 +176,6 @@ export default function GbpReviewsPage() {
     reviewDate: new Date().toISOString().slice(0, 10),
     replyText: '',
     repliedBy: '',
-  });
-
-  // Bulk Import 10 Reviews Modal
-  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [bulkForm, setBulkForm] = useState({
-    locationId: 'loc-car',
-    replaceExisting: true,
-    rawLines: '',
   });
 
   // Reply Modal
@@ -177,7 +201,10 @@ export default function GbpReviewsPage() {
         const data = await res.json();
         if (Array.isArray(data.locations) && data.locations.length > 0) setLocations(data.locations);
         if (Array.isArray(data.reviews)) setReviews(data.reviews);
-        setSheetConfigured(Boolean(data.sheetConfigured));
+        if (data.syncInfo) {
+          setSyncInfo(data.syncInfo);
+          setSheetUrlInput(data.syncInfo.sheetUrl || '');
+        }
       }
     } catch (error) {
       console.error('Error loading GBP reviews:', error);
@@ -190,7 +217,33 @@ export default function GbpReviewsPage() {
     fetchData();
   }, []);
 
-  const handleSyncSheet = async () => {
+  const handleSaveSheetAndSync = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSheet(true);
+    try {
+      const res = await fetchWorkspace('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'save-sheet', sheetUrl: sheetUrlInput }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(data.message || 'บันทึก Google Sheet และดึงรีวิวเข้าฐานข้อมูลเรียบร้อย');
+        setIsSheetModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.message || data.error || 'ไม่สามารถอ่าน Google Sheet ได้ กรุณาตรวจสอบการแชร์สิทธิ์');
+        if (data.syncInfo) setSyncInfo(data.syncInfo);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ Google Sheet');
+    } finally {
+      setSavingSheet(false);
+    }
+  };
+
+  const handleSyncNow = async () => {
     setSyncing(true);
     try {
       const res = await fetchWorkspace('/api/integrations', {
@@ -200,10 +253,11 @@ export default function GbpReviewsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast.success(`ดึงรีวิวล่าสุดสำเร็จ (${data.imported ?? 0} รายการ)`);
+        toast.success(data.message || `ดึงรีวิวเข้าฐานข้อมูลสำเร็จ`);
         fetchData();
       } else {
-        toast.error(data.error || 'ยังไม่ได้ผูก Google Sheet สำหรับดึงรีวิวอัตโนมัติ');
+        toast.error(data.message || data.error || 'ดึงข้อมูลไม่สำเร็จ');
+        if (data.syncInfo) setSyncInfo(data.syncInfo);
       }
     } catch (error) {
       console.error(error);
@@ -213,64 +267,13 @@ export default function GbpReviewsPage() {
     }
   };
 
-  const handleBulkImport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const lines = bulkForm.rawLines
-      .split(/\r?\n/)
-      .map(l => l.trim())
-      .filter(Boolean)
-      .slice(0, MAX_PER_BUSINESS);
-
-    if (lines.length === 0) {
-      toast.error('กรุณาวางข้อมูลรีวิวอย่างน้อย 1 บรรทัด');
-      return;
-    }
-
-    // Format per line (Tab or | separated): วันที่(YYYY-MM-DD) | ชื่อผู้รีวิว | ดาว(1-5) | ข้อความรีวิว | คำตอบกลับ(ถ้ามี)
-    const parsed = lines.map(line => {
-      const parts = line.includes('\t') ? line.split('\t') : line.split('|');
-      if (parts.length >= 4) {
-        return {
-          reviewDate: parts[0]?.trim() || new Date().toISOString().slice(0, 10),
-          reviewerName: parts[1]?.trim() || 'ลูกค้า Google Maps',
-          rating: Number(parts[2]?.trim()) || 5,
-          comment: parts[3]?.trim() || '',
-          replyText: parts[4]?.trim() || '',
-          repliedBy: parts[5]?.trim() || '',
-        };
-      }
-      return {
-        reviewDate: new Date().toISOString().slice(0, 10),
-        reviewerName: 'ลูกค้า Google Maps',
-        rating: 5,
-        comment: line,
-        replyText: '',
-        repliedBy: '',
-      };
-    });
-
+  const copyServiceEmail = async () => {
+    if (!syncInfo?.serviceAccountEmail) return;
     try {
-      const res = await fetchWorkspace('/api/integrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'bulk-import',
-          locationId: bulkForm.locationId,
-          replaceExisting: bulkForm.replaceExisting,
-          reviews: parsed,
-        }),
-      });
-      if (res.ok) {
-        toast.success(`นำเข้า ${parsed.length} รีวิวล่าสุดเรียบร้อย`);
-        setIsBulkModalOpen(false);
-        setBulkForm({ ...bulkForm, rawLines: '' });
-        fetchData();
-      } else {
-        toast.error('ไม่สามารถนำเข้าข้อมูลรีวิวได้');
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('เกิดข้อผิดพลาดในการนำเข้ารีวิว');
+      await navigator.clipboard.writeText(syncInfo.serviceAccountEmail);
+      toast.success('คัดลอกอีเมลสำหรับแชร์ Google Sheet แล้ว');
+    } catch {
+      toast.error('คัดลอกไม่สำเร็จ กรุณาคลุมดำเพื่อคัดลอก');
     }
   };
 
@@ -396,52 +399,129 @@ export default function GbpReviewsPage() {
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <span className={styles.eyebrow}>
-            <HiStar size={14} /> Google Business Profile · แสดง {MAX_PER_BUSINESS} รีวิวล่าสุดต่อธุรกิจ
+            <HiStar size={14} /> Porter Metrics → Google Sheet → ฐานข้อมูลอัตโนมัติทุกวัน
           </span>
           <h1 className={styles.pageTitle}>รีวิวบน Google Maps</h1>
           <p className={styles.pageSubtitle}>
-            คะแนนรีวิวและรายการ {MAX_PER_BUSINESS} รีวิวล่าสุดแยกแต่ละธุรกิจ (GOODFILM, MHL อาคาร, MHL CAR)
+            ดึงคะแนนและ {MAX_PER_BUSINESS} รีวิวล่าสุดแยกแต่ละธุรกิจเข้าฐานข้อมูลอัตโนมัติทุกเช้า 07:00 น.
           </p>
         </div>
         <div className={styles.headerActions}>
-          {sheetConfigured && (
+          {syncInfo?.configured && (
             <button
               type="button"
               className="btn btn-secondary"
               disabled={syncing}
-              onClick={handleSyncSheet}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderRadius: '12px', fontWeight: 600 }}
+              onClick={handleSyncNow}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                borderRadius: '12px',
+                fontWeight: 600,
+              }}
             >
-              <HiArrowPath size={16} /> {syncing ? 'กำลังดึงรีวิว…' : 'ดึง 10 รีวิวล่าสุด'}
+              <HiArrowPath size={16} /> {syncing ? 'กำลังดึงจากชีต…' : 'ซิงก์จากชีตเดี๋ยวนี้'}
             </button>
           )}
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => setIsBulkModalOpen(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderRadius: '12px', fontWeight: 600 }}
-          >
-            <HiArrowUpTray size={16} /> นำเข้า 10 รีวิวล่าสุด
-          </button>
-          <a
-            href="https://portermetrics.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-secondary"
+            onClick={() => setIsSheetModalOpen(true)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
               borderRadius: '12px',
               fontWeight: 600,
-              textDecoration: 'none',
             }}
           >
-            เปิด Porter <HiArrowTopRightOnSquare size={16} />
-          </a>
-          <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
-            <HiPlus size={18} /> บันทึกรีวิวใหม่
+            <HiCog6Tooth size={16} />
+            {syncInfo?.configured ? 'ตั้งค่าชีตดึงอัตโนมัติ' : 'ผูก Google Sheet ดึงอัตโนมัติ'}
           </button>
+          <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
+            <HiPlus size={18} /> บันทึกรีวิวเสริม
+          </button>
+        </div>
+      </div>
+
+      {/* Auto-Sync Status Strip */}
+      <div
+        style={{
+          width: '100%',
+          marginBottom: '1.5rem',
+          padding: '0.85rem 1.2rem',
+          borderRadius: '14px',
+          border: syncInfo?.configured
+            ? syncInfo.lastSyncOk === false
+              ? '1px solid #fed7aa'
+              : '1px solid #bbf7d0'
+            : '1px solid #cbd5e1',
+          backgroundColor: syncInfo?.configured
+            ? syncInfo.lastSyncOk === false
+              ? '#fff7ed'
+              : '#f0fdf4'
+            : '#f8fafc',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.86rem', color: '#0f2942' }}>
+          {syncInfo?.configured ? (
+            syncInfo.lastSyncOk === false ? (
+              <HiExclamationCircle size={20} color="#ea580c" style={{ flexShrink: 0 }} />
+            ) : (
+              <HiCheckCircle size={20} color="#16a34a" style={{ flexShrink: 0 }} />
+            )
+          ) : (
+            <HiCog6Tooth size={20} color="#475569" style={{ flexShrink: 0 }} />
+          )}
+
+          {syncInfo?.configured ? (
+            <span>
+              <strong>ดึงอัตโนมัติเปิดใช้งานแล้ว:</strong> ซิงก์ล่าสุด {formatThaiSyncTime(syncInfo.lastSyncedAt)}
+              {syncInfo.lastSyncMessage ? ` · ${syncInfo.lastSyncMessage}` : ''}
+            </span>
+          ) : (
+            <span>
+              <strong>ยังไม่ได้ผูก Google Sheet จาก Porter Metrics:</strong> กดปุ่ม{' '}
+              <u>ผูก Google Sheet ดึงอัตโนมัติ</u> ครั้งเดียว เพื่อให้ระบบดูดรีวิวทั้ง 3 ธุรกิจเข้าฐานข้อมูลเองทุกเช้า 07:00 น.
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {syncInfo?.sheetUrl && (
+            <a
+              href={syncInfo.sheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.openLink}
+            >
+              เปิด Google Sheet <HiArrowTopRightOnSquare size={15} />
+            </a>
+          )}
+          {!syncInfo?.configured && (
+            <button
+              type="button"
+              onClick={() => setIsSheetModalOpen(true)}
+              style={{
+                padding: '0.38rem 0.85rem',
+                borderRadius: '9px',
+                backgroundColor: '#034aad',
+                color: '#ffffff',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              ตั้งค่าผูกชีตตอนนี้
+            </button>
+          )}
         </div>
       </div>
 
@@ -569,7 +649,7 @@ export default function GbpReviewsPage() {
         })}
       </div>
 
-      {/* Filter Bar for 10 Latest Reviews per Business */}
+      {/* 10 Latest Reviews per Business */}
       <div
         style={{
           width: '100%',
@@ -595,7 +675,7 @@ export default function GbpReviewsPage() {
               10 รีวิวล่าสุด แยกแต่ละธุรกิจ
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              แสดงสูงสุดธุรกิจละ {MAX_PER_BUSINESS} รีวิวล่าสุดเรียงตามวันที่รีวิวใหม่สุด
+              ข้อมูลรีวิวที่ดึงมาเก็บไว้ในฐานข้อมูล (แสดงธุรกิจละ {MAX_PER_BUSINESS} รายการล่าสุด)
             </p>
           </div>
 
@@ -713,26 +793,6 @@ export default function GbpReviewsPage() {
                         แสดง {locLatest10.length} / {MAX_PER_BUSINESS} รีวิวล่าสุด
                       </span>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBulkForm({ locationId: loc.id, replaceExisting: true, rawLines: '' });
-                        setIsBulkModalOpen(true);
-                      }}
-                      style={{
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#ffffff',
-                        color: '#0f2942',
-                        borderRadius: '8px',
-                        padding: '0.3rem 0.7rem',
-                        fontSize: '0.78rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      + นำเข้า 10 รีวิวของ {loc.businessKey}
-                    </button>
                   </div>
 
                   {locLatest10.length === 0 ? (
@@ -747,7 +807,7 @@ export default function GbpReviewsPage() {
                         fontSize: '0.88rem',
                       }}
                     >
-                      ยังไม่มีรายการรีวิวที่ดึงเข้ามาสำหรับ {brand.shortTitle}
+                      ยังไม่มีรีวิวในฐานข้อมูลสำหรับ {brand.shortTitle} (ผูก Google Sheet ด้านบนเพื่อให้ระบบดึงเข้าอัตโนมัติ)
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -868,61 +928,102 @@ export default function GbpReviewsPage() {
         )}
       </div>
 
-      {/* Modal: Bulk Import up to 10 Latest Reviews */}
+      {/* Modal: Configure Porter Metrics -> Google Sheet Auto-Sync */}
       <Modal
-        isOpen={isBulkModalOpen}
-        onClose={() => setIsBulkModalOpen(false)}
-        title="นำเข้า 10 รีวิวล่าสุดของธุรกิจ"
+        isOpen={isSheetModalOpen}
+        onClose={() => setIsSheetModalOpen(false)}
+        title="ตั้งค่าดึงรีวิวอัตโนมัติ (Porter Metrics → Google Sheet → ฐานข้อมูล)"
         maxWidth="620px"
       >
-        <form onSubmit={handleBulkImport}>
-          <div className="form-group">
-            <label className="form-label">เลือกธุรกิจ *</label>
-            <select
-              className="form-select"
-              value={bulkForm.locationId}
-              onChange={e => setBulkForm({ ...bulkForm, locationId: e.target.value })}
-            >
-              {locations.map(loc => (
-                <option key={loc.id} value={loc.id}>
-                  {BUSINESS_BRAND[loc.businessKey]?.shortTitle || loc.name}
-                </option>
-              ))}
-            </select>
+        <form onSubmit={handleSaveSheetAndSync}>
+          <div
+            style={{
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1rem',
+              fontSize: '0.85rem',
+              lineHeight: 1.6,
+              color: '#334155',
+            }}
+          >
+            <div style={{ fontWeight: 700, color: '#0f2942', marginBottom: '0.4rem' }}>
+              วิธีตั้งค่าครั้งเดียว แล้วระบบดึงเข้าฐานข้อมูลเองทุกวัน (ฟรี 100%):
+            </div>
+            <ol style={{ margin: 0, paddingLeft: '1.2rem', display: 'grid', gap: '0.35rem' }}>
+              <li>
+                สร้างไฟล์ Google Sheet 1 ไฟล์ แล้วเปิดส่วนเสริม <b>Extensions → Porter Metrics → Launch</b>{' '}
+                เลือกแหล่งข้อมูล <b>Google Business Profile</b> (เลือกทั้ง 3 สถานที่ในแท็บเดียว หรือแยกแท็บ{' '}
+                <code>GFS</code>, <code>MHL</code>, <code>CAR</code> ก็ได้)
+              </li>
+              <li>
+                เลือกฟิลด์รีวิวใน Porter (เช่น <code>Location Name</code>, <code>Date</code>, <code>Reviewer</code>,{' '}
+                <code>Star Rating</code>, <code>Review Comment</code>, <code>Review Reply Comment</code>) และตั้งเวลา{' '}
+                <b>Schedule Refresh = Daily (รายวัน)</b>
+              </li>
+              <li>
+                กดปุ่ม <b>Share (แชร์)</b> ใน Google Sheet แล้วเพิ่มอีเมลระบบของเว็บด้านล่างเป็น <b>Viewer (ผู้มีสิทธิ์อ่าน)</b>:
+                {syncInfo?.serviceAccountEmail ? (
+                  <div
+                    style={{
+                      marginTop: '0.35rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '0.35rem 0.65rem',
+                    }}
+                  >
+                    <code style={{ flex: 1, fontSize: '0.8rem', wordBreak: 'break-all', color: '#0f2942' }}>
+                      {syncInfo.serviceAccountEmail}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={copyServiceEmail}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '6px',
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontWeight: 600,
+                        fontSize: '0.78rem',
+                        border: '1px solid #bfdbfe',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <HiClipboardDocument size={14} /> คัดลอก
+                    </button>
+                  </div>
+                ) : null}
+              </li>
+              <li>วางลิงก์ Google Sheet ด้านล่าง แล้วกด <b>บันทึกและดึงข้อมูลทันที</b></li>
+            </ol>
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              วางข้อมูลรีวิวสูงสุด 10 บรรทัด (คัดลอกจากตาราง Porter Metrics / Google Sheets ได้เลย)
-            </label>
-            <small style={{ display: 'block', marginBottom: '0.4rem', color: '#64748b' }}>
-              รูปแบบต่อบรรทัด: <code>วันที่(YYYY-MM-DD) | ชื่อลูกค้า | ดาว(1-5) | ข้อความรีวิว | คำตอบกลับ</code>
-            </small>
-            <textarea
-              className="form-input"
-              rows={8}
-              required
-              placeholder={'2026-11-01 | คุณณัฐพงศ์ | 5 | ติดฟิล์มงานเนี๊ยบมากครับ | ขอบคุณมากครับ\n2026-10-30 | คุณสมศรี | 5 | ช่างให้คำแนะนำดีมาก | ขอบคุณที่ใช้บริการค่ะ'}
-              value={bulkForm.rawLines}
-              onChange={e => setBulkForm({ ...bulkForm, rawLines: e.target.value })}
-            />
-          </div>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', marginBottom: '1rem', cursor: 'pointer' }}>
+            <label className="form-label">ลิงก์ Google Sheet (URL หรือ Sheet ID)</label>
             <input
-              type="checkbox"
-              checked={bulkForm.replaceExisting}
-              onChange={e => setBulkForm({ ...bulkForm, replaceExisting: e.target.checked })}
+              type="text"
+              className="form-input"
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              value={sheetUrlInput}
+              onChange={e => setSheetUrlInput(e.target.value)}
             />
-            แทนที่ชุดรีวิวเดิมของธุรกิจนี้ด้วยชุดใหม่ล่าสุด (ไม่เกิน 10 รีวิว)
-          </label>
+          </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setIsBulkModalOpen(false)}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsSheetModalOpen(false)}>
               ยกเลิก
             </button>
-            <button type="submit" className="btn btn-primary">
-              นำเข้า 10 รีวิวล่าสุด
+            <button type="submit" className="btn btn-primary" disabled={savingSheet}>
+              {savingSheet ? 'กำลังเชื่อมและดึงข้อมูล…' : 'บันทึกและดึงข้อมูลทันที'}
             </button>
           </div>
         </form>
@@ -932,7 +1033,7 @@ export default function GbpReviewsPage() {
       <Modal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        title="บันทึกรีวิวบน Google Maps ใหม่"
+        title="บันทึกรีวิวบน Google Maps เสริม"
         maxWidth="540px"
       >
         <form onSubmit={handleSaveReview}>
@@ -995,7 +1096,7 @@ export default function GbpReviewsPage() {
               className="form-input"
               rows={3}
               required
-              placeholder="คัดลอกข้อความรีวิวจาก Google Maps หรือ Porter Metrics..."
+              placeholder="ข้อความรีวิว..."
               value={reviewForm.comment}
               onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })}
             />
