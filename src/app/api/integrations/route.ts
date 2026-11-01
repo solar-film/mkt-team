@@ -3,10 +3,12 @@ import { prisma } from '@/lib/prisma';
 import {
   DEFAULT_LOCATIONS,
   ensureGbpTables,
+  fetchLiveGooglePlacesData,
   getGbpSyncInfo,
   MAX_REVIEWS_PER_BUSINESS,
   maybeAutoSyncGbpSheet,
   saveGbpSheetConfig,
+  syncGbpReviews,
   syncPorterGbpSheet,
   type GbpLocationSummary,
   type GbpReviewItem,
@@ -51,14 +53,42 @@ export async function GET() {
       syncInfo,
     });
   } catch (error) {
-    console.error('Failed to load GBP data from DB, returning defaults:', error);
-    return NextResponse.json({
-      locations: DEFAULT_LOCATIONS,
-      reviews: [],
-      maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
-      syncInfo: null,
-      fallback: true,
-    });
+    console.error('Failed to load GBP data from DB, trying direct Google Places API:', error);
+    try {
+      const { stats, reviewsByLoc } = await fetchLiveGooglePlacesData();
+      const locations = DEFAULT_LOCATIONS.map(loc => ({
+        ...loc,
+        rating: stats[loc.id]?.rating ?? loc.rating,
+        totalReviews: stats[loc.id]?.totalReviews ?? loc.totalReviews,
+        lastReviewAt: stats[loc.id]?.lastReviewAt || loc.lastReviewAt,
+      }));
+      const reviews = Object.values(reviewsByLoc).flat();
+      return NextResponse.json({
+        locations,
+        reviews,
+        maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
+        syncInfo: {
+          mode: 'places_api',
+          sheetId: '',
+          sheetUrl: '',
+          serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || '',
+          configured: true,
+          lastSyncedAt: new Date().toISOString(),
+          lastSyncOk: true,
+          lastSyncMessage: `ดึงจาก Google Maps สำเร็จ ${reviews.length} รีวิว`,
+          scheduleText: 'ดึงจาก Google Maps อัตโนมัติทุกวัน 07:00 น.',
+        },
+        fallback: true,
+      });
+    } catch {
+      return NextResponse.json({
+        locations: DEFAULT_LOCATIONS,
+        reviews: [],
+        maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
+        syncInfo: null,
+        fallback: true,
+      });
+    }
   }
 }
 
@@ -70,7 +100,15 @@ export async function POST(request: NextRequest) {
     if (body.kind === 'save-sheet') {
       const sheetId = await saveGbpSheetConfig(String(body.sheetUrl || ''));
       if (!sheetId) {
-        return NextResponse.json({ success: true, cleared: true, message: 'ยกเลิกการผูก Google Sheet แล้ว' });
+        const result = await syncGbpReviews();
+        const syncInfo = await getGbpSyncInfo();
+        return NextResponse.json({
+          success: true,
+          cleared: true,
+          ...result,
+          message: 'สลับกลับไปใช้การดึงอัตโนมัติจาก Google Maps API โดยตรงแล้ว',
+          syncInfo,
+        });
       }
       const result = await syncPorterGbpSheet();
       const syncInfo = await getGbpSyncInfo();
@@ -82,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.kind === 'sync-sheet') {
-      const result = await syncPorterGbpSheet();
+      const result = await syncGbpReviews();
       const syncInfo = await getGbpSyncInfo();
       return NextResponse.json(
         { success: result.ok, ...result, syncInfo },

@@ -81,10 +81,8 @@ function view(source: DataSource, today: string, live: Load<DataSourcesLive>, sh
     const syncedDay = gbp.lastSyncedAt ? bangkokDateKey(gbp.lastSyncedAt) : null;
     status = worst(status, gbpStatus(gbp.configured, gbp.lastSyncOk, syncedDay, today));
     if (gbp.configured) {
-      when = <>{source.when}<br /><small>ซิงก์ล่าสุด {gbp.lastSyncedAt ? thaiDateTime(gbp.lastSyncedAt) : '—'}</small></>;
-      if (gbp.lastSyncOk === false) note = gbp.lastSyncMessage || 'ดึงข้อมูลรีวิวจาก Google Sheet ล่าสุดไม่สำเร็จ';
-    } else {
-      when = <>{source.when}<br /><small>รอผูก Google Sheet ครั้งแรกที่หน้า รีวิวบน Google Maps</small></>;
+      when = <>{source.when}<br /><small>ซิงก์ล่าสุด {gbp.lastSyncedAt ? thaiDateTime(gbp.lastSyncedAt) : 'พร้อมดึงอัตโนมัติเมื่อเปิดหน้าเว็บ'}</small></>;
+      if (gbp.lastSyncOk === false) note = gbp.lastSyncMessage || 'ดึงข้อมูลรีวิวจาก Google Maps ล่าสุดไม่สำเร็จ';
     }
   }
 

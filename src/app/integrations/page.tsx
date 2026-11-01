@@ -49,6 +49,7 @@ interface GbpReview {
 }
 
 interface GbpSyncInfo {
+  mode?: 'places_api' | 'sheet_and_places';
   sheetId: string;
   sheetUrl: string;
   serviceAccountEmail: string;
@@ -109,7 +110,7 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
     totalReviews: 681,
     repliedCount: 0,
     lastReviewAt: '',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=ศูนย์ติดตั้งฟิล์มรถยนต์+ครบวงจร+บางนา-ลาซาล',
+    mapsUrl: 'https://www.google.com/maps/place/?q=place_id:ChIJh5ckOqdfHTER6ayNPK4WbEw',
   },
   {
     id: 'loc-gfs',
@@ -121,7 +122,7 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
     totalReviews: 110,
     repliedCount: 0,
     lastReviewAt: '',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=บจก.กู๊ดฟิล์ม+914/10-11+ถ.ลาซาล',
+    mapsUrl: 'https://www.google.com/maps/place/?q=place_id:ChIJEcaRmgmg4jARfKsd81AwsHw',
   },
   {
     id: 'loc-mhl',
@@ -133,7 +134,7 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
     totalReviews: 90,
     repliedCount: 0,
     lastReviewAt: '',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Maholan+Film+Co.,+Ltd.+บริษัท+มโหฬารฟิล์ม+จำกัด+ฟิล์มอาคาร',
+    mapsUrl: 'https://www.google.com/maps/place/?q=place_id:ChIJeU7TVHWg4jARGRU9aOYQJoQ',
   },
 ];
 
@@ -399,31 +400,29 @@ export default function GbpReviewsPage() {
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <span className={styles.eyebrow}>
-            <HiStar size={14} /> Porter Metrics → Google Sheet → ฐานข้อมูลอัตโนมัติทุกวัน
+            <HiStar size={14} /> Google Maps Official API → ดึงเข้าฐานข้อมูลอัตโนมัติทุกวัน
           </span>
           <h1 className={styles.pageTitle}>รีวิวบน Google Maps</h1>
           <p className={styles.pageSubtitle}>
-            ดึงคะแนนและ {MAX_PER_BUSINESS} รีวิวล่าสุดแยกแต่ละธุรกิจเข้าฐานข้อมูลอัตโนมัติทุกเช้า 07:00 น.
+            ดึงคะแนนดาว ยอดรีวิวสะสมจริง และ {MAX_PER_BUSINESS} รีวิวล่าสุดของแต่ละธุรกิจเข้าฐานข้อมูลอัตโนมัติทุกเช้า 07:00 น.
           </p>
         </div>
         <div className={styles.headerActions}>
-          {syncInfo?.configured && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={syncing}
-              onClick={handleSyncNow}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                borderRadius: '12px',
-                fontWeight: 600,
-              }}
-            >
-              <HiArrowPath size={16} /> {syncing ? 'กำลังดึงจากชีต…' : 'ซิงก์จากชีตเดี๋ยวนี้'}
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={syncing}
+            onClick={handleSyncNow}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              borderRadius: '12px',
+              fontWeight: 600,
+            }}
+          >
+            <HiArrowPath size={16} /> {syncing ? 'กำลังดึงจาก Google Maps…' : 'ดึงรีวิวล่าสุดเดี๋ยวนี้'}
+          </button>
           <button
             type="button"
             className="btn btn-secondary"
@@ -437,7 +436,7 @@ export default function GbpReviewsPage() {
             }}
           >
             <HiCog6Tooth size={16} />
-            {syncInfo?.configured ? 'ตั้งค่าชีตดึงอัตโนมัติ' : 'ผูก Google Sheet ดึงอัตโนมัติ'}
+            {syncInfo?.sheetId ? 'ตั้งค่าชีต Porter' : 'ผูกชีต Porter (เสริม)'}
           </button>
           <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
             <HiPlus size={18} /> บันทึกรีวิวเสริม
@@ -452,16 +451,8 @@ export default function GbpReviewsPage() {
           marginBottom: '1.5rem',
           padding: '0.85rem 1.2rem',
           borderRadius: '14px',
-          border: syncInfo?.configured
-            ? syncInfo.lastSyncOk === false
-              ? '1px solid #fed7aa'
-              : '1px solid #bbf7d0'
-            : '1px solid #cbd5e1',
-          backgroundColor: syncInfo?.configured
-            ? syncInfo.lastSyncOk === false
-              ? '#fff7ed'
-              : '#f0fdf4'
-            : '#f8fafc',
+          border: syncInfo?.lastSyncOk === false ? '1px solid #fed7aa' : '1px solid #bbf7d0',
+          backgroundColor: syncInfo?.lastSyncOk === false ? '#fff7ed' : '#f0fdf4',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -470,27 +461,21 @@ export default function GbpReviewsPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.86rem', color: '#0f2942' }}>
-          {syncInfo?.configured ? (
-            syncInfo.lastSyncOk === false ? (
-              <HiExclamationCircle size={20} color="#ea580c" style={{ flexShrink: 0 }} />
-            ) : (
-              <HiCheckCircle size={20} color="#16a34a" style={{ flexShrink: 0 }} />
-            )
+          {syncInfo?.lastSyncOk === false ? (
+            <HiExclamationCircle size={20} color="#ea580c" style={{ flexShrink: 0 }} />
           ) : (
-            <HiCog6Tooth size={20} color="#475569" style={{ flexShrink: 0 }} />
+            <HiCheckCircle size={20} color="#16a34a" style={{ flexShrink: 0 }} />
           )}
 
-          {syncInfo?.configured ? (
-            <span>
-              <strong>ดึงอัตโนมัติเปิดใช้งานแล้ว:</strong> ซิงก์ล่าสุด {formatThaiSyncTime(syncInfo.lastSyncedAt)}
-              {syncInfo.lastSyncMessage ? ` · ${syncInfo.lastSyncMessage}` : ''}
-            </span>
-          ) : (
-            <span>
-              <strong>ยังไม่ได้ผูก Google Sheet จาก Porter Metrics:</strong> กดปุ่ม{' '}
-              <u>ผูก Google Sheet ดึงอัตโนมัติ</u> ครั้งเดียว เพื่อให้ระบบดูดรีวิวทั้ง 3 ธุรกิจเข้าฐานข้อมูลเองทุกเช้า 07:00 น.
-            </span>
-          )}
+          <span>
+            <strong>
+              {syncInfo?.sheetId
+                ? 'ดึงอัตโนมัติทำงานอยู่ (Google Maps API + Porter Sheet):'
+                : 'ดึงอัตโนมัติจาก Google Maps ทำงานอยู่:'}
+            </strong>{' '}
+            ซิงก์ล่าสุด {formatThaiSyncTime(syncInfo?.lastSyncedAt || null)}
+            {syncInfo?.lastSyncMessage ? ` · ${syncInfo.lastSyncMessage}` : ' · อัปเดตเข้าฐานข้อมูลอัตโนมัติทุกวัน 07:00 น.'}
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -504,24 +489,6 @@ export default function GbpReviewsPage() {
               เปิด Google Sheet <HiArrowTopRightOnSquare size={15} />
             </a>
           )}
-          {!syncInfo?.configured && (
-            <button
-              type="button"
-              onClick={() => setIsSheetModalOpen(true)}
-              style={{
-                padding: '0.38rem 0.85rem',
-                borderRadius: '9px',
-                backgroundColor: '#034aad',
-                color: '#ffffff',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              ตั้งค่าผูกชีตตอนนี้
-            </button>
-          )}
         </div>
       </div>
 
@@ -531,20 +498,12 @@ export default function GbpReviewsPage() {
           const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
           const locReviews = reviews.filter(r => r.locationId === loc.id).slice(0, MAX_PER_BUSINESS);
           const total = Number(loc.totalReviews || 0);
-          const manualReplied = Number(loc.repliedCount || 0);
           const hasReviewData = locReviews.length > 0;
           const repliedLatest = locReviews.filter(r => Boolean(r.replyText?.trim())).length;
-          const unrepliedLatest = locReviews.length - repliedLatest;
-          const replyPct = hasReviewData
-            ? Math.round((repliedLatest / locReviews.length) * 100)
-            : manualReplied > 0 && total > 0
-            ? Math.round((manualReplied / total) * 100)
-            : null;
-          const unrepliedCount = hasReviewData
-            ? unrepliedLatest
-            : manualReplied > 0
-            ? Math.max(0, total - manualReplied)
-            : null;
+          const hasReplyTracking =
+            repliedLatest > 0 || locReviews.some(r => r.source === 'Porter Metrics Sheet');
+          const fiveStarCount = locReviews.filter(r => r.rating === 5).length;
+          const fiveStarPct = hasReviewData ? Math.round((fiveStarCount / locReviews.length) * 100) : 100;
           const latestDate = locReviews[0]?.reviewDate || loc.lastReviewAt || '';
           const isSelected = selectedLocFilter === loc.id;
           const fullStars = Math.round(Number(loc.rating || 5));
@@ -588,40 +547,33 @@ export default function GbpReviewsPage() {
                   <span className={styles.metricLabel}>รีวิวสะสมทั้งหมด</span>
                 </div>
                 <div className={styles.metricCell}>
-                  {replyPct !== null ? (
-                    <>
-                      <span className={styles.metricValue} style={{ color: '#059669' }}>
-                        {replyPct}%{' '}
-                        <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>
-                          ({hasReviewData ? `${repliedLatest}/${locReviews.length}` : manualReplied})
-                        </small>
-                      </span>
-                      <span className={styles.metricLabel}>
-                        {hasReviewData ? 'ตอบแล้ว (ชุดล่าสุด)' : 'อัตราตอบกลับ'}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={styles.metricValue} style={{ color: '#94a3b8' }}>—</span>
-                      <span className={styles.metricLabel}>อัตราตอบกลับ (รอซิงก์)</span>
-                    </>
-                  )}
+                  <span className={styles.metricValue} style={{ color: '#059669' }}>
+                    {locReviews.length}{' '}
+                    <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>/ {MAX_PER_BUSINESS}</small>
+                  </span>
+                  <span className={styles.metricLabel}>รีวิวล่าสุดในระบบ</span>
                 </div>
                 <div className={styles.metricCell}>
-                  {unrepliedCount !== null ? (
+                  {hasReplyTracking && hasReviewData ? (
                     <>
-                      <span
-                        className={styles.metricValue}
-                        style={{ color: unrepliedCount > 0 ? '#ea580c' : '#64748b' }}
-                      >
-                        {unrepliedCount}
+                      <span className={styles.metricValue} style={{ color: '#034aad' }}>
+                        {repliedLatest}{' '}
+                        <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>/ {locReviews.length}</small>
                       </span>
-                      <span className={styles.metricLabel}>รอตอบกลับ</span>
+                      <span className={styles.metricLabel}>บันทึกตอบกลับแล้ว</span>
+                    </>
+                  ) : hasReviewData ? (
+                    <>
+                      <span className={styles.metricValue} style={{ color: '#d97706' }}>
+                        {fiveStarPct}%{' '}
+                        <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>({fiveStarCount})</small>
+                      </span>
+                      <span className={styles.metricLabel}>รีวิว 5 ดาว (ชุดล่าสุด)</span>
                     </>
                   ) : (
                     <>
                       <span className={styles.metricValue} style={{ color: '#94a3b8' }}>—</span>
-                      <span className={styles.metricLabel}>รอตอบกลับ (รอซิงก์)</span>
+                      <span className={styles.metricLabel}>กำลังซิงก์ข้อมูล…</span>
                     </>
                   )}
                 </div>
@@ -639,7 +591,7 @@ export default function GbpReviewsPage() {
                   </span>
                   <span className={styles.bizMetaRow}>
                     <HiCalendarDays style={{ flexShrink: 0, marginTop: '2px', color: '#64748b' }} />
-                    ล่าสุด: {latestDate || 'รอซิงก์ชีต'}
+                    รีวิวล่าสุด: {latestDate || 'กำลังโหลด…'}
                   </span>
                 </div>
               </div>

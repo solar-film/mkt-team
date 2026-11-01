@@ -9,6 +9,7 @@ export interface GbpLocationSummary {
   id: string;
   name: string;
   businessKey: string;
+  placeId?: string;
   address: string;
   owner: string;
   rating: number;
@@ -17,6 +18,12 @@ export interface GbpLocationSummary {
   lastReviewAt: string;
   mapsUrl: string;
 }
+
+export const PLACE_IDS: Record<string, string> = {
+  'loc-car': 'ChIJh5ckOqdfHTER6ayNPK4WbEw',
+  'loc-gfs': 'ChIJEcaRmgmg4jARfKsd81AwsHw',
+  'loc-mhl': 'ChIJeU7TVHWg4jARGRU9aOYQJoQ',
+};
 
 export interface GbpReviewItem {
   id: string;
@@ -31,6 +38,7 @@ export interface GbpReviewItem {
 }
 
 export interface GbpSyncInfo {
+  mode: 'places_api' | 'sheet_and_places';
   sheetId: string;
   sheetUrl: string;
   serviceAccountEmail: string;
@@ -46,37 +54,40 @@ export const DEFAULT_LOCATIONS: GbpLocationSummary[] = [
     id: 'loc-car',
     name: 'ศูนย์ติดตั้งฟิล์มรถยนต์ ครบวงจร บางนา-ลาซาล',
     businessKey: 'CAR',
+    placeId: PLACE_IDS['loc-car'],
     address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 095-953-3949',
     owner: 'นน',
     rating: 4.9,
     totalReviews: 681,
     repliedCount: 0,
     lastReviewAt: '',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=ศูนย์ติดตั้งฟิล์มรถยนต์+ครบวงจร+บางนา-ลาซาล',
+    mapsUrl: `https://www.google.com/maps/place/?q=place_id:${PLACE_IDS['loc-car']}`,
   },
   {
     id: 'loc-gfs',
     name: 'บจก.กู๊ดฟิล์ม (GOODFILM)',
     businessKey: 'GFS',
+    placeId: PLACE_IDS['loc-gfs'],
     address: '914/10-11 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
     owner: 'แต้ว + จ๋าย',
     rating: 4.9,
     totalReviews: 110,
     repliedCount: 0,
     lastReviewAt: '',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=บจก.กู๊ดฟิล์ม+914/10-11+ถ.ลาซาล',
+    mapsUrl: `https://www.google.com/maps/place/?q=place_id:${PLACE_IDS['loc-gfs']}`,
   },
   {
     id: 'loc-mhl',
     name: 'Maholan Film Co., Ltd. (บริษัท มโหฬารฟิล์ม จำกัด) ฟิล์มอาคาร',
     businessKey: 'MHL',
+    placeId: PLACE_IDS['loc-mhl'],
     address: '1563/125 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 094-998-1234',
     owner: 'เพลง',
     rating: 4.9,
     totalReviews: 90,
     repliedCount: 0,
     lastReviewAt: '',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Maholan+Film+Co.,+Ltd.+บริษัท+มโหฬารฟิล์ม+จำกัด+ฟิล์มอาคาร',
+    mapsUrl: `https://www.google.com/maps/place/?q=place_id:${PLACE_IDS['loc-mhl']}`,
   },
 ];
 
@@ -199,6 +210,21 @@ export async function ensureGbpTables() {
           "updatedAt" = CURRENT_TIMESTAMP
       WHERE "id" = 'loc-car' AND "totalReviews" = 115;
     `);
+    await prisma.$executeRawUnsafe(
+      `UPDATE "GbpLocation" SET "mapsUrl" = $2 WHERE "id" = $1 AND "mapsUrl" LIKE '%/maps/search/%';`,
+      'loc-car',
+      `https://www.google.com/maps/place/?q=place_id:${PLACE_IDS['loc-car']}`
+    );
+    await prisma.$executeRawUnsafe(
+      `UPDATE "GbpLocation" SET "mapsUrl" = $2 WHERE "id" = $1 AND "mapsUrl" LIKE '%/maps/search/%';`,
+      'loc-gfs',
+      `https://www.google.com/maps/place/?q=place_id:${PLACE_IDS['loc-gfs']}`
+    );
+    await prisma.$executeRawUnsafe(
+      `UPDATE "GbpLocation" SET "mapsUrl" = $2 WHERE "id" = $1 AND "mapsUrl" LIKE '%/maps/search/%';`,
+      'loc-mhl',
+      `https://www.google.com/maps/place/?q=place_id:${PLACE_IDS['loc-mhl']}`
+    );
   }
 }
 
@@ -224,14 +250,15 @@ export async function getGbpSyncInfo(): Promise<GbpSyncInfo> {
   const hasCredentials = Boolean(serviceAccountEmail && process.env.GOOGLE_PRIVATE_KEY);
 
   return {
+    mode: sheetId ? 'sheet_and_places' : 'places_api',
     sheetId,
     sheetUrl: sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}` : '',
     serviceAccountEmail,
-    configured: Boolean(sheetId && hasCredentials),
+    configured: hasCredentials,
     lastSyncedAt: rows?.[0]?.lastSyncedAt ? rows[0].lastSyncedAt.toISOString() : null,
     lastSyncOk: rows?.[0]?.lastSyncOk ?? null,
     lastSyncMessage: rows?.[0]?.lastSyncMessage ?? null,
-    scheduleText: 'ดึงอัตโนมัติทุกวัน 07:00 น. (และอัปเดตอัตโนมัติเมื่อข้อมูลเก่าเกิน 6 ชม.)',
+    scheduleText: 'ดึงจาก Google Maps อัตโนมัติทุกวัน 07:00 น. (และอัปเดตเมื่อข้อมูลเก่าเกิน 6 ชม.)',
   };
 }
 
@@ -597,11 +624,281 @@ export async function syncPorterGbpSheet(): Promise<{
   }
 }
 
+interface PlaceApiReview {
+  name?: string;
+  rating?: number;
+  publishTime?: string;
+  authorAttribution?: { displayName?: string };
+  originalText?: { text?: string };
+  text?: { text?: string };
+}
+
+interface PlaceApiDetails {
+  id?: string;
+  rating?: number;
+  userRatingCount?: number;
+  reviews?: PlaceApiReview[];
+}
+
+/**
+ * Fetches live rating, cumulative review count, and latest reviews directly from Official Google Places API v1
+ * for all 3 businesses using the existing Google Service Account (0 manual setup, within free monthly quota).
+ */
+export async function fetchLiveGooglePlacesData(): Promise<{
+  stats: Record<string, { rating: number; totalReviews: number; lastReviewAt: string }>;
+  reviewsByLoc: Record<string, GbpReviewItem[]>;
+}> {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+    throw new Error('ยังไม่มีข้อมูล Service Account ในเซิร์ฟเวอร์');
+  }
+
+  const client = new JWT({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  });
+
+  const fieldMask =
+    'id,rating,userRatingCount,reviews.name,reviews.rating,reviews.publishTime,reviews.authorAttribution.displayName,reviews.originalText.text,reviews.text.text';
+
+  const stats: Record<string, { rating: number; totalReviews: number; lastReviewAt: string }> = {};
+  const reviewsByLoc: Record<string, GbpReviewItem[]> = {
+    'loc-car': [],
+    'loc-gfs': [],
+    'loc-mhl': [],
+  };
+
+  await Promise.all(
+    Object.entries(PLACE_IDS).map(async ([locId, placeId]) => {
+      const [thRes, enRes] = await Promise.all([
+        client.request<PlaceApiDetails>({
+          url: `https://places.googleapis.com/v1/places/${placeId}?languageCode=th`,
+          headers: { 'X-Goog-FieldMask': fieldMask },
+        }),
+        client.request<PlaceApiDetails>({
+          url: `https://places.googleapis.com/v1/places/${placeId}?languageCode=en`,
+          headers: { 'X-Goog-FieldMask': fieldMask },
+        }),
+      ]);
+
+      const mergedMap = new Map<string, GbpReviewItem>();
+      const rawList = [...(thRes.data.reviews || []), ...(enRes.data.reviews || [])];
+
+      rawList.forEach((rev, idx) => {
+        const key = rev.name || `${locId}_${idx}_${rev.publishTime || ''}`;
+        if (mergedMap.has(key)) return;
+        const shortHash =
+          key
+            .split('/')
+            .pop()
+            ?.slice(-18)
+            .replace(/[^a-zA-Z0-9_-]/g, '') || `${idx}`;
+        const reviewDate = rev.publishTime ? rev.publishTime.slice(0, 10) : new Date().toISOString().slice(0, 10);
+        const reviewerName = rev.authorAttribution?.displayName?.trim() || 'ลูกค้า Google Maps';
+        const comment =
+          rev.originalText?.text?.trim() || rev.text?.text?.trim() || '(ให้คะแนนดาวโดยไม่มีข้อความรีวิว)';
+        const rating =
+          typeof rev.rating === 'number' && rev.rating >= 1 && rev.rating <= 5 ? Math.round(rev.rating) : 5;
+
+        mergedMap.set(key, {
+          id: `gmaps_${locId}_${shortHash}`,
+          locationId: locId,
+          reviewerName,
+          rating,
+          comment,
+          reviewDate,
+          replyText: '',
+          repliedBy: '',
+          source: 'Google Maps API',
+        });
+      });
+
+      const sorted = [...mergedMap.values()]
+        .sort((a, b) => b.reviewDate.localeCompare(a.reviewDate))
+        .slice(0, MAX_REVIEWS_PER_BUSINESS);
+
+      reviewsByLoc[locId] = sorted;
+      stats[locId] = {
+        rating: typeof thRes.data.rating === 'number' ? Number(thRes.data.rating.toFixed(1)) : 4.9,
+        totalReviews: typeof thRes.data.userRatingCount === 'number' ? thRes.data.userRatingCount : 0,
+        lastReviewAt: sorted[0]?.reviewDate || '',
+      };
+    })
+  );
+
+  return { stats, reviewsByLoc };
+}
+
+/**
+ * Syncs live ratings, cumulative review counts, and latest reviews directly from Official Google Places API
+ * into PostgreSQL, preserving any staff replies recorded in the database.
+ */
+export async function syncGooglePlacesDirect(): Promise<{
+  ok: boolean;
+  imported: number;
+  perBusiness: Record<string, number>;
+  message: string;
+}> {
+  await ensureGbpTables();
+  const info = await getGbpSyncInfo();
+
+  try {
+    const { stats, reviewsByLoc } = await fetchLiveGooglePlacesData();
+    let totalImported = 0;
+    const perBusiness: Record<string, number> = { CAR: 0, GFS: 0, MHL: 0 };
+    const idToKey: Record<string, string> = { 'loc-car': 'CAR', 'loc-gfs': 'GFS', 'loc-mhl': 'MHL' };
+
+    for (const [locId, incoming] of Object.entries(reviewsByLoc)) {
+      const existingRows = await prisma.$queryRawUnsafe<GbpReviewItem[]>(
+        `SELECT "id", "locationId", "reviewerName", "rating", "comment",
+                "reviewDate", "replyText", "repliedBy", "source"
+         FROM "GbpReview"
+         WHERE "locationId" = $1;`,
+        locId
+      );
+
+      const bySig = new Map<string, GbpReviewItem>();
+      for (const er of existingRows) {
+        bySig.set(`${er.reviewerName}|${er.reviewDate}`, er);
+      }
+
+      const combined: GbpReviewItem[] = [];
+      const usedSigs = new Set<string>();
+
+      for (const inc of incoming) {
+        const sig = `${inc.reviewerName}|${inc.reviewDate}`;
+        const prev = bySig.get(sig);
+        usedSigs.add(sig);
+        combined.push({
+          ...inc,
+          replyText: inc.replyText || prev?.replyText || '',
+          repliedBy: inc.repliedBy || prev?.repliedBy || '',
+        });
+      }
+
+      // Keep any previously accumulated real reviews so total stays up to 10 as new reviews arrive
+      for (const er of existingRows) {
+        const sig = `${er.reviewerName}|${er.reviewDate}`;
+        if (!usedSigs.has(sig)) {
+          usedSigs.add(sig);
+          combined.push(er);
+        }
+      }
+
+      const top10 = combined
+        .sort((a, b) => b.reviewDate.localeCompare(a.reviewDate))
+        .slice(0, MAX_REVIEWS_PER_BUSINESS);
+
+      await prisma.$executeRawUnsafe(`DELETE FROM "GbpReview" WHERE "locationId" = $1;`, locId);
+      for (const r of top10) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "GbpReview" (
+            "id", "locationId", "reviewerName", "rating", "comment",
+            "reviewDate", "replyText", "repliedBy", "source"
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+          r.id,
+          r.locationId,
+          r.reviewerName,
+          r.rating,
+          r.comment,
+          r.reviewDate,
+          r.replyText,
+          r.repliedBy,
+          r.source
+        );
+        totalImported++;
+      }
+      perBusiness[idToKey[locId]] = top10.length;
+
+      const s = stats[locId];
+      if (s) {
+        const newest = top10[0]?.reviewDate || s.lastReviewAt || '';
+        await prisma.$executeRawUnsafe(
+          `UPDATE "GbpLocation"
+           SET "rating" = $2,
+               "totalReviews" = $3,
+               "lastReviewAt" = GREATEST("lastReviewAt", $4),
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE "id" = $1;`,
+          locId,
+          s.rating,
+          s.totalReviews,
+          newest
+        );
+      }
+    }
+
+    const msg = `ดึงจาก Google Maps สำเร็จ ${totalImported} รีวิว (CAR ${perBusiness.CAR}, GFS ${perBusiness.GFS}, MHL ${perBusiness.MHL})`;
+
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "GbpSyncConfig" ("id", "sheetId", "lastSyncedAt", "lastSyncOk", "lastSyncMessage", "updatedAt")
+       VALUES ('default', $1, CURRENT_TIMESTAMP, true, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT ("id") DO UPDATE
+       SET "lastSyncedAt" = CURRENT_TIMESTAMP,
+           "lastSyncOk" = true,
+           "lastSyncMessage" = $2,
+           "updatedAt" = CURRENT_TIMESTAMP;`,
+      info.sheetId,
+      msg
+    );
+
+    return { ok: true, imported: totalImported, perBusiness, message: msg };
+  } catch (error: unknown) {
+    const rawMsg = error instanceof Error ? error.message : String(error);
+    const friendly = `ดึงจาก Google Maps ไม่สำเร็จ: ${rawMsg.slice(0, 160)}`;
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "GbpSyncConfig" ("id", "sheetId", "lastSyncedAt", "lastSyncOk", "lastSyncMessage", "updatedAt")
+       VALUES ('default', $1, CURRENT_TIMESTAMP, false, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT ("id") DO UPDATE
+       SET "lastSyncedAt" = CURRENT_TIMESTAMP,
+           "lastSyncOk" = false,
+           "lastSyncMessage" = $2,
+           "updatedAt" = CURRENT_TIMESTAMP;`,
+      info.sheetId,
+      friendly
+    );
+    return { ok: false, imported: 0, perBusiness: {}, message: friendly };
+  }
+}
+
+/**
+ * Unified daily/on-demand sync:
+ * - If a Porter Metrics Google Sheet is linked, syncs reviews + replies from Sheet AND refreshes live totals from Places API.
+ * - Otherwise, syncs ratings, cumulative review counts, and latest reviews directly from Official Google Places API (zero setup).
+ */
+export async function syncGbpReviews(): Promise<{
+  ok: boolean;
+  imported: number;
+  perBusiness: Record<string, number>;
+  message: string;
+}> {
+  const info = await getGbpSyncInfo();
+  if (info.sheetId) {
+    const sheetRes = await syncPorterGbpSheet();
+    // Also refresh live rating & cumulative review count from Google Places API
+    try {
+      const { stats } = await fetchLiveGooglePlacesData();
+      for (const [locId, s] of Object.entries(stats)) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "GbpLocation" SET "rating" = $2, "totalReviews" = $3, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = $1;`,
+          locId,
+          s.rating,
+          s.totalReviews
+        );
+      }
+    } catch {
+      // Non-fatal if sheet sync already succeeded
+    }
+    return sheetRes;
+  }
+  return syncGooglePlacesDirect();
+}
+
 export async function maybeAutoSyncGbpSheet(): Promise<void> {
   const info = await getGbpSyncInfo();
   if (!info.configured) return;
   const lastMs = info.lastSyncedAt ? new Date(info.lastSyncedAt).getTime() : 0;
   if (!lastMs || Date.now() - lastMs > AUTO_SYNC_INTERVAL_MS) {
-    await syncPorterGbpSheet();
+    await syncGbpReviews();
   }
 }
