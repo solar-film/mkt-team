@@ -6,7 +6,7 @@ import styles from './sources.module.css';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import {
-  adsStatus, DATA_SOURCES, daysUntil, expiryStatus, sheetStatus, STATUS_LABEL, worst,
+  adsStatus, DATA_SOURCES, daysUntil, expiryStatus, gbpStatus, sheetStatus, STATUS_LABEL, worst,
   type DataSource, type SourceStatus,
 } from '@/lib/data-sources';
 import type { DataSourcesLive } from '@/app/api/data-sources/route';
@@ -76,6 +76,18 @@ function view(source: DataSource, today: string, live: Load<DataSourcesLive>, sh
     }
   }
 
+  if (source.live === 'gbp' && live.status === 'ready' && live.data.gbp) {
+    const gbp = live.data.gbp;
+    const syncedDay = gbp.lastSyncedAt ? bangkokDateKey(gbp.lastSyncedAt) : null;
+    status = worst(status, gbpStatus(gbp.configured, gbp.lastSyncOk, syncedDay, today));
+    if (gbp.configured) {
+      when = <>{source.when}<br /><small>ซิงก์ล่าสุด {gbp.lastSyncedAt ? thaiDateTime(gbp.lastSyncedAt) : '—'}</small></>;
+      if (gbp.lastSyncOk === false) note = gbp.lastSyncMessage || 'ดึงข้อมูลรีวิวจาก Google Sheet ล่าสุดไม่สำเร็จ';
+    } else {
+      when = <>{source.when}<br /><small>รอผูก Google Sheet ครั้งแรกที่หน้า รีวิวบน Google Maps</small></>;
+    }
+  }
+
   const rows: Row[] = [
     { icon: <HiArrowPath />, label: 'ดึงเมื่อ', value: when },
     { icon: <HiCalendarDays />, label: 'อายุ', value: expires },
@@ -83,7 +95,7 @@ function view(source: DataSource, today: string, live: Load<DataSourcesLive>, sh
   ];
   if (source.usage) rows.push({ icon: <HiClock />, label: 'ใช้ไป', value: source.usage });
   // Until its live data arrives a card cannot say it is fine.
-  const pending = (source.live === 'ads' && live.status === 'loading') || (source.live === 'sheet' && sheet.status === 'loading');
+  const pending = ((source.live === 'ads' || source.live === 'gbp') && live.status === 'loading') || (source.live === 'sheet' && sheet.status === 'loading');
   return { status, pending, rows, note, todo: status === 'ok' || pending ? undefined : source.todo, link };
 }
 

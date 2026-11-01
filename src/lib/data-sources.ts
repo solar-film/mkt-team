@@ -12,7 +12,7 @@ export const STATUS_LABEL: Record<SourceStatus, string> = {
   idle: 'ไม่ได้ใช้',
 };
 
-export type LiveKey = 'ads' | 'sheet';
+export type LiveKey = 'ads' | 'sheet' | 'gbp';
 
 export interface DataSource {
   id: string;
@@ -127,14 +127,16 @@ export const DATA_SOURCES: DataSource[] = [
   {
     id: 'porter',
     name: 'Porter Metrics',
-    what: 'ตรวจรีวิว Google Business Profile · ยังไม่ส่งเข้าเว็บ MKT',
-    from: 'Google Business Profile 1 บัญชี / 3 สถานที่',
-    to: '— (ยังไม่ได้ต่อเข้าเว็บ MKT)',
-    when: 'ถามผ่าน AI เมื่อต้องการ',
+    what: 'คะแนนดาวและ 10 รีวิวล่าสุด Google Business Profile แยก 3 ธุรกิจ',
+    from: 'Google Business Profile 1 บัญชี / 3 สถานที่ → Google Sheet',
+    to: 'หน้า รีวิวบน Google Maps',
+    when: 'Porter ดึงลงชีตรายวัน · เว็บดูดเข้าฐานข้อมูลทุกวัน 07:00',
     expires: { text: 'ทดลองฟีเจอร์เต็ม 14 วัน แล้วเป็นแพ็กเกจ Free ใช้ได้ไม่จำกัดเวลา' },
-    cost: 'ฟรี (Free forever) สำหรับ Google Business Profile',
-    usage: 'ถามผ่าน AI ย้อนหลังได้ 15 วัน · รายงานทั่วไปย้อนหลังได้ถึง 30 วัน',
-    status: 'idle',
+    cost: 'ฟรี 100% (Free forever สำหรับ Google Business Profile + Google Sheets)',
+    usage: 'Google Sheets Add-on ฟรี 1 บัญชี / 3 สถานที่ (GOODFILM, MHL อาคาร, MHL CAR) · เก็บ 10 รีวิวล่าสุด/ธุรกิจ',
+    status: 'ok',
+    todo: 'ตรวจสอบสิทธิ์แชร์ Google Sheet หรือการซิงก์ส่วนเสริม Porter Metrics',
+    live: 'gbp',
     link: { label: 'เปิด Porter', url: 'https://portermetrics.com/' },
     checkedAt: '2026-11-01',
   },
@@ -165,6 +167,19 @@ export function sheetStatus(dataThrough: string, today: string): SourceStatus {
 export function adsStatus(lastOkAt: string | null, lastFailed: boolean, today: string): SourceStatus {
   if (lastFailed || !lastOkAt) return 'problem';
   return daysUntil(today, lastOkAt) > 2 ? 'problem' : 'ok';
+}
+
+/** GBP reviews sync daily at 07:00 once a Google Sheet is linked; flag errors or stale syncs (>2 days). */
+export function gbpStatus(
+  configured: boolean,
+  lastOk: boolean | null,
+  lastSyncedDate: string | null,
+  today: string
+): SourceStatus {
+  if (!configured) return 'ok';
+  if (lastOk === false) return 'problem';
+  if (lastSyncedDate && daysUntil(today, lastSyncedDate) > 2) return 'problem';
+  return 'ok';
 }
 
 const RANK: Record<SourceStatus, number> = { idle: 0, ok: 1, soon: 2, problem: 3 };

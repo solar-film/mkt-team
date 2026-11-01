@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { adsStatus, DATA_SOURCES, daysUntil, expiryStatus, sheetStatus, worst } from '../src/lib/data-sources';
+import { adsStatus, DATA_SOURCES, daysUntil, expiryStatus, gbpStatus, sheetStatus, worst } from '../src/lib/data-sources';
 
 test('daysUntil counts whole days across months', () => {
   assert.equal(daysUntil('2026-11-30', '2026-11-01'), 29);
@@ -27,6 +27,14 @@ test('ads pull: failed last run, no success, or 3+ days old is a problem', () =>
   assert.equal(adsStatus('2026-10-29', false, '2026-11-01'), 'problem');
   assert.equal(adsStatus('2026-11-01', true, '2026-11-01'), 'problem');
   assert.equal(adsStatus(null, false, '2026-11-01'), 'problem');
+});
+
+test('gbp sync: ok before linking, problem on failed or stale sync (>2 days)', () => {
+  assert.equal(gbpStatus(false, null, null, '2026-11-01'), 'ok');
+  assert.equal(gbpStatus(true, true, '2026-11-01', '2026-11-01'), 'ok');
+  assert.equal(gbpStatus(true, true, '2026-10-30', '2026-11-01'), 'ok');
+  assert.equal(gbpStatus(true, true, '2026-10-29', '2026-11-01'), 'problem');
+  assert.equal(gbpStatus(true, false, '2026-11-01', '2026-11-01'), 'problem');
 });
 
 test('worst keeps the more urgent status and leaves idle alone', () => {
