@@ -24,10 +24,10 @@ export async function GET(request: Request) {
       where: { month: { gte: from, lte: to }, ...(platform && platform !== 'all' ? { platform } : {}) },
       orderBy: [{ date: 'asc' }, { platform: 'asc' }, { accountName: 'asc' }, { campaignName: 'asc' }],
     });
-    const header = ['วันที่', 'เดือน', 'ช่องทาง', 'แบรนด์', 'บัญชีโฆษณา', 'แคมเปญ', 'สกุลเงิน', 'ค่าใช้จ่าย', 'การแสดงผล', 'คลิก', 'ลีด/Conversions', 'แชทเริ่มใหม่'];
+    const header = ['วันที่', 'เดือน', 'ช่องทาง', 'ธุรกิจ', 'บัญชีโฆษณา', 'แคมเปญ', 'สกุลเงิน', 'ค่าใช้จ่าย', 'การแสดงผล', 'คลิก', 'ลีด/Conversions', 'แชทเริ่มใหม่'];
     const lines = rows.map(r => [
       r.date.toISOString().slice(0, 10), r.month, PLATFORM_INFO[r.platform as Platform]?.label ?? r.platform,
-      brandOf(r.accountName), r.accountName, r.campaignName, r.currency,
+      brandOf(r.accountName, r.campaignName), r.accountName, r.campaignName, r.currency,
       r.spend, r.impressions, r.clicks, r.leads, r.messages,
     ].map(cell).join(','));
     const csv = '﻿' + [header.map(cell).join(','), ...lines].join('\r\n');

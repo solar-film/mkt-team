@@ -36,15 +36,27 @@ export const WINDSOR_FIELDS: Record<Platform, { fields: string[]; leads: string[
   },
 };
 
-export const BRANDS = ['GFS', 'MHL', 'MHL CAR', 'อื่น ๆ'] as const;
+/** The four businesses of the โครงสร้างธุรกิจ page, plus a bucket for accounts none of them claims. */
+export const BRANDS = ['GFS B2B', 'GFS B2C', 'MHL อาคาร', 'MHL CAR', 'อื่น ๆ'] as const;
 export type Brand = (typeof BRANDS)[number];
 
-/** Business of an ad account, read from its name (account ids stay out of this public repository). */
-export function brandOf(accountName: string): Brand {
-  const name = accountName.toLowerCase().replace(/\s+/g, '');
+const squash = (text: string) => text.toLowerCase().replace(/\s+/g, '');
+// Campaign names that mark wholesale work on the Goodfilm page account shared by GFS B2B and GFS B2C.
+const GFS_B2B_CAMPAIGN = /b2b|ขายส่ง|ยกม้วน|3mgoodfilm/;
+
+/**
+ * Business of an ad account (and, on the shared Goodfilm page account, of the campaign), read from names
+ * because account ids stay out of this public repository. GFS accounts are B2C unless marked B2B.
+ */
+export function brandOf(accountName: string, campaignName = ''): Brand {
+  const name = squash(accountName);
   if (/car/.test(name)) return 'MHL CAR';
-  if (/maholan|mhl|มโหฬาร/.test(name)) return 'MHL';
-  if (/goodfilm|gfs|กู๊ดฟิล์ม/.test(name)) return 'GFS';
+  if (/maholan|mhl|มโหฬาร/.test(name)) return 'MHL อาคาร';
+  if (/goodfilm|gfs|กู๊ดฟิล์ม/.test(name)) {
+    if (/b2b/.test(name)) return 'GFS B2B';
+    if (/goodfilmco/.test(name) && GFS_B2B_CAMPAIGN.test(squash(campaignName))) return 'GFS B2B';
+    return 'GFS B2C';
+  }
   return 'อื่น ๆ';
 }
 
@@ -239,6 +251,17 @@ export interface SyncStatus {
   lastOkAt: string | null;
   latestDate: string | null;
 }
+/** An ad account the data is pulled from, with every business its campaigns were counted under. */
+export interface AccountRow {
+  platform: Platform;
+  accountId: string;
+  accountName: string;
+  brands: Brand[];
+  /** Spend in the selected month. */
+  spend: number;
+  firstDate: string;
+  lastDate: string;
+}
 export interface MarketData {
   configured: boolean;
   month: string;
@@ -249,5 +272,6 @@ export interface MarketData {
   days: DayRow[];
   /** Google Ads keywords and search terms for the month and the month before. */
   keywords: KeywordRow[];
+  accounts: AccountRow[];
   sync: SyncStatus[];
 }

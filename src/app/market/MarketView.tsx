@@ -309,7 +309,40 @@ function Tiles({ data, filter }: { data: MarketData; filter: Filter }) {
   );
 }
 
-const TONE_LABEL = { good: 'ดี', warn: 'ควรดู', info: 'ข้อมูล' } as const;
+/** Where the figures come from: every ad account pulled for the platform and business in view. */
+function AccountTable({ data, filter }: { data: MarketData; filter: Filter }) {
+  const rows = data.accounts
+    .filter(a => (!filter.platform || a.platform === filter.platform) && (filter.brand === 'all' || a.brands.includes(filter.brand)))
+    .sort((a, b) => PLATFORMS.indexOf(a.platform) - PLATFORMS.indexOf(b.platform) || b.spend - a.spend || a.accountName.localeCompare(b.accountName));
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}><h2>บัญชีโฆษณาที่ดึงข้อมูล</h2><small>ค่าใช้จ่าย {monthLabel(data.month)} · ดึงผ่าน Windsor.ai</small></div>
+      {rows.length === 0 ? <p className={styles.foot}>ยังไม่มีบัญชีที่ดึงข้อมูลได้</p> : (
+        <div className={styles.tableWrap}>
+          <table className={`${styles.table} ${styles.tableLeft}`}>
+            <thead>
+              <tr><th>ชื่อบัญชี</th><th>เลขบัญชี</th><th>ช่องทาง</th><th>ธุรกิจ</th><th className={styles.num}>ค่าใช้จ่าย</th><th>มีข้อมูลช่วง</th></tr>
+            </thead>
+            <tbody>
+              {rows.map(a => (
+                <tr key={`${a.platform}|${a.accountId}`}>
+                  <td>{a.accountName}</td>
+                  <td className={styles.accountId}>{a.accountId}</td>
+                  <td>{PLATFORM_INFO[a.platform].label}</td>
+                  <td>{a.brands.join(' + ')}{a.brands.length > 1 && <small>แยกตามชื่อแคมเปญ</small>}</td>
+                  <td className={styles.num}>{a.spend > 0 ? baht(a.spend) : '—'}</td>
+                  <td>{a.firstDate} – {a.lastDate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const TONE_LABEL ={ good: 'ดี', warn: 'ควรดู', info: 'ข้อมูล' } as const;
 
 function ToneIcon({ tone }: { tone: Finding['tone'] }) {
   const Icon = tone === 'good' ? HiCheckCircle : tone === 'warn' ? HiExclamationTriangle : HiInformationCircle;
@@ -413,7 +446,7 @@ function Analysis({ data, filter }: { data: MarketData; filter: Filter }) {
           </table>
         </div>
       </section>
-      <BreakdownTable title="แยกตามแบรนด์" rows={breakdown(data, filter, 'brand')} />
+      <BreakdownTable title="แยกตามธุรกิจ" rows={breakdown(data, filter, 'brand')} />
     </>
   );
 }
@@ -484,7 +517,7 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
           <span className={styles.titleIcon} aria-hidden="true">{MODE_ICON[mode]}</span>
           <div>
           <h1>{title}</h1>
-          <p>ข้อมูลตลาด · ดึงจาก Windsor.ai วันละครั้ง · {brand === 'all' ? 'ทุกแบรนด์' : brand}</p>
+          <p>ข้อมูลตลาด · ดึงจาก Windsor.ai วันละครั้ง · {brand === 'all' ? 'ทุกธุรกิจ' : brand}</p>
           </div>
         </div>
         <div className={styles.filters}>
@@ -495,11 +528,11 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
             </select>
           </label>
           <div className={styles.brandGroup} role="group" aria-labelledby="brand-filter-label">
-            <span id="brand-filter-label">แบรนด์</span>
+            <span id="brand-filter-label">ธุรกิจ</span>
             <div className={styles.chips}>
               {(['all', ...BRANDS] as const).map(b => (
                 <button key={b} type="button" className={styles.chip} aria-pressed={brand === b} onClick={() => setParam('brand', b === 'all' ? null : b)}>
-                  {b === 'all' ? 'ทุกแบรนด์' : b}
+                  {b === 'all' ? 'ทุกธุรกิจ' : b}
                 </button>
               ))}
             </div>
@@ -550,11 +583,13 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
               ) : (
                 <div className={styles.grid2}>
                   <BreakdownTable title={`แยกตามช่องทาง · ${monthLabel(month)}`} rows={breakdown(ready, filter, 'platform')} />
-                  <BreakdownTable title={`แยกตามแบรนด์ · ${monthLabel(month)}`} rows={breakdown(ready, filter, 'brand')} />
+                  <BreakdownTable title={`แยกตามธุรกิจ · ${monthLabel(month)}`} rows={breakdown(ready, filter, 'brand')} />
                 </div>
               )}
             </>
           )}
+
+          <AccountTable data={ready} filter={filter} />
 
           <section className={`${styles.card} ${styles.foot}`}>
             <div className={styles.actions}>
@@ -569,7 +604,7 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
                 </li>
               ))}
               <li>{platform ? PLATFORM_HINT[platform] : 'ผลลัพธ์ = ลีด + แชท (Facebook) หรือ Conversions (Google, ChatGPT)'} · ต้นทุนต่อผลลัพธ์ = ค่าใช้จ่าย ÷ ผลลัพธ์</li>
-              <li>แบรนด์อ่านจากชื่อบัญชีโฆษณา (ชื่อมี CAR = MHL CAR, Maholan/MHL = MHL, Goodfilm/GFS = GFS)</li>
+              <li>ธุรกิจอ่านจากชื่อบัญชีโฆษณา: ชื่อมี CAR = MHL CAR, Maholan/MHL = MHL อาคาร, Goodfilm/GFS = GFS B2C ยกเว้นบัญชีที่ชื่อมี B2B = GFS B2B · บัญชีเพจ GOODFILM CO.,LTD แยกตามชื่อแคมเปญ: มี B2B, ขายส่ง, ยกม้วน หรือ 3MGoodfilm = GFS B2B นอกนั้น = GFS B2C</li>
             </ul>
           </section>
         </>

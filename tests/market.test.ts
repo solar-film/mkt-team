@@ -5,10 +5,18 @@ import { campaignLines, compare, cutoffDay, findings, keywordLines, spendByMonth
 
 // Made-up accounts and figures; real numbers never enter this public repository.
 
-test('brand comes from the ad account name', () => {
+test('business comes from the ad account name, and from the campaign on the shared Goodfilm page account', () => {
   assert.equal(brandOf('ExampleCAR'), 'MHL CAR');
-  assert.equal(brandOf('MAHOLAN Example'), 'MHL');
-  assert.equal(brandOf('Goodfilm Example Ads'), 'GFS');
+  assert.equal(brandOf('MAHOLAN Example'), 'MHL อาคาร');
+  assert.equal(brandOf('FB75-Filmmaholan'), 'MHL อาคาร');
+  assert.equal(brandOf('Goodfilm Example Ads'), 'GFS B2C');
+  assert.equal(brandOf('goodfilmshop.com (GFS B2B) example'), 'GFS B2B');
+  assert.equal(brandOf('GOODFILM CO.,LTD', 'B2B ขอราคาส่ง'), 'GFS B2B');
+  assert.equal(brandOf('GOODFILM CO.,LTD', 'เข้าชมเว็บไซต์-ขายส่ง'), 'GFS B2B');
+  assert.equal(brandOf('GOODFILM CO.,LTD', 'การโปรโมท https://facebook.com/3MGoodfilm'), 'GFS B2B');
+  assert.equal(brandOf('GOODFILM CO.,LTD', 'แคมเปญการรับรู้ใหม่'), 'GFS B2C');
+  // Only the shared page account is split by campaign.
+  assert.equal(brandOf('Goodfilm', 'ขายส่ง'), 'GFS B2C');
   assert.equal(brandOf('Someone else'), 'อื่น ๆ');
 });
 
@@ -34,7 +42,7 @@ test('Windsor rows are merged per campaign-day, leads and chats counted, empty d
 });
 
 const day = (platform: DayRow['platform'], date: string, spend: number, leads = 0): DayRow =>
-  ({ platform, brand: 'GFS', date, ...emptyMetrics(), spend, leads, clicks: spend / 10, impressions: spend * 10 });
+  ({ platform, brand: 'GFS B2C', date, ...emptyMetrics(), spend, leads, clicks: spend / 10, impressions: spend * 10 });
 
 function sample(today: string): MarketData {
   const days: DayRow[] = [];
@@ -45,22 +53,22 @@ function sample(today: string): MarketData {
     days.push(day('facebook', `2025-10-${dd}`, 200, 1));
   }
   const months: MonthRow[] = [
-    { platform: 'facebook', brand: 'GFS', month: '2026-01', ...emptyMetrics(), spend: 1000 },
-    { platform: 'facebook', brand: 'GFS', month: '2025-01', ...emptyMetrics(), spend: 4000 },
-    { platform: 'facebook', brand: 'GFS', month: '2026-10', ...emptyMetrics(), spend: 3100 },
+    { platform: 'facebook', brand: 'GFS B2C', month: '2026-01', ...emptyMetrics(), spend: 1000 },
+    { platform: 'facebook', brand: 'GFS B2C', month: '2025-01', ...emptyMetrics(), spend: 4000 },
+    { platform: 'facebook', brand: 'GFS B2C', month: '2026-10', ...emptyMetrics(), spend: 3100 },
   ];
   const campaigns: CampaignRow[] = [
-    { platform: 'facebook', brand: 'GFS', accountName: 'Goodfilm X', campaignId: 'c1', campaignName: 'Leads', month: '2026-10', ...emptyMetrics(), spend: 3000, leads: 30 },
-    { platform: 'facebook', brand: 'GFS', accountName: 'Goodfilm X', campaignId: 'c2', campaignName: 'Awareness', month: '2026-10', ...emptyMetrics(), spend: 1500 },
-    { platform: 'facebook', brand: 'GFS', accountName: 'Goodfilm X', campaignId: 'c1', campaignName: 'Leads', month: '2026-09', ...emptyMetrics(), spend: 900, leads: 3 },
+    { platform: 'facebook', brand: 'GFS B2C', accountName: 'Goodfilm X', campaignId: 'c1', campaignName: 'Leads', month: '2026-10', ...emptyMetrics(), spend: 3000, leads: 30 },
+    { platform: 'facebook', brand: 'GFS B2C', accountName: 'Goodfilm X', campaignId: 'c2', campaignName: 'Awareness', month: '2026-10', ...emptyMetrics(), spend: 1500 },
+    { platform: 'facebook', brand: 'GFS B2C', accountName: 'Goodfilm X', campaignId: 'c1', campaignName: 'Leads', month: '2026-09', ...emptyMetrics(), spend: 900, leads: 3 },
   ];
   const keywords: KeywordRow[] = [
-    { kind: 'keyword', month: '2026-10', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS', text: 'ฟิล์มอาคาร', matchType: 'EXACT', spend: 500, impressions: 100, clicks: 10, conversions: 5 },
-    { kind: 'keyword', month: '2026-10', accountId: 'g2', accountName: 'Maholan G', brand: 'MHL', text: 'ติดฟิล์มบ้าน', matchType: 'BROAD', spend: 900, impressions: 300, clicks: 20, conversions: 2 },
-    { kind: 'keyword', month: '2026-09', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS', text: 'ฟิล์มอาคาร', matchType: 'EXACT', spend: 400, impressions: 80, clicks: 8, conversions: 4 },
-    { kind: 'search_term', month: '2026-10', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS', text: 'ฟิล์ม 3m', matchType: '', spend: 50, impressions: 10, clicks: 1, conversions: 0 },
+    { kind: 'keyword', month: '2026-10', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS B2C', text: 'ฟิล์มอาคาร', matchType: 'EXACT', spend: 500, impressions: 100, clicks: 10, conversions: 5 },
+    { kind: 'keyword', month: '2026-10', accountId: 'g2', accountName: 'Maholan G', brand: 'MHL อาคาร', text: 'ติดฟิล์มบ้าน', matchType: 'BROAD', spend: 900, impressions: 300, clicks: 20, conversions: 2 },
+    { kind: 'keyword', month: '2026-09', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS B2C', text: 'ฟิล์มอาคาร', matchType: 'EXACT', spend: 400, impressions: 80, clicks: 8, conversions: 4 },
+    { kind: 'search_term', month: '2026-10', accountId: 'g1', accountName: 'Goodfilm G', brand: 'GFS B2C', text: 'ฟิล์ม 3m', matchType: '', spend: 50, impressions: 10, clicks: 1, conversions: 0 },
   ];
-  return { configured: true, month: '2026-10', today, firstMonth: '2025-01', months, campaigns, days, keywords, sync: [] };
+  return { configured: true, month: '2026-10', today, firstMonth: '2025-01', months, campaigns, days, keywords, accounts: [], sync: [] };
 }
 
 test('a running month is compared over the same days of the month before and last year', () => {
@@ -83,7 +91,7 @@ test('a finished month uses whole months', () => {
 });
 
 test('brand and platform filters exclude other rows', () => {
-  assert.equal(compare(sample('2026-10-15'), { brand: 'MHL' }).current.spend, 0);
+  assert.equal(compare(sample('2026-10-15'), { brand: 'MHL อาคาร' }).current.spend, 0);
   assert.equal(compare(sample('2026-10-15'), { brand: 'all', platform: 'google_ads' }).current.spend, 0);
 });
 
@@ -128,6 +136,6 @@ test('keyword lines follow the brand filter and carry last month spend', () => {
   assert.deepEqual(all.map(k => k.text), ['ติดฟิล์มบ้าน', 'ฟิล์มอาคาร']);
   assert.equal(all[1].prevSpend, 400);
   assert.equal(all[0].prevSpend, null);
-  assert.deepEqual(keywordLines(data, { brand: 'GFS' }, 'keyword').map(k => k.text), ['ฟิล์มอาคาร']);
+  assert.deepEqual(keywordLines(data, { brand: 'GFS B2C' }, 'keyword').map(k => k.text), ['ฟิล์มอาคาร']);
   assert.equal(keywordLines(data, { brand: 'all' }, 'search_term').length, 1);
 });

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import {
-  brandOf, isMonthKey, isPlatform, KEYWORD_KINDS, PLATFORMS, shiftMonth,
-  type CampaignRow, type DayRow, type KeywordRow, type MarketData, type MonthRow, type SyncStatus,
+  BRANDS, brandOf, isMonthKey, isPlatform, KEYWORD_KINDS, PLATFORMS, shiftMonth,
+  type AccountRow, type CampaignRow, type DayRow, type KeywordRow, type MarketData, type MonthRow, type SyncStatus,
 } from '@/lib/ads-data';
 import { windsorConfigured } from '@/lib/windsor';
 
@@ -15,6 +15,7 @@ const METRICS = { spend: true, impressions: true, clicks: true, leads: true, mes
 /**
  * Everything the ข้อมูลตลาด pages need for one month: monthly totals for this and last year,
  * plus campaigns and days for the month, the month before and the same month last year.
+ * Rows are grouped down to the campaign because one Facebook account serves two businesses.
  * Members only — the proxy rejects requests without a valid session.
  */
 export async function GET(request: Request) {
@@ -25,9 +26,9 @@ export async function GET(request: Request) {
   const compared = [month, shiftMonth(month, -1), shiftMonth(month, -12)];
 
   try {
-    const [monthGroups, campaignGroups, dayGroups, first, runs, okRuns, latest, keywordRows] = await Promise.all([
+    const [monthGroups, campaignGroups, dayGroups, first, runs, okRuns, latest, keywordRows, accountGroups, accountSpend] = await Promise.all([
       prisma.adDaily.groupBy({
-        by: ['platform', 'accountName', 'month'],
+        by: ['platform', 'accountName', 'campaignName', 'month'],
         where: { month: { gte: `${year - 1}-01`, lte: `${year}-12` } },
         _sum: METRICS,
       }),
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
         _sum: METRICS,
       }),
       prisma.adDaily.groupBy({
-        by: ['platform', 'accountName', 'date'],
+        by: ['platform', 'accountName', 'campaignName', 'date'],
         where: { month: { in: compared } },
         _sum: METRICS,
       }),
@@ -50,6 +51,9 @@ export async function GET(request: Request) {
         console.error('Keyword read failed:', error instanceof Error ? error.message : 'unknown error');
         return [];
       }),
+      // Every account ever pulled, per campaign so the shared Goodfilm page account lists both its businesses.
+      prisma.adDaily.groupBy({ by: ['platform', 'accountId', 'accountName', 'campaignName'], _min: { date: true }, _max: { date: true } }),
+      prisma.adDaily.groupBy({ by: ['platform', 'accountId'], where: { month }, _sum: { spend: true } }),
     ]);
 
     const metrics = (sum: Partial<Record<keyof typeof METRICS, number | null>>) => ({
@@ -59,14 +63,14 @@ export async function GET(request: Request) {
     const known = <T extends { platform: string }>(rows: T[]) => rows.filter(row => isPlatform(row.platform));
 
     const months: MonthRow[] = known(monthGroups).map(g => ({
-      platform: g.platform as MonthRow['platform'], brand: brandOf(g.accountName), month: g.month, ...metrics(g._sum),
+      platform: g.platform as MonthRow['platform'], brand: brandOf(g.accountName, g.campaignName), month: g.month, ...metrics(g._sum),
     }));
     const campaigns: CampaignRow[] = known(campaignGroups).map(g => ({
-      platform: g.platform as CampaignRow['platform'], brand: brandOf(g.accountName), accountName: g.accountName,
+      platform: g.platform as CampaignRow['platform'], brand: brandOf(g.accountName, g.campaignName), accountName: g.accountName,
       campaignId: g.campaignId, campaignName: g.campaignName, month: g.month, ...metrics(g._sum),
     }));
     const days: DayRow[] = known(dayGroups).map(g => ({
-      platform: g.platform as DayRow['platform'], brand: brandOf(g.accountName),
+      platform: g.platform as DayRow['platform'], brand: brandOf(g.accountName, g.campaignName),
       date: g.date.toISOString().slice(0, 10), ...metrics(g._sum),
     }));
     const sync: SyncStatus[] = PLATFORMS.map(platform => {
@@ -89,7 +93,28 @@ export async function GET(request: Request) {
         spend: k.spend, impressions: k.impressions, clicks: k.clicks, conversions: k.conversions,
       }));
 
-    const data: MarketData = { configured: windsorConfigured(), month, today, firstMonth: first?.month ?? null, months, campaigns, days, keywords, sync };
+    const accountMap = new Map<string, AccountRow>();
+    for (const g of known(accountGroups)) {
+      const key = `${g.platform}|${g.accountId}`;
+      const firstDate = g._min.date?.toISOString().slice(0, 10) ?? '';
+      const lastDate = g._max.date?.toISOString().slice(0, 10) ?? '';
+      const brand = brandOf(g.accountName, g.campaignName);
+      const account = accountMap.get(key);
+      if (!account) {
+        accountMap.set(key, {
+          platform: g.platform as AccountRow['platform'], accountId: g.accountId, accountName: g.accountName, brands: [brand],
+          spend: accountSpend.find(s => s.platform === g.platform && s.accountId === g.accountId)?._sum.spend ?? 0, firstDate, lastDate,
+        });
+        continue;
+      }
+      if (!account.brands.includes(brand)) account.brands.push(brand);
+      if (firstDate && firstDate < account.firstDate) account.firstDate = firstDate;
+      // A renamed account keeps its latest name.
+      if (lastDate > account.lastDate) { account.lastDate = lastDate; account.accountName = g.accountName; }
+    }
+    const accounts = [...accountMap.values()].map(a => ({ ...a, brands: BRANDS.filter(b => a.brands.includes(b)) }));
+
+    const data: MarketData = { configured: windsorConfigured(), month, today, firstMonth: first?.month ?? null, months, campaigns, days, keywords, accounts, sync };
     return NextResponse.json(data, { headers });
   } catch (error) {
     console.error('Market data failed:', error instanceof Error ? error.message : 'unknown error');
