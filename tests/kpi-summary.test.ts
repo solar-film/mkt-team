@@ -121,3 +121,20 @@ test('months before hand-in tracking began are not timed (no false 0%)', () => {
   assert.equal(s.team.published.unknown, 1, 'published counts still show for old months');
   assert.equal(s.trackingStart, '2026-11-01');
 });
+
+test('KPI progress matches the old page: max of typed count and finished linked work', async () => {
+  const { kpiCurrent } = await import('../src/lib/kpi-summary');
+  const kpi = { id: 'k1', memberId: 'a', current: 1 };
+  const work = (over: object) => ({ kind: 'task' as const, kpiId: 'k1', status: 'done', memberId: 'a', memberIds: ['a'], ...over });
+  assert.equal(kpiCurrent(kpi, []), 1, 'typed count when nothing is linked');
+  assert.equal(kpiCurrent(kpi, [
+    work({}), work({ status: 'เสร็จแล้ว' }), work({ kpiId: 'k0,k1' }),
+    work({ kind: 'content', status: 'published' }), work({ kind: 'content', status: 'done' }),
+    work({ status: 'in_progress' }), work({ memberId: 'b', memberIds: ['b'] }), work({ kpiId: 'k2' }),
+  ]), 5);
+});
+
+test('content with the older "published" status counts as published', () => {
+  const s = run([base({ kind: 'content', status: 'published', due: th('2026-11-02'), promotion: 'organic' })]);
+  assert.equal(s.team.published.organic, 1);
+});

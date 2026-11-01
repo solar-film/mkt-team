@@ -1,4 +1,6 @@
 import { bangkokDateKey } from '@/lib/bangkok-date';
+import { isContentDone } from '@/lib/dashboard-items';
+import { taskHasKpi } from '@/lib/task-kpi';
 
 /**
  * Monthly KPI กลาง numbers per member, worked out from tasks and contents in the app.
@@ -74,9 +76,26 @@ export function monthQueryRange(year: number, month: number) {
   return { gte: new Date(Date.UTC(year, month - 1, 1, -7)), lt: new Date(Date.UTC(year, month, 1, -7)) };
 }
 
-export const percent = (ratio: Ratio): number | null => (ratio.total ? Math.round((ratio.done / ratio.total) * 100) : null);
-
 const assignees = (item: { memberId: string; memberIds: string[] }) => (item.memberIds.length ? item.memberIds : [item.memberId]);
+
+/** Work that can count towards a KPI (any month: KPI ids are per month already). */
+export interface LinkedWork { kind: 'task' | 'content'; kpiId: string | null; status: string; memberId: string; memberIds: string[] }
+
+/** KPIs the old page leaves out of the per-person list. */
+export const HIDDEN_KPI_NAMES = new Set(['งานทั่วไป']);
+
+/**
+ * Same rule as the เป้าหมาย KPI page: the larger of the typed-in count and the finished
+ * tasks/contents of that person linked to the KPI.
+ */
+export function kpiCurrent(kpi: { id: string; memberId: string; current: number }, linked: LinkedWork[]): number {
+  const done = linked.filter(work => assignees(work).includes(kpi.memberId) && (work.kind === 'task'
+    ? taskHasKpi(work.kpiId, kpi.id) && (work.status === 'done' || work.status === 'เสร็จแล้ว')
+    : work.kpiId === kpi.id && isContentDone(work.status))).length;
+  return Math.max(Number(kpi.current) || 0, done);
+}
+
+export const percent = (ratio: Ratio): number | null => (ratio.total ? Math.round((ratio.done / ratio.total) * 100) : null);
 
 export function summarizeMonth(input: {
   year: number;
@@ -117,7 +136,7 @@ export function summarizeMonth(input: {
         firstPass.total++;
         if (item.firstReview === 'pass' || item.reviseReason === 'brief') firstPass.done++;
       }
-      if (item.kind === 'content' && item.status === 'done') {
+      if (item.kind === 'content' && isContentDone(item.status)) {
         const side = item.promotion === 'organic' || item.promotion === 'paid' ? item.promotion : null;
         published[side ?? 'unknown']++;
         if (side && typeof item.reach7 === 'number') reach[side].push(item.reach7);
@@ -162,7 +181,7 @@ export function summarizeMonth(input: {
       team.firstPass.total++;
       if (item.firstReview === 'pass' || item.reviseReason === 'brief') team.firstPass.done++;
     }
-    if (item.kind === 'content' && item.status === 'done') {
+    if (item.kind === 'content' && isContentDone(item.status)) {
       const side = item.promotion === 'organic' || item.promotion === 'paid' ? item.promotion : 'unknown';
       team.published[side]++;
     }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { bangkokDateKey } from '@/lib/bangkok-date';
-import { monthQueryRange, summarizeMonth, type ReviewItem } from '@/lib/kpi-summary';
+import { HIDDEN_KPI_NAMES, kpiCurrent, monthQueryRange, summarizeMonth, type LinkedWork, type ReviewItem } from '@/lib/kpi-summary';
 import { withAvatarUrls, MEMBER_LIST_SELECT } from '@/lib/member-avatar';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +24,8 @@ export async function GET(request: Request) {
 
   try {
     const range = monthQueryRange(year, month);
-    const [members, tasks, contents, kpis, evaluations] = await Promise.all([
+    const linkedSelect = { kpiId: true, status: true, memberId: true, memberIds: true } as const;
+    const [members, tasks, contents, kpis, evaluations, linkedTasks, linkedContents] = await Promise.all([
       prisma.teamMember.findMany({ where: { id: { not: 'all' }, status: { not: 'inactive' } }, select: MEMBER_LIST_SELECT, orderBy: { name: 'asc' } }),
       prisma.task.findMany({ where: { deadline: range }, select: { ...REVIEW_SELECT, deadline: true } }),
       prisma.content.findMany({
@@ -36,7 +37,13 @@ export async function GET(request: Request) {
       }),
       prisma.kPI.findMany({ where: { year, month }, orderBy: { name: 'asc' } }),
       prisma.memberEvaluation.findMany({ where: { year, month } }),
+      prisma.task.findMany({ where: { kpiId: { not: null } }, select: linkedSelect }),
+      prisma.content.findMany({ where: { kpiId: { not: null } }, select: linkedSelect }),
     ]);
+    const linked: LinkedWork[] = [
+      ...linkedTasks.map(work => ({ ...work, kind: 'task' as const })),
+      ...linkedContents.map(work => ({ ...work, kind: 'content' as const })),
+    ];
 
     const items: ReviewItem[] = [
       ...tasks.map(({ deadline, ...task }) => ({ ...task, kind: 'task' as const, due: deadline })),
@@ -55,7 +62,8 @@ export async function GET(request: Request) {
       year, month, today,
       members: withAvatars.map(m => ({ id: m.id, name: m.name, avatar: m.avatar ?? null, company: m.company })),
       items,
-      kpis: kpis.map(k => ({ id: k.id, memberId: k.memberId, name: k.name, target: k.target, current: k.current, unit: k.unit, company: k.company })),
+      kpis: kpis.filter(k => !HIDDEN_KPI_NAMES.has(k.name))
+        .map(k => ({ id: k.id, memberId: k.memberId, name: k.name, target: k.target, current: kpiCurrent(k, linked), unit: k.unit, company: k.company })),
       evaluations: evaluations.map(e => ({ ...e, updatedAt: e.updatedAt.toISOString() })),
     });
     return NextResponse.json(summary, { headers });
