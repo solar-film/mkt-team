@@ -271,7 +271,7 @@ export default function GbpReviewsPage() {
           <span className={styles.eyebrow}>
             <HiStar size={14} /> Google Business Profile · 1 บัญชี / 3 สถานที่
           </span>
-          <h1 className={styles.pageTitle}>ตรวจรีวิว Google Business Profile</h1>
+          <h1 className={styles.pageTitle}>รีวิวบน Google Maps</h1>
           <p className={styles.pageSubtitle}>
             ติดตามคะแนนดาวและบันทึกการตอบกลับรีวิวทั้ง 3 สถานที่ (GOODFILM, มโหฬารฟิล์ม อาคาร, MHL CARFILM)
           </p>

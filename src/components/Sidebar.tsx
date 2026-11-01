@@ -54,7 +54,7 @@ interface Member {
 const navLinks = [
   { group: 'ภาพรวม', path: '/', label: 'แดชบอร์ด', icon: <HiChartBarSquare /> },
   { group: 'ภาพรวม', path: '/reports', label: 'รายงาน', icon: <HiChartPie /> },
-  { group: 'ภาพรวม', path: '/integrations', label: 'รีวิว Google (GBP)', icon: <HiStar /> },
+  { group: 'ภาพรวม', path: '/integrations', label: 'รีวิวบน Google Maps', icon: <HiStar /> },
   { group: 'จัดการงาน/KPI', path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { group: 'จัดการงาน/KPI', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { group: 'จัดการงาน/KPI', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
