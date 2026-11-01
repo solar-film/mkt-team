@@ -74,7 +74,7 @@ const BUSINESS_BRAND: Record<
 > = {
   GFS: {
     shortTitle: 'GOODFILM (GFS B2B / B2C)',
-    badgeLabel: 'บริษัท กู๊ดฟิล์ม จำกัด',
+    badgeLabel: 'บจก.กู๊ดฟิล์ม',
     logoSrc: '/brands/goodfilm.webp',
     logoBg: '#1b437c',
     color: '#034aad',
@@ -82,7 +82,7 @@ const BUSINESS_BRAND: Record<
   },
   MHL: {
     shortTitle: 'MHL อาคาร (มโหฬารฟิล์ม)',
-    badgeLabel: 'ติดตั้งฟิล์มอาคาร',
+    badgeLabel: 'Maholan Film Co., Ltd. · ฟิล์มอาคาร',
     logoSrc: '/brands/maholan.webp',
     logoBg: '#ffffff',
     color: '#c2620a',
@@ -90,7 +90,7 @@ const BUSINESS_BRAND: Record<
   },
   CAR: {
     shortTitle: 'MHL CAR (ศูนย์ฟิล์มรถยนต์)',
-    badgeLabel: 'ศูนย์ฟิล์มรถยนต์ บางนา-ลาซาล',
+    badgeLabel: 'ศูนย์ติดตั้งฟิล์มรถยนต์ ครบวงจร บางนา-ลาซาล',
     logoSrc: '/brands/mhl-carfilm.webp',
     logoBg: '#000000',
     color: '#c8202f',
@@ -100,40 +100,40 @@ const BUSINESS_BRAND: Record<
 
 const INITIAL_LOCATIONS: GbpLocation[] = [
   {
+    id: 'loc-car',
+    name: 'ศูนย์ติดตั้งฟิล์มรถยนต์ ครบวงจร บางนา-ลาซาล',
+    businessKey: 'CAR',
+    address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 095-953-3949',
+    owner: 'นน',
+    rating: 4.9,
+    totalReviews: 681,
+    repliedCount: 0,
+    lastReviewAt: '',
+    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=ศูนย์ติดตั้งฟิล์มรถยนต์+ครบวงจร+บางนา-ลาซาล',
+  },
+  {
     id: 'loc-gfs',
-    name: 'GOODFILM สำนักงานใหญ่ (GFS B2B/B2C)',
+    name: 'บจก.กู๊ดฟิล์ม (GOODFILM)',
     businessKey: 'GFS',
-    address: '914/10-11 ถ.ลาซาล แขวงบางนา เขตบางนา กรุงเทพฯ 10260',
+    address: '914/10-11 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
     owner: 'แต้ว + จ๋าย',
     rating: 4.9,
-    totalReviews: 48,
-    repliedCount: 45,
-    lastReviewAt: '2026-10-30',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=GOODFILM+ลาซาล+บางนา',
+    totalReviews: 110,
+    repliedCount: 0,
+    lastReviewAt: '',
+    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=บจก.กู๊ดฟิล์ม+914/10-11+ถ.ลาซาล',
   },
   {
     id: 'loc-mhl',
-    name: 'มโหฬารฟิล์ม สำนักงานใหญ่ (MHL อาคาร)',
+    name: 'Maholan Film Co., Ltd. (บริษัท มโหฬารฟิล์ม จำกัด) ฟิล์มอาคาร',
     businessKey: 'MHL',
-    address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260',
+    address: '1563/125 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 094-998-1234',
     owner: 'เพลง',
-    rating: 4.8,
-    totalReviews: 62,
-    repliedCount: 58,
-    lastReviewAt: '2026-10-31',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=มโหฬารฟิล์ม+ลาซาล',
-  },
-  {
-    id: 'loc-car',
-    name: 'MHL CARFILM ศูนย์ติดฟิล์มรถยนต์ (บางนา-ลาซาล)',
-    businessKey: 'CAR',
-    address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 (MRT ศรีลาซาล)',
-    owner: 'นน',
     rating: 4.9,
-    totalReviews: 115,
-    repliedCount: 112,
-    lastReviewAt: '2026-11-01',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=MHL+CARFILM+ลาซาล',
+    totalReviews: 90,
+    repliedCount: 0,
+    lastReviewAt: '',
+    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Maholan+Film+Co.,+Ltd.+บริษัท+มโหฬารฟิล์ม+จำกัด+ฟิล์มอาคาร',
   },
 ];
 
@@ -529,10 +529,23 @@ export default function GbpReviewsPage() {
       <div className={styles.businessGrid}>
         {locations.map(loc => {
           const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
+          const locReviews = reviews.filter(r => r.locationId === loc.id).slice(0, MAX_PER_BUSINESS);
           const total = Number(loc.totalReviews || 0);
-          const replied = Number(loc.repliedCount || 0);
-          const unreplied = Math.max(0, total - replied);
-          const replyPct = total > 0 ? Math.round((replied / total) * 100) : 100;
+          const manualReplied = Number(loc.repliedCount || 0);
+          const hasReviewData = locReviews.length > 0;
+          const repliedLatest = locReviews.filter(r => Boolean(r.replyText?.trim())).length;
+          const unrepliedLatest = locReviews.length - repliedLatest;
+          const replyPct = hasReviewData
+            ? Math.round((repliedLatest / locReviews.length) * 100)
+            : manualReplied > 0 && total > 0
+            ? Math.round((manualReplied / total) * 100)
+            : null;
+          const unrepliedCount = hasReviewData
+            ? unrepliedLatest
+            : manualReplied > 0
+            ? Math.max(0, total - manualReplied)
+            : null;
+          const latestDate = locReviews[0]?.reviewDate || loc.lastReviewAt || '';
           const isSelected = selectedLocFilter === loc.id;
           const fullStars = Math.round(Number(loc.rating || 5));
 
@@ -571,23 +584,46 @@ export default function GbpReviewsPage() {
 
               <div className={styles.metricsStrip}>
                 <div className={styles.metricCell}>
-                  <span className={styles.metricValue}>{total}</span>
+                  <span className={styles.metricValue}>{total.toLocaleString()}</span>
                   <span className={styles.metricLabel}>รีวิวสะสมทั้งหมด</span>
                 </div>
                 <div className={styles.metricCell}>
-                  <span className={styles.metricValue} style={{ color: '#059669' }}>
-                    {replyPct}% <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>({replied})</small>
-                  </span>
-                  <span className={styles.metricLabel}>อัตราตอบกลับ</span>
+                  {replyPct !== null ? (
+                    <>
+                      <span className={styles.metricValue} style={{ color: '#059669' }}>
+                        {replyPct}%{' '}
+                        <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>
+                          ({hasReviewData ? `${repliedLatest}/${locReviews.length}` : manualReplied})
+                        </small>
+                      </span>
+                      <span className={styles.metricLabel}>
+                        {hasReviewData ? 'ตอบแล้ว (ชุดล่าสุด)' : 'อัตราตอบกลับ'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className={styles.metricValue} style={{ color: '#94a3b8' }}>—</span>
+                      <span className={styles.metricLabel}>อัตราตอบกลับ (รอซิงก์)</span>
+                    </>
+                  )}
                 </div>
                 <div className={styles.metricCell}>
-                  <span
-                    className={styles.metricValue}
-                    style={{ color: unreplied > 0 ? '#ea580c' : '#64748b' }}
-                  >
-                    {unreplied}
-                  </span>
-                  <span className={styles.metricLabel}>รอตอบกลับ</span>
+                  {unrepliedCount !== null ? (
+                    <>
+                      <span
+                        className={styles.metricValue}
+                        style={{ color: unrepliedCount > 0 ? '#ea580c' : '#64748b' }}
+                      >
+                        {unrepliedCount}
+                      </span>
+                      <span className={styles.metricLabel}>รอตอบกลับ</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className={styles.metricValue} style={{ color: '#94a3b8' }}>—</span>
+                      <span className={styles.metricLabel}>รอตอบกลับ (รอซิงก์)</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -603,7 +639,7 @@ export default function GbpReviewsPage() {
                   </span>
                   <span className={styles.bizMetaRow}>
                     <HiCalendarDays style={{ flexShrink: 0, marginTop: '2px', color: '#64748b' }} />
-                    ล่าสุด: {loc.lastReviewAt || '-'}
+                    ล่าสุด: {latestDate || 'รอซิงก์ชีต'}
                   </span>
                 </div>
               </div>
@@ -959,7 +995,8 @@ export default function GbpReviewsPage() {
               </li>
               <li>
                 เลือกฟิลด์รีวิวใน Porter (เช่น <code>Location Name</code>, <code>Date</code>, <code>Reviewer</code>,{' '}
-                <code>Star Rating</code>, <code>Review Comment</code>, <code>Review Reply Comment</code>) และตั้งเวลา{' '}
+                <code>Star Rating</code>, <code>Review Comment</code>, <code>Review Reply Comment</code> รวมถึง{' '}
+                <code>Total Reviews</code>, <code>Average Rating</code>) และตั้งเวลา{' '}
                 <b>Schedule Refresh = Daily (รายวัน)</b>
               </li>
               <li>

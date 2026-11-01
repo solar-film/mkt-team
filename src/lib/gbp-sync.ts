@@ -43,40 +43,40 @@ export interface GbpSyncInfo {
 
 export const DEFAULT_LOCATIONS: GbpLocationSummary[] = [
   {
+    id: 'loc-car',
+    name: 'ศูนย์ติดตั้งฟิล์มรถยนต์ ครบวงจร บางนา-ลาซาล',
+    businessKey: 'CAR',
+    address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 095-953-3949',
+    owner: 'นน',
+    rating: 4.9,
+    totalReviews: 681,
+    repliedCount: 0,
+    lastReviewAt: '',
+    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=ศูนย์ติดตั้งฟิล์มรถยนต์+ครบวงจร+บางนา-ลาซาล',
+  },
+  {
     id: 'loc-gfs',
-    name: 'GOODFILM สำนักงานใหญ่ (GFS B2B/B2C)',
+    name: 'บจก.กู๊ดฟิล์ม (GOODFILM)',
     businessKey: 'GFS',
-    address: '914/10-11 ถ.ลาซาล แขวงบางนา เขตบางนา กรุงเทพฯ 10260',
+    address: '914/10-11 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
     owner: 'แต้ว + จ๋าย',
     rating: 4.9,
-    totalReviews: 48,
-    repliedCount: 45,
-    lastReviewAt: '2026-10-30',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=GOODFILM+ลาซาล+บางนา',
+    totalReviews: 110,
+    repliedCount: 0,
+    lastReviewAt: '',
+    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=บจก.กู๊ดฟิล์ม+914/10-11+ถ.ลาซาล',
   },
   {
     id: 'loc-mhl',
-    name: 'มโหฬารฟิล์ม สำนักงานใหญ่ (MHL อาคาร)',
+    name: 'Maholan Film Co., Ltd. (บริษัท มโหฬารฟิล์ม จำกัด) ฟิล์มอาคาร',
     businessKey: 'MHL',
-    address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260',
+    address: '1563/125 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 094-998-1234',
     owner: 'เพลง',
-    rating: 4.8,
-    totalReviews: 62,
-    repliedCount: 58,
-    lastReviewAt: '2026-10-31',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=มโหฬารฟิล์ม+ลาซาล',
-  },
-  {
-    id: 'loc-car',
-    name: 'MHL CARFILM ศูนย์ติดฟิล์มรถยนต์ (บางนา-ลาซาล)',
-    businessKey: 'CAR',
-    address: '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 (MRT ศรีลาซาล)',
-    owner: 'นน',
     rating: 4.9,
-    totalReviews: 115,
-    repliedCount: 112,
-    lastReviewAt: '2026-11-01',
-    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=MHL+CARFILM+ลาซาล',
+    totalReviews: 90,
+    repliedCount: 0,
+    lastReviewAt: '',
+    mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Maholan+Film+Co.,+Ltd.+บริษัท+มโหฬารฟิล์ม+จำกัด+ฟิล์มอาคาร',
   },
 ];
 
@@ -155,6 +155,50 @@ export async function ensureGbpTables() {
         loc.mapsUrl
       );
     }
+  } else {
+    // Clean up initial prototype mockup rows if they are still present in DB
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM "GbpReview" WHERE "id" IN ('rev-1', 'rev-2', 'rev-3');
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      UPDATE "GbpLocation"
+      SET "name" = 'บจก.กู๊ดฟิล์ม (GOODFILM)',
+          "address" = '914/10-11 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
+          "rating" = 4.9,
+          "totalReviews" = 110,
+          "repliedCount" = 0,
+          "lastReviewAt" = '',
+          "mapsUrl" = 'https://www.google.com/maps/search/?api=1&query=บจก.กู๊ดฟิล์ม+914/10-11+ถ.ลาซาล',
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = 'loc-gfs' AND "totalReviews" = 48;
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      UPDATE "GbpLocation"
+      SET "name" = 'Maholan Film Co., Ltd. (บริษัท มโหฬารฟิล์ม จำกัด) ฟิล์มอาคาร',
+          "address" = '1563/125 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 094-998-1234',
+          "rating" = 4.9,
+          "totalReviews" = 90,
+          "repliedCount" = 0,
+          "lastReviewAt" = '',
+          "mapsUrl" = 'https://www.google.com/maps/search/?api=1&query=Maholan+Film+Co.,+Ltd.+บริษัท+มโหฬารฟิล์ม+จำกัด+ฟิล์มอาคาร',
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = 'loc-mhl' AND "totalReviews" = 62;
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      UPDATE "GbpLocation"
+      SET "name" = 'ศูนย์ติดตั้งฟิล์มรถยนต์ ครบวงจร บางนา-ลาซาล',
+          "address" = '924 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพฯ 10260 · โทร 095-953-3949',
+          "rating" = 4.9,
+          "totalReviews" = 681,
+          "repliedCount" = 0,
+          "lastReviewAt" = '',
+          "mapsUrl" = 'https://www.google.com/maps/search/?api=1&query=ศูนย์ติดตั้งฟิล์มรถยนต์+ครบวงจร+บางนา-ลาซาล',
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = 'loc-car' AND "totalReviews" = 115;
+    `);
   }
 }
 
@@ -369,8 +413,8 @@ export async function syncPorterGbpSheet(): Promise<{
       const replyCol = findColIndex(headers, [/reply.?comment|review.?reply|owner.?reply|^reply$|response|ข้อความตอบกลับ|คำตอบ|ตอบกลับ/], /time|date|ผู้ตอบ/);
       const repliedByCol = findColIndex(headers, [/replied.?by|responder|ผู้ตอบ/]);
 
-      const avgRatingCol = findColIndex(headers, [/average.?rating|avg.?rating|คะแนนเฉลี่ย/]);
-      const totalReviewsCol = findColIndex(headers, [/total.?review|review.?count|จำนวนรีวิว|รีวิวสะสม/]);
+      const avgRatingCol = findColIndex(headers, [/average.?rating|avg.?rating|total.?rating|overall.?rating|คะแนนเฉลี่ย/]);
+      const totalReviewsCol = findColIndex(headers, [/total.?review|review.?count|^reviews$|จำนวนรีวิว|รีวิวสะสม/]);
 
       for (const row of rows.slice(headerRowIndex + 1)) {
         if (!row || row.every(c => !String(c ?? '').trim())) continue;
@@ -475,34 +519,21 @@ export async function syncPorterGbpSheet(): Promise<{
         }
         perBusiness[idToKey[locId]] = top10.length;
 
-        // Update location summary stats (from Porter summary columns if available, else compute from all rows in sheet)
-        const computedAvg =
-          unique.reduce((sum, r) => sum + r.rating, 0) / unique.length;
-        const computedReplied = unique.filter(r => Boolean(r.replyText.trim())).length;
+        // Update location summary stats: preserve all-time rating/totalReviews unless Porter provides summary columns
         const newestDate = top10[0].reviewDate;
-
-        const finalRating = summaryStats[locId]?.rating ?? Number(computedAvg.toFixed(1));
-        const finalTotal = summaryStats[locId]?.totalReviews ?? unique.length;
-        const finalReplied =
-          summaryStats[locId]?.totalReviews && unique.length > 0
-            ? Math.min(
-                summaryStats[locId]!.totalReviews!,
-                Math.round((computedReplied / unique.length) * summaryStats[locId]!.totalReviews!)
-              )
-            : computedReplied;
+        const sheetRating = summaryStats[locId]?.rating ?? null;
+        const sheetTotal = summaryStats[locId]?.totalReviews ?? unique.length;
 
         await prisma.$executeRawUnsafe(
           `UPDATE "GbpLocation"
-           SET "rating" = $2,
+           SET "rating" = COALESCE($2, "rating"),
                "totalReviews" = GREATEST("totalReviews", $3),
-               "repliedCount" = GREATEST("repliedCount", $4),
-               "lastReviewAt" = GREATEST("lastReviewAt", $5),
+               "lastReviewAt" = GREATEST("lastReviewAt", $4),
                "updatedAt" = CURRENT_TIMESTAMP
            WHERE "id" = $1;`,
           locId,
-          finalRating,
-          finalTotal,
-          finalReplied,
+          sheetRating,
+          sheetTotal,
           newestDate
         );
       } else if (summaryStats[locId]) {
