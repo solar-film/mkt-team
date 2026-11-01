@@ -1,8 +1,8 @@
 .page {
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0.5rem 0.5rem 2.5rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 2.5rem;
   color: #0f2942;
 }
 
@@ -83,8 +83,9 @@
 
 /* Summary Strip */
 .summaryGrid {
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -170,8 +171,7 @@
 
 .searchWrap {
   position: relative;
-  min-width: 240px;
-  flex: 0 1 320px;
+  width: 100%;
 }
 
 .searchIcon {
@@ -202,8 +202,9 @@
 
 /* Cards Grid */
 .cardsGrid {
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
   align-items: stretch;
 }
@@ -453,7 +454,21 @@
   color: #ef4444;
 }
 
+@media (max-width: 1100px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cardsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
   .cardsGrid {
     grid-template-columns: 1fr;
   }
