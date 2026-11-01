@@ -4,6 +4,7 @@ import { useState, useEffect, type CSSProperties } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   HiPlus,
+  HiArrowPath,
   HiArrowTopRightOnSquare,
   HiPencilSquare,
   HiOutlineTrash,
@@ -12,6 +13,7 @@ import {
   HiMapPin,
   HiUser,
   HiCalendarDays,
+  HiArrowUpTray,
 } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import Modal from '@/components/Modal';
@@ -42,6 +44,8 @@ interface GbpReview {
   repliedBy: string;
   source: string;
 }
+
+const MAX_PER_BUSINESS = 10;
 
 const BUSINESS_BRAND: Record<
   string,
@@ -122,13 +126,15 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
 export default function GbpReviewsPage() {
   const [locations, setLocations] = useState<GbpLocation[]>(INITIAL_LOCATIONS);
   const [reviews, setReviews] = useState<GbpReview[]>([]);
+  const [sheetConfigured, setSheetConfigured] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [selectedLocFilter, setSelectedLocFilter] = useState<string>('ALL');
   const [replyFilter, setReplyFilter] = useState<'ALL' | 'UNREPLIED' | 'REPLIED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Add Review Modal
+  // Add Single Review Modal
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     locationId: 'loc-car',
@@ -138,6 +144,14 @@ export default function GbpReviewsPage() {
     reviewDate: new Date().toISOString().slice(0, 10),
     replyText: '',
     repliedBy: '',
+  });
+
+  // Bulk Import 10 Reviews Modal
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkForm, setBulkForm] = useState({
+    locationId: 'loc-car',
+    replaceExisting: true,
+    rawLines: '',
   });
 
   // Reply Modal
@@ -163,6 +177,7 @@ export default function GbpReviewsPage() {
         const data = await res.json();
         if (Array.isArray(data.locations) && data.locations.length > 0) setLocations(data.locations);
         if (Array.isArray(data.reviews)) setReviews(data.reviews);
+        setSheetConfigured(Boolean(data.sheetConfigured));
       }
     } catch (error) {
       console.error('Error loading GBP reviews:', error);
@@ -174,6 +189,90 @@ export default function GbpReviewsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleSyncSheet = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetchWorkspace('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'sync-sheet' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`ดึงรีวิวล่าสุดสำเร็จ (${data.imported ?? 0} รายการ)`);
+        fetchData();
+      } else {
+        toast.error(data.error || 'ยังไม่ได้ผูก Google Sheet สำหรับดึงรีวิวอัตโนมัติ');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('เกิดข้อผิดพลาดในการซิงก์รีวิว');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleBulkImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const lines = bulkForm.rawLines
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean)
+      .slice(0, MAX_PER_BUSINESS);
+
+    if (lines.length === 0) {
+      toast.error('กรุณาวางข้อมูลรีวิวอย่างน้อย 1 บรรทัด');
+      return;
+    }
+
+    // Format per line (Tab or | separated): วันที่(YYYY-MM-DD) | ชื่อผู้รีวิว | ดาว(1-5) | ข้อความรีวิว | คำตอบกลับ(ถ้ามี)
+    const parsed = lines.map(line => {
+      const parts = line.includes('\t') ? line.split('\t') : line.split('|');
+      if (parts.length >= 4) {
+        return {
+          reviewDate: parts[0]?.trim() || new Date().toISOString().slice(0, 10),
+          reviewerName: parts[1]?.trim() || 'ลูกค้า Google Maps',
+          rating: Number(parts[2]?.trim()) || 5,
+          comment: parts[3]?.trim() || '',
+          replyText: parts[4]?.trim() || '',
+          repliedBy: parts[5]?.trim() || '',
+        };
+      }
+      return {
+        reviewDate: new Date().toISOString().slice(0, 10),
+        reviewerName: 'ลูกค้า Google Maps',
+        rating: 5,
+        comment: line,
+        replyText: '',
+        repliedBy: '',
+      };
+    });
+
+    try {
+      const res = await fetchWorkspace('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'bulk-import',
+          locationId: bulkForm.locationId,
+          replaceExisting: bulkForm.replaceExisting,
+          reviews: parsed,
+        }),
+      });
+      if (res.ok) {
+        toast.success(`นำเข้า ${parsed.length} รีวิวล่าสุดเรียบร้อย`);
+        setIsBulkModalOpen(false);
+        setBulkForm({ ...bulkForm, rawLines: '' });
+        fetchData();
+      } else {
+        toast.error('ไม่สามารถนำเข้าข้อมูลรีวิวได้');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('เกิดข้อผิดพลาดในการนำเข้ารีวิว');
+    }
+  };
 
   const handleSaveReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,8 +370,7 @@ export default function GbpReviewsPage() {
     }
   };
 
-  const filteredReviews = reviews.filter(r => {
-    if (selectedLocFilter !== 'ALL' && r.locationId !== selectedLocFilter) return false;
+  const matchesReviewFilters = (r: GbpReview) => {
     const hasReply = Boolean(r.replyText?.trim());
     if (replyFilter === 'UNREPLIED' && hasReply) return false;
     if (replyFilter === 'REPLIED' && !hasReply) return false;
@@ -285,7 +383,12 @@ export default function GbpReviewsPage() {
       (r.replyText || '').toLowerCase().includes(q) ||
       (r.repliedBy || '').toLowerCase().includes(q)
     );
-  });
+  };
+
+  const visibleLocations =
+    selectedLocFilter === 'ALL'
+      ? locations
+      : locations.filter(l => l.id === selectedLocFilter);
 
   return (
     <div className={styles.page}>
@@ -293,14 +396,33 @@ export default function GbpReviewsPage() {
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <span className={styles.eyebrow}>
-            <HiStar size={14} /> Google Business Profile · แยกตามธุรกิจ
+            <HiStar size={14} /> Google Business Profile · แสดง {MAX_PER_BUSINESS} รีวิวล่าสุดต่อธุรกิจ
           </span>
           <h1 className={styles.pageTitle}>รีวิวบน Google Maps</h1>
           <p className={styles.pageSubtitle}>
-            คะแนนรีวิวและสถานะการตอบกลับแยกแต่ละธุรกิจ (GOODFILM, MHL อาคาร, MHL CAR)
+            คะแนนรีวิวและรายการ {MAX_PER_BUSINESS} รีวิวล่าสุดแยกแต่ละธุรกิจ (GOODFILM, MHL อาคาร, MHL CAR)
           </p>
         </div>
         <div className={styles.headerActions}>
+          {sheetConfigured && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={syncing}
+              onClick={handleSyncSheet}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderRadius: '12px', fontWeight: 600 }}
+            >
+              <HiArrowPath size={16} /> {syncing ? 'กำลังดึงรีวิว…' : 'ดึง 10 รีวิวล่าสุด'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setIsBulkModalOpen(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderRadius: '12px', fontWeight: 600 }}
+          >
+            <HiArrowUpTray size={16} /> นำเข้า 10 รีวิวล่าสุด
+          </button>
           <a
             href="https://portermetrics.com/"
             target="_blank"
@@ -315,7 +437,7 @@ export default function GbpReviewsPage() {
               textDecoration: 'none',
             }}
           >
-            เปิด Porter Metrics <HiArrowTopRightOnSquare size={16} />
+            เปิด Porter <HiArrowTopRightOnSquare size={16} />
           </a>
           <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
             <HiPlus size={18} /> บันทึกรีวิวใหม่
@@ -340,7 +462,6 @@ export default function GbpReviewsPage() {
               className={`${styles.businessCard} ${isSelected ? styles.businessCardActive : ''}`}
               style={{ '--biz-color': brand.color } as CSSProperties}
             >
-              {/* Business Logo + Name + Star Rating */}
               <div className={styles.bizHeader}>
                 <div className={styles.bizIdentity}>
                   <span className={styles.bizLogo} style={{ background: brand.logoBg }}>
@@ -368,7 +489,6 @@ export default function GbpReviewsPage() {
                 </div>
               </div>
 
-              {/* 3 Key Figures per Business */}
               <div className={styles.metricsStrip}>
                 <div className={styles.metricCell}>
                   <span className={styles.metricValue}>{total}</span>
@@ -391,7 +511,6 @@ export default function GbpReviewsPage() {
                 </div>
               </div>
 
-              {/* Address & Owner */}
               <div className={styles.bizMeta}>
                 <div className={styles.bizMetaRow}>
                   <HiMapPin style={{ flexShrink: 0, marginTop: '2px', color: '#64748b' }} />
@@ -409,7 +528,6 @@ export default function GbpReviewsPage() {
                 </div>
               </div>
 
-              {/* Card Footer Actions */}
               <div className={styles.bizFooter}>
                 <a
                   href={loc.mapsUrl}
@@ -426,7 +544,7 @@ export default function GbpReviewsPage() {
                     onClick={() => setSelectedLocFilter(isSelected ? 'ALL' : loc.id)}
                     className={`${styles.filterBizBtn} ${isSelected ? styles.filterBizBtnActive : ''}`}
                   >
-                    {isSelected ? 'แสดงทุกธุรกิจ' : `ดูรีวิว ${loc.businessKey}`}
+                    {isSelected ? 'แสดงทุกธุรกิจ' : `ดูเฉพาะ ${loc.businessKey}`}
                   </button>
                   <button
                     type="button"
@@ -451,7 +569,7 @@ export default function GbpReviewsPage() {
         })}
       </div>
 
-      {/* Reviews & Replies List (100% Width) */}
+      {/* Filter Bar for 10 Latest Reviews per Business */}
       <div
         style={{
           width: '100%',
@@ -474,10 +592,10 @@ export default function GbpReviewsPage() {
         >
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              รายการรีวิวลูกค้า &amp; การตอบกลับ
+              10 รีวิวล่าสุด แยกแต่ละธุรกิจ
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              เลือกกรองดูรีวิวแยกตามธุรกิจ หรือตรวจเฉพาะรายการที่ยังรอตอบกลับ
+              แสดงสูงสุดธุรกิจละ {MAX_PER_BUSINESS} รีวิวล่าสุดเรียงตามวันที่รีวิวใหม่สุด
             </p>
           </div>
 
@@ -488,11 +606,10 @@ export default function GbpReviewsPage() {
                 onClick={() => setSelectedLocFilter('ALL')}
                 className={`${styles.filterTab} ${selectedLocFilter === 'ALL' ? styles.filterTabActive : ''}`}
               >
-                ทุกธุรกิจ ({reviews.length})
+                ทุกธุรกิจ
               </button>
               {locations.map(l => {
-                const brand = BUSINESS_BRAND[l.businessKey];
-                const count = reviews.filter(r => r.locationId === l.id).length;
+                const count = reviews.filter(r => r.locationId === l.id).slice(0, MAX_PER_BUSINESS).length;
                 return (
                   <button
                     key={l.id}
@@ -500,7 +617,7 @@ export default function GbpReviewsPage() {
                     onClick={() => setSelectedLocFilter(l.id)}
                     className={`${styles.filterTab} ${selectedLocFilter === l.id ? styles.filterTabActive : ''}`}
                   >
-                    {brand?.shortTitle.split(' ')[0] === 'MHL' ? `MHL ${l.businessKey === 'CAR' ? 'CAR' : 'อาคาร'}` : 'GOODFILM'} ({count})
+                    {l.businessKey === 'GFS' ? 'GOODFILM' : l.businessKey === 'MHL' ? 'MHL อาคาร' : 'MHL CAR'} ({count}/{MAX_PER_BUSINESS})
                   </button>
                 );
               })}
@@ -532,13 +649,13 @@ export default function GbpReviewsPage() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '1.1rem' }}>
+        <div style={{ marginBottom: '1.25rem' }}>
           <div className={styles.searchWrap}>
             <HiMagnifyingGlass className={styles.searchIcon} size={18} />
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="ค้นหาชื่อลูกค้า, ข้อความรีวิว, หรือผู้ตอบกลับ..."
+              placeholder="ค้นหาชื่อผู้รีวิว, ข้อความรีวิว, หรือผู้ตอบกลับ..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
@@ -549,137 +666,269 @@ export default function GbpReviewsPage() {
           <div className="loading-container">
             <div className="loading-spinner"></div>
           </div>
-        ) : filteredReviews.length === 0 ? (
-          <div
-            style={{
-              borderRadius: '14px',
-              border: '1px dashed #cbd5e1',
-              padding: '2.5rem 1rem',
-              textAlign: 'center',
-              color: '#64748b',
-            }}
-          >
-            ไม่พบรายการรีวิวตามตัวกรองที่เลือก
-          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {filteredReviews.map(rev => {
-              const loc = locations.find(l => l.id === rev.locationId);
-              const brand = loc ? BUSINESS_BRAND[loc.businessKey] : undefined;
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {visibleLocations.map(loc => {
+              const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
+              const locLatest10 = reviews
+                .filter(r => r.locationId === loc.id)
+                .slice(0, MAX_PER_BUSINESS)
+                .filter(matchesReviewFilters);
+
               return (
-                <div
-                  key={rev.id}
+                <section
+                  key={loc.id}
                   style={{
                     border: '1px solid #e2e8f0',
-                    borderRadius: '14px',
-                    padding: '1rem 1.2rem',
-                    backgroundColor: '#fcfdff',
+                    borderTop: `3px solid ${brand.color}`,
+                    borderRadius: '16px',
+                    padding: '1.15rem 1.25rem',
+                    backgroundColor: '#f8fafc',
                   }}
                 >
                   <div
                     style={{
                       display: 'flex',
+                      alignItems: 'center',
                       justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      gap: '0.75rem',
                       flexWrap: 'wrap',
+                      gap: '0.5rem',
+                      marginBottom: '0.9rem',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, color: '#0f2942' }}>{rev.reviewerName}</span>
-                      <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.9rem' }}>
-                        {'★'.repeat(rev.rating)}
-                        {'☆'.repeat(Math.max(0, 5 - rev.rating))}
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 700, color: '#0f2942' }}>
+                        {brand.shortTitle}
+                      </h3>
                       <span
                         style={{
                           fontSize: '0.76rem',
+                          fontWeight: 700,
                           padding: '0.15rem 0.6rem',
                           borderRadius: '999px',
-                          backgroundColor: brand?.softBg || '#eff6ff',
-                          color: brand?.color || '#1d4ed8',
-                          fontWeight: 700,
+                          backgroundColor: brand.softBg,
+                          color: brand.color,
                         }}
                       >
-                        {brand?.shortTitle || loc?.name || rev.locationId}
+                        แสดง {locLatest10.length} / {MAX_PER_BUSINESS} รีวิวล่าสุด
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{rev.reviewDate}</span>
-                      <button
-                        type="button"
-                        className={styles.iconBtn}
-                        onClick={() => {
-                          setReplyTarget(rev);
-                          setReplyForm({
-                            replyText: rev.replyText || '',
-                            repliedBy: rev.repliedBy || loc?.owner || '',
-                          });
-                        }}
-                        title="แก้ไขคำตอบกลับรีวิว"
-                      >
-                        <HiPencilSquare size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                        onClick={() => setDeleteReviewTarget(rev)}
-                        title="ลบรีวิว"
-                      >
-                        <HiOutlineTrash size={15} />
-                      </button>
-                    </div>
-                  </div>
 
-                  <p style={{ margin: '0.55rem 0', color: '#1e293b', fontSize: '0.92rem', lineHeight: 1.5 }}>
-                    {rev.comment}
-                  </p>
-
-                  {rev.replyText ? (
-                    <div
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBulkForm({ locationId: loc.id, replaceExisting: true, rawLines: '' });
+                        setIsBulkModalOpen(true);
+                      }}
                       style={{
-                        marginTop: '0.5rem',
-                        padding: '0.6rem 0.85rem',
-                        backgroundColor: '#f0fdf4',
-                        borderLeft: '3px solid #16a34a',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: '#ffffff',
+                        color: '#0f2942',
                         borderRadius: '8px',
-                        fontSize: '0.85rem',
-                        color: '#166534',
+                        padding: '0.3rem 0.7rem',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
                       }}
                     >
-                      <strong>ตอบกลับแล้ว {rev.repliedBy ? `(${rev.repliedBy})` : ''}:</strong> {rev.replyText}
+                      + นำเข้า 10 รีวิวของ {loc.businessKey}
+                    </button>
+                  </div>
+
+                  {locLatest10.length === 0 ? (
+                    <div
+                      style={{
+                        borderRadius: '12px',
+                        border: '1px dashed #cbd5e1',
+                        backgroundColor: '#ffffff',
+                        padding: '1.5rem 1rem',
+                        textAlign: 'center',
+                        color: '#64748b',
+                        fontSize: '0.88rem',
+                      }}
+                    >
+                      ยังไม่มีรายการรีวิวที่ดึงเข้ามาสำหรับ {brand.shortTitle}
                     </div>
                   ) : (
-                    <div style={{ marginTop: '0.4rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReplyTarget(rev);
-                          setReplyForm({ replyText: '', repliedBy: loc?.owner || '' });
-                        }}
-                        style={{
-                          border: '1px solid #cbd5e1',
-                          backgroundColor: '#ffffff',
-                          color: '#034aad',
-                          borderRadius: '8px',
-                          padding: '0.3rem 0.7rem',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        + บันทึกคำตอบกลับรีวิว
-                      </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {locLatest10.map((rev, idx) => (
+                        <div
+                          key={rev.id}
+                          style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '0.95rem 1.1rem',
+                            backgroundColor: '#ffffff',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              gap: '0.75rem',
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  color: '#64748b',
+                                  backgroundColor: '#f1f5f9',
+                                  padding: '1px 7px',
+                                  borderRadius: '999px',
+                                }}
+                              >
+                                #{idx + 1}
+                              </span>
+                              <span style={{ fontWeight: 700, color: '#0f2942' }}>{rev.reviewerName}</span>
+                              <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.9rem' }}>
+                                {'★'.repeat(rev.rating)}
+                                {'☆'.repeat(Math.max(0, 5 - rev.rating))}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{rev.reviewDate}</span>
+                              <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => {
+                                  setReplyTarget(rev);
+                                  setReplyForm({
+                                    replyText: rev.replyText || '',
+                                    repliedBy: rev.repliedBy || loc.owner || '',
+                                  });
+                                }}
+                                title="แก้ไขคำตอบกลับรีวิว"
+                              >
+                                <HiPencilSquare size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                                onClick={() => setDeleteReviewTarget(rev)}
+                                title="ลบรีวิว"
+                              >
+                                <HiOutlineTrash size={15} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <p style={{ margin: '0.5rem 0', color: '#1e293b', fontSize: '0.92rem', lineHeight: 1.5 }}>
+                            {rev.comment}
+                          </p>
+
+                          {rev.replyText ? (
+                            <div
+                              style={{
+                                marginTop: '0.45rem',
+                                padding: '0.55rem 0.85rem',
+                                backgroundColor: '#f0fdf4',
+                                borderLeft: '3px solid #16a34a',
+                                borderRadius: '8px',
+                                fontSize: '0.84rem',
+                                color: '#166534',
+                              }}
+                            >
+                              <strong>ตอบกลับแล้ว {rev.repliedBy ? `(${rev.repliedBy})` : ''}:</strong> {rev.replyText}
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: '0.4rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplyTarget(rev);
+                                  setReplyForm({ replyText: '', repliedBy: loc.owner || '' });
+                                }}
+                                style={{
+                                  border: '1px solid #cbd5e1',
+                                  backgroundColor: '#ffffff',
+                                  color: '#034aad',
+                                  borderRadius: '8px',
+                                  padding: '0.28rem 0.65rem',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                + บันทึกคำตอบกลับรีวิว
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
-                </div>
+                </section>
               );
             })}
           </div>
         )}
       </div>
 
-      {/* Modal: Add GBP Review */}
+      {/* Modal: Bulk Import up to 10 Latest Reviews */}
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title="นำเข้า 10 รีวิวล่าสุดของธุรกิจ"
+        maxWidth="620px"
+      >
+        <form onSubmit={handleBulkImport}>
+          <div className="form-group">
+            <label className="form-label">เลือกธุรกิจ *</label>
+            <select
+              className="form-select"
+              value={bulkForm.locationId}
+              onChange={e => setBulkForm({ ...bulkForm, locationId: e.target.value })}
+            >
+              {locations.map(loc => (
+                <option key={loc.id} value={loc.id}>
+                  {BUSINESS_BRAND[loc.businessKey]?.shortTitle || loc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              วางข้อมูลรีวิวสูงสุด 10 บรรทัด (คัดลอกจากตาราง Porter Metrics / Google Sheets ได้เลย)
+            </label>
+            <small style={{ display: 'block', marginBottom: '0.4rem', color: '#64748b' }}>
+              รูปแบบต่อบรรทัด: <code>วันที่(YYYY-MM-DD) | ชื่อลูกค้า | ดาว(1-5) | ข้อความรีวิว | คำตอบกลับ</code>
+            </small>
+            <textarea
+              className="form-input"
+              rows={8}
+              required
+              placeholder={'2026-11-01 | คุณณัฐพงศ์ | 5 | ติดฟิล์มงานเนี๊ยบมากครับ | ขอบคุณมากครับ\n2026-10-30 | คุณสมศรี | 5 | ช่างให้คำแนะนำดีมาก | ขอบคุณที่ใช้บริการค่ะ'}
+              value={bulkForm.rawLines}
+              onChange={e => setBulkForm({ ...bulkForm, rawLines: e.target.value })}
+            />
+          </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', marginBottom: '1rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={bulkForm.replaceExisting}
+              onChange={e => setBulkForm({ ...bulkForm, replaceExisting: e.target.checked })}
+            />
+            แทนที่ชุดรีวิวเดิมของธุรกิจนี้ด้วยชุดใหม่ล่าสุด (ไม่เกิน 10 รีวิว)
+          </label>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsBulkModalOpen(false)}>
+              ยกเลิก
+            </button>
+            <button type="submit" className="btn btn-primary">
+              นำเข้า 10 รีวิวล่าสุด
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Add Single GBP Review */}
       <Modal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}

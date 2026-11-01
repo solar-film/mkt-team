@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { JWT } from 'google-auth-library';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+
+export const MAX_REVIEWS_PER_BUSINESS = 10;
 
 export interface GbpLocationSummary {
   id: string;
@@ -64,42 +67,6 @@ const DEFAULT_LOCATIONS: GbpLocationSummary[] = [
     repliedCount: 112,
     lastReviewAt: '2026-11-01',
     mapsUrl: 'https://www.google.com/maps/search/?api=1&query=MHL+CARFILM+ลาซาล',
-  },
-];
-
-const DEFAULT_REVIEWS: GbpReviewItem[] = [
-  {
-    id: 'rev-1',
-    locationId: 'loc-car',
-    reviewerName: 'คุณณัฐพงศ์ ส.',
-    rating: 5,
-    comment: 'ติดฟิล์มรถยนต์ 3M Crystalline งานเนี๊ยบมาก ห้องปลอดฝุ่น พนักงานให้คำแนะนำดีมากครับ',
-    reviewDate: '2026-11-01',
-    replyText: 'ขอบคุณคุณณัฐพงศ์มากครับที่ไว้วางใจ MHL CARFILM ยินดีให้บริการเสมอครับ',
-    repliedBy: 'นน (NON)',
-    source: 'Porter Metrics / GBP',
-  },
-  {
-    id: 'rev-2',
-    locationId: 'loc-mhl',
-    reviewerName: 'คุณพิมพ์ชนก ว.',
-    rating: 5,
-    comment: 'ทีมช่างมโหฬารฟิล์มเข้าติดตั้งฟิล์มคอนโดตรงเวลา เก็บงานสะอาด ลดความร้อนได้ชัดเจนค่ะ',
-    reviewDate: '2026-10-31',
-    replyText: 'ขอบพระคุณคุณพิมพ์ชนกค่ะ หากต้องการคำแนะนำเพิ่มเติมทัก LINE @MHL1 ได้ตลอดเลยนะคะ',
-    repliedBy: 'เพลง (PLENG)',
-    source: 'Porter Metrics / GBP',
-  },
-  {
-    id: 'rev-3',
-    locationId: 'loc-gfs',
-    reviewerName: 'คุณกิตติศักดิ์ ช่างกระจกอลูมิเนียม',
-    rating: 5,
-    comment: 'สั่งฟิล์มอาคาร 3M ยกม้วนกับ GOODFILM ของแท้ ส่งไว ราคาช่าง คุยง่ายครับ',
-    reviewDate: '2026-10-30',
-    replyText: '',
-    repliedBy: '',
-    source: 'Porter Metrics / GBP',
   },
 ];
 
@@ -167,35 +134,96 @@ async function ensureTablesAndSeed() {
       );
     }
   }
+}
 
-  const revCount = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-    `SELECT COUNT(*)::bigint AS count FROM "GbpReview";`
+function mapBusinessToLocationId(raw: string): string {
+  const s = (raw || '').trim().toUpperCase();
+  if (s.includes('CAR') || s.includes('รถ')) return 'loc-car';
+  if (s.includes('MHL') || s.includes('มโหฬาร')) return 'loc-mhl';
+  return 'loc-gfs';
+}
+
+const gbpSheetConfigured = () =>
+  Boolean(
+    process.env.GBP_REVIEWS_SHEET_ID?.trim() &&
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+      process.env.GOOGLE_PRIVATE_KEY
   );
-  if (Number(revCount?.[0]?.count ?? 0) === 0) {
-    for (const rev of DEFAULT_REVIEWS) {
+
+async function syncFromPorterSheet(): Promise<{ imported: number }> {
+  const sheetId = process.env.GBP_REVIEWS_SHEET_ID!.trim();
+  const client = new JWT({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  });
+
+  const res = await client.request<{ values?: unknown[][] }>({
+    url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/A1:G500`,
+  });
+
+  const rows = res.data.values || [];
+  if (rows.length <= 1) return { imported: 0 };
+
+  // Expected columns: Business/Location | Date (YYYY-MM-DD) | Reviewer | Rating (1-5) | Comment | Reply | RepliedBy
+  const grouped: Record<string, GbpReviewItem[]> = { 'loc-gfs': [], 'loc-mhl': [], 'loc-car': [] };
+  for (const row of rows.slice(1)) {
+    const locId = mapBusinessToLocationId(String(row[0] ?? ''));
+    const reviewDate = String(row[1] ?? '').trim().slice(0, 10) || new Date().toISOString().slice(0, 10);
+    const reviewerName = String(row[2] ?? '').trim() || 'ลูกค้า Google Maps';
+    const rating = Math.min(5, Math.max(1, Number(row[3]) || 5));
+    const comment = String(row[4] ?? '').trim();
+    const replyText = String(row[5] ?? '').trim();
+    const repliedBy = String(row[6] ?? '').trim();
+    if (!comment && !reviewerName) continue;
+
+    grouped[locId].push({
+      id: `sheet_${locId}_${grouped[locId].length + 1}_${reviewDate}`,
+      locationId: locId,
+      reviewerName,
+      rating,
+      comment,
+      reviewDate,
+      replyText,
+      repliedBy,
+      source: 'Porter Metrics Sheet',
+    });
+  }
+
+  let imported = 0;
+  for (const [locId, list] of Object.entries(grouped)) {
+    const top10 = list
+      .sort((a, b) => b.reviewDate.localeCompare(a.reviewDate))
+      .slice(0, MAX_REVIEWS_PER_BUSINESS);
+    if (top10.length === 0) continue;
+
+    await prisma.$executeRawUnsafe(`DELETE FROM "GbpReview" WHERE "locationId" = $1;`, locId);
+    for (const r of top10) {
       await prisma.$executeRawUnsafe(
         `INSERT INTO "GbpReview" (
           "id", "locationId", "reviewerName", "rating", "comment",
           "reviewDate", "replyText", "repliedBy", "source"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT ("id") DO NOTHING;`,
-        rev.id,
-        rev.locationId,
-        rev.reviewerName,
-        rev.rating,
-        rev.comment,
-        rev.reviewDate,
-        rev.replyText,
-        rev.repliedBy,
-        rev.source
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+        r.id,
+        r.locationId,
+        r.reviewerName,
+        r.rating,
+        r.comment,
+        r.reviewDate,
+        r.replyText,
+        r.repliedBy,
+        r.source
       );
+      imported++;
     }
   }
+  return { imported };
 }
 
 export async function GET() {
   try {
     await ensureTablesAndSeed();
+    // Pull up to 10 latest reviews per business using ROW_NUMBER() OVER (PARTITION BY "locationId")
     const [locations, reviews] = await Promise.all([
       prisma.$queryRawUnsafe<GbpLocationSummary[]>(
         `SELECT "id", "name", "businessKey", "address", "owner", "rating",
@@ -206,16 +234,32 @@ export async function GET() {
       prisma.$queryRawUnsafe<GbpReviewItem[]>(
         `SELECT "id", "locationId", "reviewerName", "rating", "comment",
                 "reviewDate", "replyText", "repliedBy", "source"
-         FROM "GbpReview"
-         ORDER BY "reviewDate" DESC, "createdAt" DESC;`
+         FROM (
+           SELECT *,
+                  ROW_NUMBER() OVER (
+                    PARTITION BY "locationId"
+                    ORDER BY "reviewDate" DESC, "createdAt" DESC
+                  ) AS rn
+           FROM "GbpReview"
+         ) ranked
+         WHERE rn <= ${MAX_REVIEWS_PER_BUSINESS}
+         ORDER BY "locationId" ASC, "reviewDate" DESC, "createdAt" DESC;`
       ),
     ]);
-    return NextResponse.json({ locations, reviews });
+
+    return NextResponse.json({
+      locations,
+      reviews,
+      maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
+      sheetConfigured: gbpSheetConfigured(),
+    });
   } catch (error) {
     console.error('Failed to load GBP data from DB, returning defaults:', error);
     return NextResponse.json({
       locations: DEFAULT_LOCATIONS,
-      reviews: DEFAULT_REVIEWS,
+      reviews: [],
+      maxPerBusiness: MAX_REVIEWS_PER_BUSINESS,
+      sheetConfigured: gbpSheetConfigured(),
       fallback: true,
     });
   }
@@ -225,6 +269,54 @@ export async function POST(request: NextRequest) {
   try {
     await ensureTablesAndSeed();
     const body = await request.json();
+
+    if (body.kind === 'sync-sheet') {
+      if (!gbpSheetConfigured()) {
+        return NextResponse.json(
+          {
+            error:
+              'ยังไม่ได้เชื่อมต่อ GBP_REVIEWS_SHEET_ID ในระบบ (ต้องผูก Porter Metrics เข้ากับ Google Sheets ก่อน)',
+          },
+          { status: 400 }
+        );
+      }
+      const { imported } = await syncFromPorterSheet();
+      return NextResponse.json({ success: true, imported });
+    }
+
+    if (body.kind === 'bulk-import' && Array.isArray(body.reviews)) {
+      const locationId = body.locationId || 'loc-car';
+      const incoming = body.reviews.slice(0, MAX_REVIEWS_PER_BUSINESS);
+      if (body.replaceExisting) {
+        await prisma.$executeRawUnsafe(`DELETE FROM "GbpReview" WHERE "locationId" = $1;`, locationId);
+      }
+      let added = 0;
+      for (const item of incoming) {
+        const id = `rev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+        const reviewerName = String(item.reviewerName || '').trim() || 'ลูกค้า Google Maps';
+        const rating = Math.min(5, Math.max(1, Number(item.rating) || 5));
+        const comment = String(item.comment || '').trim();
+        const reviewDate = String(item.reviewDate || '').trim().slice(0, 10) || new Date().toISOString().slice(0, 10);
+        const replyText = String(item.replyText || '').trim();
+        const repliedBy = String(item.repliedBy || '').trim();
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "GbpReview" (
+            "id", "locationId", "reviewerName", "rating", "comment",
+            "reviewDate", "replyText", "repliedBy", "source"
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Porter Metrics / GBP');`,
+          id,
+          locationId,
+          reviewerName,
+          rating,
+          comment,
+          reviewDate,
+          replyText,
+          repliedBy
+        );
+        added++;
+      }
+      return NextResponse.json({ success: true, added });
+    }
 
     const id = `rev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
     const locationId = body.locationId || 'loc-car';
