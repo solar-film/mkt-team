@@ -22,6 +22,7 @@ model TeamMember {
   channelMetrics ChannelMetric[]
   credential MemberCredential?
   sessions  MemberSession[]
+  evaluations MemberEvaluation[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -42,6 +43,11 @@ model Task {
   memberIds   String[]   @default([])
   companies   String[]   @default([])
   member      TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  // Work review for KPI กลาง (see src/lib/work-review.ts)
+  submittedAt  DateTime?
+  waitingOn    String?
+  firstReview  String?
+  reviseReason String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -86,9 +92,34 @@ model Content {
   platformPostId String?
   permalink      String?
   metrics        ContentMetric[]
+  // Work review for KPI กลาง (see src/lib/work-review.ts)
+  submittedAt  DateTime?
+  waitingOn    String?
+  firstReview  String?
+  reviseReason String?
+  promotion    String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   @@index([memberIds], type: Gin)
+}
+
+/// Monthly evaluation per member, drafted by มะลิ (AI) and shown on the KPI กลาง page.
+model MemberEvaluation {
+  id           String     @id @default(cuid())
+  memberId     String
+  member       TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  month        Int
+  year         Int
+  summary      String
+  strengths    String?
+  improvements String?
+  nextSteps    String?
+  source       String     @default("มะลิ")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([memberId, year, month])
+  @@index([year, month])
 }
 
 model ContentMetric {

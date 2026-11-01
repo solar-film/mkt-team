@@ -6,6 +6,7 @@ import { sendLineNotify } from '@/lib/line-notify'
 import { assignmentData } from '@/lib/assignment-storage'
 import { notificationMembers, notificationMemberLabel } from '@/lib/notification-assignees'
 import { COMPLETION_LINK_MESSAGE, blocksCompletion } from '@/lib/completion-link'
+import { submittedAtForStatus } from '@/lib/work-review'
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 
 export const dynamic = 'force-dynamic'
@@ -114,9 +115,11 @@ export async function PUT(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
+    let submittedAt: Date | null | undefined
     if (status !== undefined || link !== undefined) {
-      const before = await prisma.content.findUnique({ where: { id }, select: { status: true, kpiId: true, link: true } })
+      const before = await prisma.content.findUnique({ where: { id }, select: { status: true, kpiId: true, link: true, submittedAt: true } })
       if (before) {
+        submittedAt = submittedAtForStatus(before, status)
         const after = {
           status: status !== undefined ? status : before.status,
           kpiId: kpiId !== undefined ? kpiId : before.kpiId,
@@ -135,6 +138,7 @@ export async function PUT(request: NextRequest) {
         type: type !== undefined ? type : undefined,
         platform: platform !== undefined ? platform : undefined,
         status: status !== undefined ? status : undefined,
+        submittedAt,
         publishDate: publishDate !== undefined ? (publishDate ? new Date(publishDate) : null) : undefined,
         ...assignments,
         link: link !== undefined ? link : undefined,

@@ -8,6 +8,7 @@ import { notificationMembers, notificationMemberLabel } from '@/lib/notification
 import { serializeAssignments, memberAssignmentFilter, AssignmentValidationError } from '@/lib/assignments'
 import { joinKpiIds } from '@/lib/task-kpi'
 import { COMPLETION_LINK_MESSAGE, blocksCompletion } from '@/lib/completion-link'
+import { submittedAtForStatus } from '@/lib/work-review'
 
 export const dynamic = 'force-dynamic'
 
@@ -119,9 +120,11 @@ export async function PUT(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
+    let submittedAt: Date | null | undefined
     if (status !== undefined || kpiId !== undefined || link !== undefined) {
-      const before = await prisma.task.findUnique({ where: { id }, select: { status: true, kpiId: true, link: true } })
+      const before = await prisma.task.findUnique({ where: { id }, select: { status: true, kpiId: true, link: true, submittedAt: true } })
       if (before) {
+        submittedAt = submittedAtForStatus(before, status)
         const after = {
           status: status !== undefined ? status : before.status,
           kpiId: kpiId !== undefined ? joinKpiIds(kpiId) : before.kpiId,
@@ -138,6 +141,7 @@ export async function PUT(request: NextRequest) {
         title: title !== undefined ? title : undefined,
         description: description !== undefined ? description : undefined,
         status: status !== undefined ? status : undefined,
+        submittedAt,
         priority: priority !== undefined ? priority : undefined,
         startDate: startDate !== undefined ? (startDate ? new Date(startDate) : null) : undefined,
         deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined,

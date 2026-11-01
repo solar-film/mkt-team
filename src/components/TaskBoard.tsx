@@ -21,6 +21,7 @@ import { bangkokDateKey } from '@/lib/bangkok-date';
 import { toast } from 'react-hot-toast';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import TaskKpiSelect from '@/components/TaskKpiSelect';
+import WorkReviewPanel from '@/components/WorkReviewPanel';
 import { validTaskKpiIds } from '@/lib/task-kpi';
 import { hasLink, requiresLinkToComplete } from '@/lib/completion-link';
 
@@ -45,6 +46,13 @@ interface UnifiedItem {
   company?: string;
   link?: string;
   meetingId?: string;
+
+  // KPI กลาง review (WorkReviewPanel)
+  submittedAt?: string | null;
+  waitingOn?: string | null;
+  firstReview?: string | null;
+  reviseReason?: string | null;
+  promotion?: string | null;
 }
 
 interface TeamMember {
@@ -1141,6 +1149,19 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                   เปิดลิงก์แนบ
                 </a>
               </div>
+            )}
+
+            {!viewItem.id.startsWith('idea_') && (
+              <WorkReviewPanel
+                key={viewItem.id}
+                kind={viewItem.itemType}
+                id={viewItem.id}
+                values={viewItem}
+                onSaved={saved => {
+                  setViewItem(prev => (prev ? { ...prev, ...saved } : prev));
+                  setItems(prev => prev.map(i => (i.id === viewItem.id ? { ...i, ...saved } : i)));
+                }}
+              />
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>

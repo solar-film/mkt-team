@@ -1,65 +1,66 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { readJsonBody, RequestBodyError } from '@/lib/request-body';
-import { MEMBER_HEADER, clientIp, lockMessage, lockedUntil, readCookie, recordAttempt } from '@/lib/member-auth';
-import {
-  KPI_HUB_COOKIE, KPI_HUB_PATH, KPI_HUB_SECONDS, issuePass, kpiHubLinks, kpiHubPassword, passValid, passwordMatches,
-  type KpiHubState,
-} from '@/lib/kpi-hub';
+import { bangkokDateKey } from '@/lib/bangkok-date';
+import { monthQueryRange, summarizeMonth, type ReviewItem } from '@/lib/kpi-summary';
+import { withAvatarUrls, MEMBER_LIST_SELECT } from '@/lib/member-avatar';
 
 export const dynamic = 'force-dynamic';
 
 const headers = { 'Cache-Control': 'private, no-store' };
-const passCookie = (maxAge: number) => ({
-  httpOnly: true, sameSite: 'strict' as const, secure: process.env.NODE_ENV === 'production', path: KPI_HUB_PATH, maxAge,
-});
+const REVIEW_SELECT = {
+  id: true, title: true, memberId: true, memberIds: true, status: true,
+  submittedAt: true, waitingOn: true, firstReview: true, reviseReason: true,
+} as const;
 
-// The proxy has already checked the member session and set this header.
-const memberOf = (request: Request) => request.headers.get(MEMBER_HEADER) ?? '';
-
+/** KPI กลาง for one month (?year=2026&month=11). Members only: the proxy checks the session. */
 export async function GET(request: Request) {
-  const password = kpiHubPassword();
-  let state: KpiHubState;
-  if (!password) state = { status: 'not-configured' };
-  else if (passValid(readCookie(request, KPI_HUB_COOKIE), memberOf(request), password)) state = { status: 'open', links: kpiHubLinks() };
-  else state = { status: 'locked' };
-  return NextResponse.json(state, { headers });
-}
-
-/** Wrong answers use 403, not 401: the page treats 401 as an expired member login. */
-export async function POST(request: Request) {
-  const password = kpiHubPassword();
-  if (!password) return NextResponse.json({ error: 'ยังไม่ได้ตั้งรหัสของหน้านี้' }, { status: 503, headers });
-  const memberId = memberOf(request);
-  try {
-    const body = await readJsonBody(request);
-    const input = typeof body.password === 'string' ? body.password.slice(0, 200) : '';
-
-    const until = await lockedUntil(prisma, { kind: 'kpi-hub', memberId, ip: clientIp(request) });
-    if (until) {
-      await recordAttempt(prisma, request, { kind: 'kpi-hub', memberId, success: false, reason: 'locked' });
-      return NextResponse.json({ error: lockMessage(until) }, { status: 429, headers });
-    }
-    if (!passwordMatches(input, password)) {
-      await recordAttempt(prisma, request, { kind: 'kpi-hub', memberId, success: false, reason: 'wrong password' });
-      return NextResponse.json({ error: 'รหัสไม่ถูกต้อง' }, { status: 403, headers });
-    }
-
-    await recordAttempt(prisma, request, { kind: 'kpi-hub', memberId, success: true, reason: 'ok' });
-    const state: KpiHubState = { status: 'open', links: kpiHubLinks() };
-    const response = NextResponse.json(state, { headers });
-    response.cookies.set(KPI_HUB_COOKIE, issuePass(memberId, password), passCookie(KPI_HUB_SECONDS));
-    return response;
-  } catch (error) {
-    if (error instanceof RequestBodyError) return NextResponse.json({ error: 'Invalid request' }, { status: error.status, headers });
-    console.error('KPI hub unlock failed:', error instanceof Error ? error.message : 'unknown error');
-    return NextResponse.json({ error: 'ตรวจรหัสไม่สำเร็จ ลองใหม่อีกครั้ง' }, { status: 500, headers });
+  const params = new URL(request.url).searchParams;
+  const today = bangkokDateKey(new Date());
+  const year = Number(params.get('year') || today.slice(0, 4));
+  const month = Number(params.get('month') || today.slice(5, 7));
+  if (!Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12) {
+    return NextResponse.json({ error: 'เดือนไม่ถูกต้อง' }, { status: 400, headers });
   }
-}
 
-/** "ล็อกหน้านี้": forgets the pass on this browser. */
-export async function DELETE() {
-  const response = NextResponse.json({ status: 'locked' } satisfies KpiHubState, { headers });
-  response.cookies.set(KPI_HUB_COOKIE, '', passCookie(0));
-  return response;
+  try {
+    const range = monthQueryRange(year, month);
+    const [members, tasks, contents, kpis, evaluations] = await Promise.all([
+      prisma.teamMember.findMany({ where: { id: { not: 'all' }, status: { not: 'inactive' } }, select: MEMBER_LIST_SELECT, orderBy: { name: 'asc' } }),
+      prisma.task.findMany({ where: { deadline: range }, select: { ...REVIEW_SELECT, deadline: true } }),
+      prisma.content.findMany({
+        where: { publishDate: range },
+        select: {
+          ...REVIEW_SELECT, publishDate: true, promotion: true,
+          metrics: { where: { snapshot: 'D+7' }, select: { reach: true, likes: true, comments: true, shares: true }, take: 1 },
+        },
+      }),
+      prisma.kPI.findMany({ where: { year, month }, orderBy: { name: 'asc' } }),
+      prisma.memberEvaluation.findMany({ where: { year, month } }),
+    ]);
+
+    const items: ReviewItem[] = [
+      ...tasks.map(({ deadline, ...task }) => ({ ...task, kind: 'task' as const, due: deadline })),
+      ...contents.map(({ publishDate, metrics, ...content }) => {
+        const metric = metrics[0];
+        return {
+          ...content, kind: 'content' as const, due: publishDate,
+          reach7: metric?.reach ?? null,
+          engagement7: metric ? (metric.likes ?? 0) + (metric.comments ?? 0) + (metric.shares ?? 0) : null,
+        };
+      }),
+    ];
+
+    const withAvatars = await withAvatarUrls(members, prisma);
+    const summary = summarizeMonth({
+      year, month, today,
+      members: withAvatars.map(m => ({ id: m.id, name: m.name, avatar: m.avatar ?? null, company: m.company })),
+      items,
+      kpis: kpis.map(k => ({ id: k.id, memberId: k.memberId, name: k.name, target: k.target, current: k.current, unit: k.unit, company: k.company })),
+      evaluations: evaluations.map(e => ({ ...e, updatedAt: e.updatedAt.toISOString() })),
+    });
+    return NextResponse.json(summary, { headers });
+  } catch (error) {
+    console.error('KPI hub read failed:', error instanceof Error ? error.message : 'unknown error');
+    return NextResponse.json({ error: 'โหลดข้อมูลไม่สำเร็จ' }, { status: 503, headers });
+  }
 }
