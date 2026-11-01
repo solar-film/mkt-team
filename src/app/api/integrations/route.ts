@@ -3,23 +3,6 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export interface ToolIntegrationItem {
-  id: string;
-  name: string;
-  status: string;
-  description: string;
-  source: string;
-  destination: string;
-  syncSchedule: string;
-  lifespan: string;
-  cost: string;
-  usageLimit: string;
-  linkLabel: string;
-  linkUrl: string;
-  checkedAt: string;
-  sortOrder: number;
-}
-
 export interface GbpLocationSummary {
   id: string;
   name: string;
@@ -120,83 +103,10 @@ const DEFAULT_REVIEWS: GbpReviewItem[] = [
   },
 ];
 
-const DEFAULT_INTEGRATIONS: ToolIntegrationItem[] = [
-  {
-    id: 'porter-metrics',
-    name: 'Porter Metrics',
-    status: 'ไม่ได้ใช้',
-    description: 'ตรวจรีวิว Google Business Profile · ยังไม่ส่งเข้าเว็บ MKT',
-    source: 'Google Business Profile 1 บัญชี / 3 สถานที่',
-    destination: '— (ยังไม่ได้ต่อเข้าเว็บ MKT)',
-    syncSchedule: 'ถามผ่าน AI เมื่อต้องการ',
-    lifespan: 'ทดลองฟีเจอร์เต็ม 14 วัน แล้วเป็นแพ็กเกจ Free ใช้ได้ไม่จำกัดเวลา',
-    cost: 'ฟรี (Free forever) สำหรับ Google Business Profile',
-    usageLimit: 'ถามผ่าน AI ย้อนหลังได้ 15 วัน · รายงานทั่วไปย้อนหลังได้ถึง 30 วัน',
-    linkLabel: 'เปิด Porter',
-    linkUrl: 'https://portermetrics.com/',
-    checkedAt: 'ตรวจ 1 พ.ย. 69',
-    sortOrder: 1,
-  },
-  {
-    id: 'windsor-ai',
-    name: 'Windsor.ai',
-    status: 'ใช้งานอยู่',
-    description: 'ค่าโฆษณา Facebook · Google และ Reach โพสต์เพจ Facebook',
-    source: 'Facebook Ads 5 บัญชี · Google Ads 6 บัญชี · เพจ Facebook 4 เพจ',
-    destination: 'หน้า ข้อมูลตลาด · สรุปผลงาน & ประเมิน',
-    syncSchedule: 'ทุกวัน 06:00 ค่าโฆษณา (10 วันล่าสุด) · 06:30 โพสต์เพจ (12 วันล่าสุด)',
-    lifespan: 'ทดลองใช้ฟรี ถึง ~30 พ.ย. 69',
-    cost: 'ฟรีช่วงทดลอง · วางแผนใช้ Basic $19/เดือน (จ่ายรายปี $228)',
-    usageLimit: '3 แหล่งข้อมูล / 15 บัญชี–เพจ อยู่ในโควตา Basic (3 แหล่ง)',
-    linkLabel: 'เปิด Windsor',
-    linkUrl: 'https://onboard.windsor.ai/app/settings/account',
-    checkedAt: 'ตรวจ 1 พ.ย. 69',
-    sortOrder: 2,
-  },
-  {
-    id: 'make-com',
-    name: 'Make.com',
-    status: 'ไม่ได้ใช้',
-    description: 'ดึง Google Analytics 4 ของเว็บไซต์ · ยังไม่ส่งเข้าเว็บ MKT',
-    source: 'GA4 5 Properties (ทดสอบแล้วครบ) · Facebook Messenger → Google Sheets',
-    destination: '— (ยังไม่ได้ต่อเข้าเว็บ MKT)',
-    syncSchedule: 'ยังไม่ได้ตรวจตารางเวลา',
-    lifespan: 'ไม่หมดอายุ · เครดิตรีเซ็ต ~22 พ.ย. 69',
-    cost: 'ฟรี 1,000 เครดิต/เดือน · ต้องคุมจำนวนรันไม่ให้เกินโควตา',
-    usageLimit: '~12 จาก 1,000 เครดิต (ตรวจ 1 พ.ย. ก่อนทดสอบ GA4)',
-    linkLabel: 'เปิด Make',
-    linkUrl: 'https://eu1.make.com/',
-    checkedAt: 'ตรวจ 1 พ.ย. 69',
-    sortOrder: 3,
-  },
-];
-
 let tablesEnsured = false;
 
 async function ensureTablesAndSeed() {
   if (!tablesEnsured) {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "ToolIntegration" (
-        "id" TEXT NOT NULL,
-        "name" TEXT NOT NULL,
-        "status" TEXT NOT NULL DEFAULT 'ไม่ได้ใช้',
-        "description" TEXT NOT NULL DEFAULT '',
-        "source" TEXT NOT NULL DEFAULT '',
-        "destination" TEXT NOT NULL DEFAULT '',
-        "syncSchedule" TEXT NOT NULL DEFAULT '',
-        "lifespan" TEXT NOT NULL DEFAULT '',
-        "cost" TEXT NOT NULL DEFAULT '',
-        "usageLimit" TEXT NOT NULL DEFAULT '',
-        "linkLabel" TEXT NOT NULL DEFAULT '',
-        "linkUrl" TEXT NOT NULL DEFAULT '',
-        "checkedAt" TEXT NOT NULL DEFAULT '',
-        "sortOrder" INTEGER NOT NULL DEFAULT 10,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "ToolIntegration_pkey" PRIMARY KEY ("id")
-      );
-    `);
-
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "GbpLocation" (
         "id" TEXT NOT NULL,
@@ -231,36 +141,6 @@ async function ensureTablesAndSeed() {
     `);
 
     tablesEnsured = true;
-  }
-
-  const toolCount = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-    `SELECT COUNT(*)::bigint AS count FROM "ToolIntegration";`
-  );
-  if (Number(toolCount?.[0]?.count ?? 0) === 0) {
-    for (const item of DEFAULT_INTEGRATIONS) {
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "ToolIntegration" (
-          "id", "name", "status", "description", "source", "destination",
-          "syncSchedule", "lifespan", "cost", "usageLimit", "linkLabel", "linkUrl",
-          "checkedAt", "sortOrder", "updatedAt"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
-        ON CONFLICT ("id") DO NOTHING;`,
-        item.id,
-        item.name,
-        item.status,
-        item.description,
-        item.source,
-        item.destination,
-        item.syncSchedule,
-        item.lifespan,
-        item.cost,
-        item.usageLimit,
-        item.linkLabel,
-        item.linkUrl,
-        item.checkedAt,
-        item.sortOrder
-      );
-    }
   }
 
   const locCount = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
@@ -316,14 +196,7 @@ async function ensureTablesAndSeed() {
 export async function GET() {
   try {
     await ensureTablesAndSeed();
-    const [items, locations, reviews] = await Promise.all([
-      prisma.$queryRawUnsafe<ToolIntegrationItem[]>(
-        `SELECT "id", "name", "status", "description", "source", "destination",
-                "syncSchedule", "lifespan", "cost", "usageLimit", "linkLabel",
-                "linkUrl", "checkedAt", "sortOrder"
-         FROM "ToolIntegration"
-         ORDER BY "sortOrder" ASC, "createdAt" ASC;`
-      ),
+    const [locations, reviews] = await Promise.all([
       prisma.$queryRawUnsafe<GbpLocationSummary[]>(
         `SELECT "id", "name", "businessKey", "address", "owner", "rating",
                 "totalReviews", "repliedCount", "lastReviewAt", "mapsUrl"
@@ -337,11 +210,10 @@ export async function GET() {
          ORDER BY "reviewDate" DESC, "createdAt" DESC;`
       ),
     ]);
-    return NextResponse.json({ items, locations, reviews });
+    return NextResponse.json({ locations, reviews });
   } catch (error) {
-    console.error('Failed to load GBP/Integrations from DB, returning defaults:', error);
+    console.error('Failed to load GBP data from DB, returning defaults:', error);
     return NextResponse.json({
-      items: DEFAULT_INTEGRATIONS,
       locations: DEFAULT_LOCATIONS,
       reviews: DEFAULT_REVIEWS,
       fallback: true,
@@ -354,93 +226,46 @@ export async function POST(request: NextRequest) {
     await ensureTablesAndSeed();
     const body = await request.json();
 
-    if (body.kind === 'review') {
-      const id = `rev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-      const locationId = body.locationId || 'loc-car';
-      const reviewerName = (body.reviewerName || '').trim() || 'ลูกค้า Google Maps';
-      const rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
-      const comment = (body.comment || '').trim();
-      const reviewDate = body.reviewDate || new Date().toISOString().slice(0, 10);
-      const replyText = (body.replyText || '').trim();
-      const repliedBy = (body.repliedBy || '').trim();
-
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "GbpReview" (
-          "id", "locationId", "reviewerName", "rating", "comment",
-          "reviewDate", "replyText", "repliedBy", "source"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Porter Metrics / GBP');`,
-        id,
-        locationId,
-        reviewerName,
-        rating,
-        comment,
-        reviewDate,
-        replyText,
-        repliedBy
-      );
-
-      await prisma.$executeRawUnsafe(
-        `UPDATE "GbpLocation"
-         SET "totalReviews" = "totalReviews" + 1,
-             "repliedCount" = "repliedCount" + $2,
-             "lastReviewAt" = GREATEST("lastReviewAt", $3),
-             "updatedAt" = CURRENT_TIMESTAMP
-         WHERE "id" = $1;`,
-        locationId,
-        replyText ? 1 : 0,
-        reviewDate
-      );
-
-      return NextResponse.json({ success: true, id });
-    }
-
-    const id = body.id || `tool_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-    const name = (body.name || '').trim();
-    if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-    }
-
-    const status = body.status || 'ไม่ได้ใช้';
-    const description = body.description || '';
-    const source = body.source || '';
-    const destination = body.destination || '';
-    const syncSchedule = body.syncSchedule || '';
-    const lifespan = body.lifespan || '';
-    const cost = body.cost || '';
-    const usageLimit = body.usageLimit || '';
-    const linkLabel = body.linkLabel || `เปิด ${name}`;
-    const linkUrl = body.linkUrl || '';
-    const checkedAt =
-      body.checkedAt ||
-      `ตรวจ ${new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}`;
-    const sortOrder = typeof body.sortOrder === 'number' ? body.sortOrder : 50;
+    const id = `rev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const locationId = body.locationId || 'loc-car';
+    const reviewerName = (body.reviewerName || '').trim() || 'ลูกค้า Google Maps';
+    const rating = Math.min(5, Math.max(1, Number(body.rating) || 5));
+    const comment = (body.comment || '').trim();
+    const reviewDate = body.reviewDate || new Date().toISOString().slice(0, 10);
+    const replyText = (body.replyText || '').trim();
+    const repliedBy = (body.repliedBy || '').trim();
 
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "ToolIntegration" (
-        "id", "name", "status", "description", "source", "destination",
-        "syncSchedule", "lifespan", "cost", "usageLimit", "linkLabel", "linkUrl",
-        "checkedAt", "sortOrder", "updatedAt"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP);`,
+      `INSERT INTO "GbpReview" (
+        "id", "locationId", "reviewerName", "rating", "comment",
+        "reviewDate", "replyText", "repliedBy", "source"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Porter Metrics / GBP');`,
       id,
-      name,
-      status,
-      description,
-      source,
-      destination,
-      syncSchedule,
-      lifespan,
-      cost,
-      usageLimit,
-      linkLabel,
-      linkUrl,
-      checkedAt,
-      sortOrder
+      locationId,
+      reviewerName,
+      rating,
+      comment,
+      reviewDate,
+      replyText,
+      repliedBy
+    );
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE "GbpLocation"
+       SET "totalReviews" = "totalReviews" + 1,
+           "repliedCount" = "repliedCount" + $2,
+           "lastReviewAt" = GREATEST("lastReviewAt", $3),
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE "id" = $1;`,
+      locationId,
+      replyText ? 1 : 0,
+      reviewDate
     );
 
     return NextResponse.json({ success: true, id });
   } catch (error: any) {
-    console.error('Error creating item:', error);
-    return NextResponse.json({ error: error.message || 'Failed to create item' }, { status: 500 });
+    console.error('Error creating GBP review:', error);
+    return NextResponse.json({ error: error.message || 'Failed to create review' }, { status: 500 });
   }
 }
 
@@ -452,15 +277,37 @@ export async function PUT(request: NextRequest) {
     if (body.kind === 'review-reply') {
       const { id, replyText, repliedBy } = body;
       if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+
+      const existing = await prisma.$queryRawUnsafe<{ locationId: string; replyText: string }[]>(
+        `SELECT "locationId", "replyText" FROM "GbpReview" WHERE "id" = $1 LIMIT 1;`,
+        id
+      );
+      const prevHadReply = Boolean(existing?.[0]?.replyText?.trim());
+      const nextReply = (replyText || '').trim();
+      const nextHasReply = Boolean(nextReply);
+
       await prisma.$executeRawUnsafe(
         `UPDATE "GbpReview"
          SET "replyText" = $2,
              "repliedBy" = $3
          WHERE "id" = $1;`,
         id,
-        (replyText || '').trim(),
+        nextReply,
         (repliedBy || '').trim()
       );
+
+      if (existing?.[0]?.locationId && prevHadReply !== nextHasReply) {
+        const delta = nextHasReply ? 1 : -1;
+        await prisma.$executeRawUnsafe(
+          `UPDATE "GbpLocation"
+           SET "repliedCount" = GREATEST(0, "repliedCount" + $2),
+               "updatedAt" = CURRENT_TIMESTAMP
+           WHERE "id" = $1;`,
+          existing[0].locationId,
+          delta
+        );
+      }
+
       return NextResponse.json({ success: true });
     }
 
@@ -484,60 +331,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const {
-      id,
-      name,
-      status,
-      description,
-      source,
-      destination,
-      syncSchedule,
-      lifespan,
-      cost,
-      usageLimit,
-      linkLabel,
-      linkUrl,
-      checkedAt,
-    } = body;
-
-    if (!id || !name) {
-      return NextResponse.json({ error: 'ID and name are required' }, { status: 400 });
-    }
-
-    await prisma.$executeRawUnsafe(
-      `UPDATE "ToolIntegration"
-       SET "name" = $2,
-           "status" = $3,
-           "description" = $4,
-           "source" = $5,
-           "destination" = $6,
-           "syncSchedule" = $7,
-           "lifespan" = $8,
-           "cost" = $9,
-           "usageLimit" = $10,
-           "linkLabel" = $11,
-           "linkUrl" = $12,
-           "checkedAt" = $13,
-           "updatedAt" = CURRENT_TIMESTAMP
-       WHERE "id" = $1;`,
-      id,
-      name,
-      status || 'ไม่ได้ใช้',
-      description || '',
-      source || '',
-      destination || '',
-      syncSchedule || '',
-      lifespan || '',
-      cost || '',
-      usageLimit || '',
-      linkLabel || '',
-      linkUrl || '',
-      checkedAt || ''
-    );
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: 'Invalid update kind' }, { status: 400 });
   } catch (error: any) {
-    console.error('Error updating item:', error);
+    console.error('Error updating GBP item:', error);
     return NextResponse.json({ error: error.message || 'Failed to update item' }, { status: 500 });
   }
 }
@@ -547,20 +343,14 @@ export async function DELETE(request: NextRequest) {
     await ensureTablesAndSeed();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const kind = searchParams.get('kind');
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    if (kind === 'review') {
-      await prisma.$executeRawUnsafe(`DELETE FROM "GbpReview" WHERE "id" = $1;`, id);
-      return NextResponse.json({ success: true });
-    }
-
-    await prisma.$executeRawUnsafe(`DELETE FROM "ToolIntegration" WHERE "id" = $1;`, id);
+    await prisma.$executeRawUnsafe(`DELETE FROM "GbpReview" WHERE "id" = $1;`, id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error deleting item:', error);
-    return NextResponse.json({ error: error.message || 'Failed to delete item' }, { status: 500 });
+    console.error('Error deleting GBP review:', error);
+    return NextResponse.json({ error: error.message || 'Failed to delete review' }, { status: 500 });
   }
 }

@@ -4,43 +4,20 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   HiPlus,
-  HiArrowPath,
-  HiOutlineCalendarDays,
-  HiOutlineBanknotes,
-  HiClock,
   HiArrowTopRightOnSquare,
   HiPencilSquare,
   HiOutlineTrash,
   HiMagnifyingGlass,
-  HiGlobeAlt,
   HiCheckBadge,
-  HiOutlinePauseCircle,
-  HiOutlineSparkles,
   HiStar,
   HiMapPin,
   HiChatBubbleLeftEllipsis,
+  HiClock,
 } from 'react-icons/hi2';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import styles from './integrations.module.css';
-
-interface ToolIntegration {
-  id: string;
-  name: string;
-  status: string;
-  description: string;
-  source: string;
-  destination: string;
-  syncSchedule: string;
-  lifespan: string;
-  cost: string;
-  usageLimit: string;
-  linkLabel: string;
-  linkUrl: string;
-  checkedAt: string;
-  sortOrder?: number;
-}
 
 interface GbpLocation {
   id: string;
@@ -66,25 +43,6 @@ interface GbpReview {
   repliedBy: string;
   source: string;
 }
-
-const INITIAL_FALLBACK_ITEMS: ToolIntegration[] = [
-  {
-    id: 'porter-metrics',
-    name: 'Porter Metrics',
-    status: 'ไม่ได้ใช้',
-    description: 'ตรวจรีวิว Google Business Profile · ยังไม่ส่งเข้าเว็บ MKT',
-    source: 'Google Business Profile 1 บัญชี / 3 สถานที่',
-    destination: '— (ยังไม่ได้ต่อเข้าเว็บ MKT)',
-    syncSchedule: 'ถามผ่าน AI เมื่อต้องการ',
-    lifespan: 'ทดลองฟีเจอร์เต็ม 14 วัน แล้วเป็นแพ็กเกจ Free ใช้ได้ไม่จำกัดเวลา',
-    cost: 'ฟรี (Free forever) สำหรับ Google Business Profile',
-    usageLimit: 'ถามผ่าน AI ย้อนหลังได้ 15 วัน · รายงานทั่วไปย้อนหลังได้ถึง 30 วัน',
-    linkLabel: 'เปิด Porter',
-    linkUrl: 'https://portermetrics.com/',
-    checkedAt: 'ตรวจ 1 พ.ย. 69',
-    sortOrder: 1,
-  },
-];
 
 const INITIAL_LOCATIONS: GbpLocation[] = [
   {
@@ -125,33 +83,16 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
   },
 ];
 
-function getTodayThaiShort(): string {
-  const d = new Date();
-  const formatted = d.toLocaleDateString('th-TH', {
-    day: 'numeric',
-    month: 'short',
-    year: '2-digit',
-  });
-  return `ตรวจ ${formatted}`;
-}
-
-export default function IntegrationsPage() {
-  const [items, setItems] = useState<ToolIntegration[]>(INITIAL_FALLBACK_ITEMS);
+export default function GbpReviewsPage() {
   const [locations, setLocations] = useState<GbpLocation[]>(INITIAL_LOCATIONS);
   const [reviews, setReviews] = useState<GbpReview[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedLocFilter, setSelectedLocFilter] = useState<string>('ALL');
-  const [filterStatus, setFilterStatus] = useState<string>('ทั้งหมด');
+  const [replyFilter, setReplyFilter] = useState<'ALL' | 'UNREPLIED' | 'REPLIED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Tool Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ToolIntegration | null>(null);
-
-  // Review Modal state
+  // Add Review Modal
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     locationId: 'loc-car',
@@ -163,11 +104,14 @@ export default function IntegrationsPage() {
     repliedBy: '',
   });
 
-  // Reply Modal state
+  // Reply Modal
   const [replyTarget, setReplyTarget] = useState<GbpReview | null>(null);
   const [replyForm, setReplyForm] = useState({ replyText: '', repliedBy: '' });
 
-  // Location Edit Modal state
+  // Delete Review Confirm Modal
+  const [deleteReviewTarget, setDeleteReviewTarget] = useState<GbpReview | null>(null);
+
+  // Location Edit Modal
   const [locEditTarget, setLocEditTarget] = useState<GbpLocation | null>(null);
   const [locForm, setLocForm] = useState({
     rating: 4.9,
@@ -176,160 +120,24 @@ export default function IntegrationsPage() {
     lastReviewAt: '',
   });
 
-  const emptyForm = {
-    name: '',
-    status: 'ไม่ได้ใช้',
-    description: '',
-    source: '',
-    destination: '— (ยังไม่ได้ต่อเข้าเว็บ MKT)',
-    syncSchedule: '',
-    lifespan: '',
-    cost: '',
-    usageLimit: '',
-    linkLabel: '',
-    linkUrl: '',
-    checkedAt: getTodayThaiShort(),
-  };
-
-  const [formData, setFormData] = useState(emptyForm);
-
-  const fetchItems = async () => {
+  const fetchData = async () => {
     try {
       const res = await fetchWorkspace('/api/integrations', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.items) && data.items.length > 0) setItems(data.items);
         if (Array.isArray(data.locations) && data.locations.length > 0) setLocations(data.locations);
         if (Array.isArray(data.reviews)) setReviews(data.reviews);
       }
     } catch (error) {
-      console.error('Error loading integrations:', error);
+      console.error('Error loading GBP reviews:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchItems();
+    fetchData();
   }, []);
-
-  const getStatusClass = (status: string) => {
-    if (status === 'ใช้งานอยู่') return styles.statusActive;
-    if (status === 'ทดลองใช้') return styles.statusTrial;
-    if (status === 'สำรองข้อมูล') return styles.statusBackup;
-    return styles.statusUnused;
-  };
-
-  const openCreateModal = () => {
-    setIsEditing(false);
-    setEditingId(null);
-    setFormData({
-      ...emptyForm,
-      checkedAt: getTodayThaiShort(),
-    });
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (item: ToolIntegration) => {
-    setIsEditing(true);
-    setEditingId(item.id);
-    setFormData({
-      name: item.name,
-      status: item.status,
-      description: item.description,
-      source: item.source,
-      destination: item.destination,
-      syncSchedule: item.syncSchedule,
-      lifespan: item.lifespan,
-      cost: item.cost,
-      usageLimit: item.usageLimit,
-      linkLabel: item.linkLabel,
-      linkUrl: item.linkUrl,
-      checkedAt: item.checkedAt,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const method = isEditing ? 'PUT' : 'POST';
-      const payload = isEditing ? { id: editingId, ...formData } : formData;
-      const res = await fetchWorkspace('/api/integrations', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        toast.success(isEditing ? 'บันทึกการแก้ไขเรียบร้อย' : 'เพิ่มรายการใหม่เรียบร้อย');
-        setIsModalOpen(false);
-        fetchItems();
-      } else {
-        toast.error('ไม่สามารถบันทึกข้อมูลได้');
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('เกิดข้อผิดพลาดในการบันทึก');
-    }
-  };
-
-  const handleQuickToggleStatus = async (item: ToolIntegration) => {
-    const statusOrder = ['ไม่ได้ใช้', 'ใช้งานอยู่', 'ทดลองใช้', 'สำรองข้อมูล'];
-    const nextIndex = (statusOrder.indexOf(item.status) + 1) % statusOrder.length;
-    const nextStatus = statusOrder[nextIndex];
-    const updatedItem = { ...item, status: nextStatus, checkedAt: getTodayThaiShort() };
-
-    setItems(prev => prev.map(i => (i.id === item.id ? updatedItem : i)));
-
-    try {
-      await fetchWorkspace('/api/integrations', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedItem),
-      });
-      toast.success(`เปลี่ยนสถานะ ${item.name} เป็น "${nextStatus}"`);
-    } catch (error) {
-      console.error(error);
-      fetchItems();
-    }
-  };
-
-  const handleStampToday = async (item: ToolIntegration) => {
-    const todayStr = getTodayThaiShort();
-    const updatedItem = { ...item, checkedAt: todayStr };
-    setItems(prev => prev.map(i => (i.id === item.id ? updatedItem : i)));
-
-    try {
-      await fetchWorkspace('/api/integrations', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedItem),
-      });
-      toast.success(`อัปเดตวันที่ตรวจของ ${item.name} เป็นวันนี้แล้ว`);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      const res = await fetchWorkspace(`/api/integrations?id=${deleteTarget.id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        toast.success(`ลบ "${deleteTarget.name}" เรียบร้อย`);
-        setDeleteTarget(null);
-        fetchItems();
-      } else {
-        toast.error('ไม่สามารถลบข้อมูลได้');
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('เกิดข้อผิดพลาดในการลบ');
-    }
-  };
 
   const handleSaveReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -337,7 +145,7 @@ export default function IntegrationsPage() {
       const res = await fetchWorkspace('/api/integrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'review', ...reviewForm }),
+        body: JSON.stringify(reviewForm),
       });
       if (res.ok) {
         toast.success('บันทึกรีวิว Google Business Profile เรียบร้อย');
@@ -351,7 +159,7 @@ export default function IntegrationsPage() {
           replyText: '',
           repliedBy: '',
         });
-        fetchItems();
+        fetchData();
       } else {
         toast.error('ไม่สามารถบันทึกรีวิวได้');
       }
@@ -378,7 +186,7 @@ export default function IntegrationsPage() {
       if (res.ok) {
         toast.success('บันทึกการตอบกลับรีวิวเรียบร้อย');
         setReplyTarget(null);
-        fetchItems();
+        fetchData();
       }
     } catch (error) {
       console.error(error);
@@ -402,7 +210,7 @@ export default function IntegrationsPage() {
       if (res.ok) {
         toast.success(`อัปเดตสถิติรีวิวของ ${locEditTarget.name} เรียบร้อย`);
         setLocEditTarget(null);
-        fetchItems();
+        fetchData();
       }
     } catch (error) {
       console.error(error);
@@ -410,47 +218,42 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handleDeleteReview = async (id: string) => {
+  const handleConfirmDeleteReview = async () => {
+    if (!deleteReviewTarget) return;
     try {
-      const res = await fetchWorkspace(`/api/integrations?id=${id}&kind=review`, {
+      const res = await fetchWorkspace(`/api/integrations?id=${deleteReviewTarget.id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
-        toast.success('ลบรีวิวเรียบร้อย');
-        fetchItems();
+        toast.success('ลบรายการรีวิวเรียบร้อย');
+        setDeleteReviewTarget(null);
+        fetchData();
       }
     } catch (error) {
       console.error(error);
+      toast.error('เกิดข้อผิดพลาดในการลบรีวิว');
     }
   };
 
-  const filteredItems = items.filter(item => {
-    const matchesStatus =
-      filterStatus === 'ทั้งหมด'
-        ? true
-        : filterStatus === 'อื่นๆ'
-        ? item.status !== 'ใช้งานอยู่' && item.status !== 'ไม่ได้ใช้'
-        : item.status === filterStatus;
+  const filteredReviews = reviews.filter(r => {
+    if (selectedLocFilter !== 'ALL' && r.locationId !== selectedLocFilter) return false;
+    const hasReply = Boolean(r.replyText?.trim());
+    if (replyFilter === 'UNREPLIED' && hasReply) return false;
+    if (replyFilter === 'REPLIED' && !hasReply) return false;
 
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return matchesStatus;
-
-    const matchesSearch =
-      item.name.toLowerCase().includes(q) ||
-      item.description.toLowerCase().includes(q) ||
-      item.source.toLowerCase().includes(q) ||
-      item.destination.toLowerCase().includes(q) ||
-      item.cost.toLowerCase().includes(q);
-
-    return matchesStatus && matchesSearch;
+    if (!q) return true;
+    return (
+      r.reviewerName.toLowerCase().includes(q) ||
+      r.comment.toLowerCase().includes(q) ||
+      (r.replyText || '').toLowerCase().includes(q) ||
+      (r.repliedBy || '').toLowerCase().includes(q)
+    );
   });
-
-  const filteredReviews = reviews.filter(r =>
-    selectedLocFilter === 'ALL' ? true : r.locationId === selectedLocFilter
-  );
 
   const totalReviewsAll = locations.reduce((acc, l) => acc + Number(l.totalReviews || 0), 0);
   const totalRepliedAll = locations.reduce((acc, l) => acc + Number(l.repliedCount || 0), 0);
+  const totalUnrepliedAll = Math.max(0, totalReviewsAll - totalRepliedAll);
   const weightedRating =
     totalReviewsAll > 0
       ? (
@@ -466,29 +269,37 @@ export default function IntegrationsPage() {
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <span className={styles.eyebrow}>
-            <HiGlobeAlt size={14} /> Porter Metrics · Google Business Profile (1 บัญชี / 3 สถานที่)
+            <HiStar size={14} /> Google Business Profile · 1 บัญชี / 3 สถานที่
           </span>
-          <h1 className={styles.pageTitle}>ตรวจรีวิว Google Business Profile &amp; ระบบเชื่อมต่อ</h1>
+          <h1 className={styles.pageTitle}>ตรวจรีวิว Google Business Profile</h1>
           <p className={styles.pageSubtitle}>
-            ติดตามคะแนนรีวิว Google Business Profile ทั้ง 3 สถานที่ (GOODFILM, มโหฬารฟิล์ม, MHL CARFILM) และจัดการการ์ด Porter Metrics
+            ติดตามคะแนนดาวและบันทึกการตอบกลับรีวิวทั้ง 3 สถานที่ (GOODFILM, มโหฬารฟิล์ม อาคาร, MHL CARFILM)
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button
-            type="button"
+          <a
+            href="https://portermetrics.com/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn btn-secondary"
-            onClick={() => setIsReviewModalOpen(true)}
-            style={{ borderRadius: '12px', fontWeight: 600 }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              borderRadius: '12px',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
           >
+            เปิด Porter Metrics <HiArrowTopRightOnSquare size={16} />
+          </a>
+          <button type="button" className={styles.addBtn} onClick={() => setIsReviewModalOpen(true)}>
             <HiPlus size={18} /> บันทึกรีวิว GBP ใหม่
-          </button>
-          <button type="button" className={styles.addBtn} onClick={openCreateModal}>
-            <HiPlus size={18} /> เพิ่มการ์ดระบบเชื่อมต่อ
           </button>
         </div>
       </div>
 
-      {/* Summary Cards for GBP 1 Account / 3 Locations */}
+      {/* Summary Cards */}
       <div className={styles.summaryGrid}>
         <div className={styles.summaryCard}>
           <div className={styles.summaryIcon} style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
@@ -496,7 +307,7 @@ export default function IntegrationsPage() {
           </div>
           <div>
             <div className={styles.summaryValue} style={{ color: '#b45309' }}>{weightedRating} ★</div>
-            <div className={styles.summaryLabel}>คะแนนเฉลี่ยรวม 3 สถานที่ (GBP)</div>
+            <div className={styles.summaryLabel}>คะแนนเฉลี่ยรวม 3 สถานที่</div>
           </div>
         </div>
 
@@ -506,7 +317,7 @@ export default function IntegrationsPage() {
           </div>
           <div>
             <div className={styles.summaryValue}>{totalReviewsAll}</div>
-            <div className={styles.summaryLabel}>รีวิวสะสมทั้งหมด (1 บัญชี / 3 สถานที่)</div>
+            <div className={styles.summaryLabel}>รีวิวสะสมทั้งหมด (3 สถานที่)</div>
           </div>
         </div>
 
@@ -516,165 +327,50 @@ export default function IntegrationsPage() {
           </div>
           <div>
             <div className={styles.summaryValue} style={{ color: '#059669' }}>{replyPercent}%</div>
-            <div className={styles.summaryLabel}>อัตราการตอบกลับรีวิว ({totalRepliedAll}/{totalReviewsAll})</div>
+            <div className={styles.summaryLabel}>อัตราการตอบกลับ ({totalRepliedAll}/{totalReviewsAll})</div>
           </div>
         </div>
 
         <div className={styles.summaryCard}>
-          <div className={styles.summaryIcon} style={{ backgroundColor: '#eff6ff', color: '#0284c7' }}>
-            <HiOutlineSparkles />
+          <div
+            className={styles.summaryIcon}
+            style={{
+              backgroundColor: totalUnrepliedAll > 0 ? '#fff7ed' : '#f1f5f9',
+              color: totalUnrepliedAll > 0 ? '#ea580c' : '#64748b',
+            }}
+          >
+            <HiClock />
           </div>
           <div>
-            <div className={styles.summaryValue} style={{ color: '#0284c7' }}>Free Forever</div>
-            <div className={styles.summaryLabel}>Porter Metrics (ดูย้อนหลัง 15-30 วัน)</div>
+            <div
+              className={styles.summaryValue}
+              style={{ color: totalUnrepliedAll > 0 ? '#ea580c' : '#475569' }}
+            >
+              {totalUnrepliedAll}
+            </div>
+            <div className={styles.summaryLabel}>รีวิวที่รอตอบกลับ</div>
           </div>
         </div>
       </div>
 
-      {/* Section 1: Porter Metrics & Integration Cards (Exact Design from Screenshot) */}
+      {/* Section 1: 3 Google Business Profile Locations */}
       <div style={{ marginBottom: '2rem' }}>
-        <div className={styles.toolbar}>
-          <div className={styles.filterTabs}>
-            {['ทั้งหมด', 'ใช้งานอยู่', 'ไม่ได้ใช้', 'อื่นๆ'].map(tab => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setFilterStatus(tab)}
-                className={`${styles.filterTab} ${filterStatus === tab ? styles.filterTabActive : ''}`}
-              >
-                {tab === 'อื่นๆ' ? 'สำรอง / ทดลองใช้' : tab}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.searchWrap}>
-            <HiMagnifyingGlass className={styles.searchIcon} size={18} />
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="ค้นหา Porter Metrics, Windsor, Make..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className={styles.cardsGrid}>
-          {filteredItems.map(item => (
-            <article key={item.id} className={styles.card}>
-              <div className={styles.cardTop}>
-                <h2 className={styles.cardTitle}>{item.name}</h2>
-                <button
-                  type="button"
-                  onClick={() => handleQuickToggleStatus(item)}
-                  className={`${styles.statusBadge} ${getStatusClass(item.status)}`}
-                  title="คลิกเพื่อสลับสถานะ"
-                >
-                  {item.status}
-                </button>
-              </div>
-
-              <p className={styles.cardDesc}>{item.description || '-'}</p>
-
-              <div className={styles.flowContainer}>
-                <span className={styles.flowPill}>{item.source || 'ไม่ระบุต้นทาง'}</span>
-                <span className={styles.flowArrow} aria-hidden="true">→</span>
-                <span className={styles.flowPill}>{item.destination || '— (ยังไม่ได้ต่อเข้าเว็บ MKT)'}</span>
-              </div>
-
-              <div className={styles.infoList}>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>
-                    <HiArrowPath className={styles.infoIcon} />
-                    ดึงเมื่อ
-                  </span>
-                  <span className={styles.infoValue}>{item.syncSchedule || '-'}</span>
-                </div>
-
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>
-                    <HiOutlineCalendarDays className={styles.infoIcon} />
-                    อายุ
-                  </span>
-                  <span className={styles.infoValue}>{item.lifespan || '-'}</span>
-                </div>
-
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>
-                    <HiOutlineBanknotes className={styles.infoIcon} />
-                    ค่าใช้จ่าย
-                  </span>
-                  <span className={styles.infoValue}>{item.cost || '-'}</span>
-                </div>
-
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>
-                    <HiClock className={styles.infoIcon} />
-                    ใช้ไป
-                  </span>
-                  <span className={styles.infoValue}>{item.usageLimit || '-'}</span>
-                </div>
-              </div>
-
-              <div className={styles.cardFooter}>
-                <div>
-                  {item.linkUrl ? (
-                    <a
-                      href={item.linkUrl.startsWith('http') ? item.linkUrl : `https://${item.linkUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.openLink}
-                    >
-                      {item.linkLabel || `เปิด ${item.name}`}
-                      <HiArrowTopRightOnSquare size={16} />
-                    </a>
-                  ) : (
-                    <span className={styles.openLinkMuted}>{item.linkLabel || 'ไม่มีลิงก์'}</span>
-                  )}
-                </div>
-
-                <div className={styles.footerRight}>
-                  <div className={styles.cardActions}>
-                    <button
-                      type="button"
-                      className={styles.iconBtn}
-                      onClick={() => openEditModal(item)}
-                      title="แก้ไขข้อมูล"
-                    >
-                      <HiPencilSquare size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      onClick={() => setDeleteTarget(item)}
-                      title="ลบรายการ"
-                    >
-                      <HiOutlineTrash size={16} />
-                    </button>
-                  </div>
-                  <span
-                    className={styles.checkedText}
-                    onClick={() => handleStampToday(item)}
-                    title="คลิกเพื่ออัปเดตเป็นวันที่ตรวจวันนี้"
-                  >
-                    {item.checkedAt || getTodayThaiShort()}
-                  </span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      {/* Section 2: Google Business Profile 3 Locations Breakdown */}
-      <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '1rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              สถานที่ใน Google Business Profile (1 บัญชี / 3 สถานที่)
+              ภาพรวมรายสถานที่ (1 บัญชี / 3 สถานที่)
             </h2>
             <p style={{ fontSize: '0.85rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              คลิกปุ่มดินสอที่แต่ละสาขาเพื่ออัปเดตยอดรีวิวสะสม หรือกดลิงก์เพื่อดูใน Google Maps
+              กดไอคอนดินสอเพื่อปรับปรุงยอดรีวิวสะสม หรือกดเปิด Google Maps เพื่อตรวจหน้าร้านจริง
             </p>
           </div>
         </div>
@@ -700,7 +396,7 @@ export default function IntegrationsPage() {
                 </p>
 
                 <div className={styles.flowContainer}>
-                  <span className={styles.flowPill}>รีวิวทั้งหมด {loc.totalReviews} รายการ</span>
+                  <span className={styles.flowPill}>รีวิวสะสม {loc.totalReviews} รายการ</span>
                   <span className={styles.flowArrow}>→</span>
                   <span className={styles.flowPill}>
                     ตอบแล้ว {loc.repliedCount} รายการ {unreplied > 0 ? `(รอตอบ ${unreplied})` : '(ครบ 100%)'}
@@ -752,7 +448,7 @@ export default function IntegrationsPage() {
         </div>
       </div>
 
-      {/* Section 3: Recent GBP Reviews & Reply Log */}
+      {/* Section 2: Recent GBP Reviews & Reply Log */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -769,298 +465,213 @@ export default function IntegrationsPage() {
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '0.75rem',
-            marginBottom: '1.25rem',
+            marginBottom: '1rem',
           }}
         >
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              รายการตรวจรีวิวล่าสุด (Google Business Profile)
+              รายการตรวจรีวิวลูกค้า &amp; การตอบกลับ
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              บันทึกและติดตามการตอบกลับรีวิวของลูกค้าจาก Porter Metrics / Google Maps
+              บันทึกข้อความรีวิวจากลูกค้าและติดตามสถานะการตอบกลับของแต่ละธุรกิจ
             </p>
           </div>
 
-          <div className={styles.filterTabs}>
-            <button
-              type="button"
-              onClick={() => setSelectedLocFilter('ALL')}
-              className={`${styles.filterTab} ${selectedLocFilter === 'ALL' ? styles.filterTabActive : ''}`}
-            >
-              ทุกสถานที่ ({reviews.length})
-            </button>
-            {locations.map(l => (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div className={styles.filterTabs}>
               <button
-                key={l.id}
                 type="button"
-                onClick={() => setSelectedLocFilter(l.id)}
-                className={`${styles.filterTab} ${selectedLocFilter === l.id ? styles.filterTabActive : ''}`}
+                onClick={() => setSelectedLocFilter('ALL')}
+                className={`${styles.filterTab} ${selectedLocFilter === 'ALL' ? styles.filterTabActive : ''}`}
               >
-                {l.businessKey}
+                ทุกสถานที่ ({reviews.length})
               </button>
-            ))}
+              {locations.map(l => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => setSelectedLocFilter(l.id)}
+                  className={`${styles.filterTab} ${selectedLocFilter === l.id ? styles.filterTabActive : ''}`}
+                >
+                  {l.businessKey}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.filterTabs}>
+              <button
+                type="button"
+                onClick={() => setReplyFilter('ALL')}
+                className={`${styles.filterTab} ${replyFilter === 'ALL' ? styles.filterTabActive : ''}`}
+              >
+                ทั้งหมด
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplyFilter('UNREPLIED')}
+                className={`${styles.filterTab} ${replyFilter === 'UNREPLIED' ? styles.filterTabActive : ''}`}
+              >
+                รอตอบกลับ
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplyFilter('REPLIED')}
+                className={`${styles.filterTab} ${replyFilter === 'REPLIED' ? styles.filterTabActive : ''}`}
+              >
+                ตอบแล้ว
+              </button>
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {filteredReviews.map(rev => {
-            const loc = locations.find(l => l.id === rev.locationId);
-            return (
-              <div
-                key={rev.id}
-                style={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '14px',
-                  padding: '1rem 1.2rem',
-                  backgroundColor: '#fcfdff',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <div>
-                    <span style={{ fontWeight: 700, color: '#0f2942', marginRight: '0.5rem' }}>{rev.reviewerName}</span>
-                    <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.9rem' }}>
-                      {'★'.repeat(rev.rating)}{'☆'.repeat(Math.max(0, 5 - rev.rating))}
-                    </span>
-                    <span
-                      style={{
-                        marginLeft: '0.6rem',
-                        fontSize: '0.78rem',
-                        padding: '0.15rem 0.55rem',
-                        borderRadius: '999px',
-                        backgroundColor: '#eff6ff',
-                        color: '#1d4ed8',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {loc?.name || rev.locationId}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{rev.reviewDate}</span>
-                    <button
-                      type="button"
-                      className={styles.iconBtn}
-                      onClick={() => {
-                        setReplyTarget(rev);
-                        setReplyForm({ replyText: rev.replyText || '', repliedBy: rev.repliedBy || '' });
-                      }}
-                      title="ตอบกลับรีวิว"
-                    >
-                      <HiPencilSquare size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      onClick={() => handleDeleteReview(rev.id)}
-                      title="ลบรีวิว"
-                    >
-                      <HiOutlineTrash size={15} />
-                    </button>
-                  </div>
-                </div>
+        <div style={{ marginBottom: '1.1rem' }}>
+          <div className={styles.searchWrap} style={{ maxWidth: '100%' }}>
+            <HiMagnifyingGlass className={styles.searchIcon} size={18} />
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="ค้นหาชื่อลูกค้า, ข้อความรีวิว, หรือผู้ตอบกลับ..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
-                <p style={{ margin: '0.55rem 0', color: '#1e293b', fontSize: '0.92rem', lineHeight: 1.5 }}>
-                  {rev.comment}
-                </p>
-
-                {rev.replyText ? (
+        {loading && reviews.length === 0 ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+          </div>
+        ) : filteredReviews.length === 0 ? (
+          <div
+            style={{
+              borderRadius: '14px',
+              border: '1px dashed #cbd5e1',
+              padding: '2.5rem 1rem',
+              textAlign: 'center',
+              color: '#64748b',
+            }}
+          >
+            ไม่พบรายการรีวิวตามตัวกรองที่เลือก
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {filteredReviews.map(rev => {
+              const loc = locations.find(l => l.id === rev.locationId);
+              return (
+                <div
+                  key={rev.id}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '1rem 1.2rem',
+                    backgroundColor: '#fcfdff',
+                  }}
+                >
                   <div
                     style={{
-                      marginTop: '0.5rem',
-                      padding: '0.6rem 0.85rem',
-                      backgroundColor: '#f0fdf4',
-                      borderLeft: '3px solid #16a34a',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      color: '#166534',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: '0.75rem',
+                      flexWrap: 'wrap',
                     }}
                   >
-                    <strong>ตอบกลับแล้ว {rev.repliedBy ? `(${rev.repliedBy})` : ''}:</strong> {rev.replyText}
+                    <div>
+                      <span style={{ fontWeight: 700, color: '#0f2942', marginRight: '0.5rem' }}>
+                        {rev.reviewerName}
+                      </span>
+                      <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.9rem' }}>
+                        {'★'.repeat(rev.rating)}
+                        {'☆'.repeat(Math.max(0, 5 - rev.rating))}
+                      </span>
+                      <span
+                        style={{
+                          marginLeft: '0.6rem',
+                          fontSize: '0.78rem',
+                          padding: '0.15rem 0.55rem',
+                          borderRadius: '999px',
+                          backgroundColor: '#eff6ff',
+                          color: '#1d4ed8',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {loc?.name || rev.locationId}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{rev.reviewDate}</span>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => {
+                          setReplyTarget(rev);
+                          setReplyForm({
+                            replyText: rev.replyText || '',
+                            repliedBy: rev.repliedBy || loc?.owner || '',
+                          });
+                        }}
+                        title="แก้ไขคำตอบกลับรีวิว"
+                      >
+                        <HiPencilSquare size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                        onClick={() => setDeleteReviewTarget(rev)}
+                        title="ลบรีวิว"
+                      >
+                        <HiOutlineTrash size={15} />
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ marginTop: '0.4rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplyTarget(rev);
-                        setReplyForm({ replyText: '', repliedBy: loc?.owner || '' });
-                      }}
+
+                  <p style={{ margin: '0.55rem 0', color: '#1e293b', fontSize: '0.92rem', lineHeight: 1.5 }}>
+                    {rev.comment}
+                  </p>
+
+                  {rev.replyText ? (
+                    <div
                       style={{
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#ffffff',
-                        color: '#034aad',
+                        marginTop: '0.5rem',
+                        padding: '0.6rem 0.85rem',
+                        backgroundColor: '#f0fdf4',
+                        borderLeft: '3px solid #16a34a',
                         borderRadius: '8px',
-                        padding: '0.3rem 0.7rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        color: '#166534',
                       }}
                     >
-                      + บันทึกคำตอบกลับรีวิว
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                      <strong>ตอบกลับแล้ว {rev.repliedBy ? `(${rev.repliedBy})` : ''}:</strong> {rev.replyText}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: '0.4rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyTarget(rev);
+                          setReplyForm({ replyText: '', repliedBy: loc?.owner || '' });
+                        }}
+                        style={{
+                          border: '1px solid #cbd5e1',
+                          backgroundColor: '#ffffff',
+                          color: '#034aad',
+                          borderRadius: '8px',
+                          padding: '0.3rem 0.7rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        + บันทึกคำตอบกลับรีวิว
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      {/* Modal: Add/Edit Integration Tool */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={isEditing ? 'แก้ไขการ์ดระบบเชื่อมต่อ' : 'เพิ่มการ์ดระบบเชื่อมต่อใหม่'}
-        maxWidth="640px"
-      >
-        <form onSubmit={handleSave}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">ชื่อเครื่องมือ / ระบบ *</label>
-              <input
-                type="text"
-                className="form-input"
-                required
-                placeholder="เช่น Porter Metrics"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">สถานะ *</label>
-              <select
-                className="form-select"
-                value={formData.status}
-                onChange={e => setFormData({ ...formData, status: e.target.value })}
-              >
-                <option value="ไม่ได้ใช้">ไม่ได้ใช้</option>
-                <option value="ใช้งานอยู่">ใช้งานอยู่</option>
-                <option value="ทดลองใช้">ทดลองใช้</option>
-                <option value="สำรองข้อมูล">สำรองข้อมูล</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">คำอธิบายสั้นๆ (หน้าที่และการส่งข้อมูล)</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="เช่น ตรวจรีวิว Google Business Profile · ยังไม่ส่งเข้าเว็บ MKT"
-              value={formData.description}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">ต้นทางข้อมูล (Source)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="เช่น Google Business Profile 1 บัญชี / 3 สถานที่"
-                value={formData.source}
-                onChange={e => setFormData({ ...formData, source: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">ปลายทาง (Destination)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="เช่น หน้า รีวิว GBP / Porter"
-                value={formData.destination}
-                onChange={e => setFormData({ ...formData, destination: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">🔄 ดึงเมื่อ</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.syncSchedule}
-                onChange={e => setFormData({ ...formData, syncSchedule: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">💵 ค่าใช้จ่าย</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.cost}
-                onChange={e => setFormData({ ...formData, cost: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">📅 อายุการใช้งาน</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.lifespan}
-              onChange={e => setFormData({ ...formData, lifespan: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">🕒 ใช้ไป</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.usageLimit}
-              onChange={e => setFormData({ ...formData, usageLimit: e.target.value })}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group">
-              <label className="form-label">ข้อความปุ่มลิงก์</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.linkLabel}
-                onChange={e => setFormData({ ...formData, linkLabel: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">URL ลิงก์ปลายทาง</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.linkUrl}
-                onChange={e => setFormData({ ...formData, linkUrl: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">วันที่ตรวจล่าสุด</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.checkedAt}
-                onChange={e => setFormData({ ...formData, checkedAt: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-              ยกเลิก
-            </button>
-            <button type="submit" className="btn btn-primary">
-              บันทึกข้อมูล
-            </button>
-          </div>
-        </form>
-      </Modal>
 
       {/* Modal: Add GBP Review */}
       <Modal
@@ -1178,7 +789,7 @@ export default function IntegrationsPage() {
             <textarea
               className="form-input"
               rows={3}
-              required
+              placeholder="พิมพ์ข้อความตอบกลับ (เว้นว่างหากต้องการเปลี่ยนสถานะเป็นรอตอบกลับ)"
               value={replyForm.replyText}
               onChange={e => setReplyForm({ ...replyForm, replyText: e.target.value })}
             />
@@ -1267,13 +878,13 @@ export default function IntegrationsPage() {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Review Confirmation Modal */}
       <ConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleConfirmDelete}
-        title="ยืนยันการลบรายการ"
-        message={`คุณต้องการลบ "${deleteTarget?.name || ''}" ออกจากหน้าระบบเชื่อมต่อใช่หรือไม่?`}
+        isOpen={!!deleteReviewTarget}
+        onClose={() => setDeleteReviewTarget(null)}
+        onConfirm={handleConfirmDeleteReview}
+        title="ยืนยันการลบรายการรีวิว"
+        message={`ต้องการลบรีวิวของ "${deleteReviewTarget?.reviewerName || ''}" ออกจากระบบใช่หรือไม่?`}
       />
     </div>
   );
