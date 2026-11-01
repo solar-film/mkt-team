@@ -4,14 +4,17 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { HiArrowDownTray, HiBanknotes, HiPresentationChartLine } from 'react-icons/hi2';
+import {
+  HiArrowDownTray, HiArrowTrendingDown, HiArrowTrendingUp, HiBanknotes, HiCalendarDays, HiCheckCircle, HiExclamationTriangle,
+  HiInformationCircle, HiPresentationChartLine,
+} from 'react-icons/hi2';
 import { SiFacebook, SiGoogleads, SiOpenai } from 'react-icons/si';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import {
   BRANDS, change, costPerResult, cpc, ctr, daysInMonth, isMonthKey, monthLabel, PLATFORM_INFO, PLATFORMS, results, shiftMonth, thaiMonthShort,
   type Brand, type KeywordKind, type MarketData, type Metrics, type Platform,
 } from '@/lib/ads-data';
-import { breakdown, campaignLines, compare, dailySeries, findings, keywordLines, spendByMonth, type Breakdown, type Filter } from '@/lib/market-analysis';
+import { breakdown, campaignLines, compare, dailySeries, findings, keywordLines, spendByMonth, type Breakdown, type Filter, type Finding } from '@/lib/market-analysis';
 import styles from './market.module.css';
 
 export type MarketMode = 'overview' | 'analysis' | Platform;
@@ -306,26 +309,83 @@ function Tiles({ data, filter }: { data: MarketData; filter: Filter }) {
   );
 }
 
+const TONE_LABEL = { good: 'ดี', warn: 'ควรดู', info: 'ข้อมูล' } as const;
+
+function ToneIcon({ tone }: { tone: Finding['tone'] }) {
+  const Icon = tone === 'good' ? HiCheckCircle : tone === 'warn' ? HiExclamationTriangle : HiInformationCircle;
+  return <Icon className={styles.toneIcon} data-tone={tone} role="img" aria-label={TONE_LABEL[tone]} />;
+}
+
 function Analysis({ data, filter }: { data: MarketData; filter: Filter }) {
   const items = findings(data, filter);
   const perPlatform = PLATFORMS.map(platform => {
     const c = compare(data, { ...filter, platform });
     return { platform, ...c };
   }).filter(p => p.current.spend > 0 || p.prevMonth.spend > 0 || p.lastYear.spend > 0);
-  const TONE = { good: 'ดี', warn: 'ควรดู', info: 'ข้อมูล' } as const;
+  const trends = items.filter(f => f.kind === 'trend');
+  const campaigns = items.filter(f => f.kind === 'campaign');
+  const mix = items.find(f => f.kind === 'mix');
+  const { partialDay } = compare(data, filter);
+  const period = partialDay && partialDay < daysInMonth(data.month)
+    ? `ข้อมูลวันที่ ${partialDay === 1 ? '1' : `1–${partialDay}`} ${monthLabel(data.month)} เทียบช่วงวันเดียวกันของเดือนก่อนและปีก่อน`
+    : `ทั้งเดือน ${monthLabel(data.month)}`;
   return (
     <>
       <section className={styles.card}>
         <div className={styles.cardHead}><h2>สรุปจากตัวเลข · {monthLabel(data.month)}</h2><small>คำนวณตามกฎจากตัวเลขจริง ไม่ใช่ความเห็น AI</small></div>
+        <p className={styles.period}><HiCalendarDays aria-hidden /> {period}</p>
+        {partialDay !== null && partialDay <= 3 && (
+          <p className={styles.notice}>เดือนเพิ่งเริ่ม {partialDay} วัน และข้อมูลของวันนี้อาจยังเข้าไม่ครบ ตัวเลข % จึงแกว่งได้มาก ควรดูคู่กับเดือนก่อนทั้งเดือน</p>
+        )}
         {items.length === 0 ? <p className={styles.foot}>ยังไม่มีข้อมูลพอให้สรุป</p> : (
-          <ul className={styles.findings}>
-            {items.map((f, i) => (
-              <li key={i} className={styles.finding} data-tone={f.tone}>
-                <strong><span className={styles.tone}>[{TONE[f.tone]}]</span>{f.title}</strong>
-                <span>{f.detail}</span>
-              </li>
-            ))}
-          </ul>
+          <>
+            {trends.length > 0 && (
+              <ul className={styles.insightGrid}>
+                {trends.map(f => (
+                  <li key={f.label} className={styles.insight} data-tone={f.tone} title={f.title}>
+                    <span className={styles.insightLabel}><ToneIcon tone={f.tone} />{f.label}</span>
+                    <span className={styles.insightValue}>
+                      {f.value.startsWith('+') && <HiArrowTrendingUp aria-hidden />}
+                      {f.value.startsWith('-') && <HiArrowTrendingDown aria-hidden />}
+                      {f.value}
+                    </span>
+                    <span className={styles.insightDetail}>{f.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {campaigns.length > 0 && (
+              <>
+                <h3 className={styles.subhead}>แคมเปญที่ควรรู้</h3>
+                <ul className={styles.campaignList}>
+                  {campaigns.map((f, i) => (
+                    <li key={i} className={styles.campaignItem} data-tone={f.tone}>
+                      <ToneIcon tone={f.tone} />
+                      <div className={styles.campaignText}>
+                        <small>{f.label}</small>
+                        <strong>{f.campaign}</strong>
+                        <span>{f.detail}</span>
+                      </div>
+                      <span className={styles.campaignValue}>{f.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {mix?.shares && (
+              <>
+                <h3 className={styles.subhead}>{mix.label}</h3>
+                <div className={styles.shareBar} role="img" aria-label={mix.detail}>
+                  {mix.shares.map(s => <span key={s.platform} style={{ width: `${s.share * 100}%`, background: SERIES_COLOR[s.platform] }} />)}
+                </div>
+                <div className={styles.legend}>
+                  {mix.shares.map(s => (
+                    <span key={s.platform}><i className={styles.swatch} style={{ background: SERIES_COLOR[s.platform] }} />{s.label} <b>{Math.round(s.share * 100)}%</b></span>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         )}
       </section>
       <section className={styles.card}>
@@ -434,13 +494,16 @@ export default function MarketView({ mode }: { mode: MarketMode }) {
               {monthOptions(ready, month, ready?.today ?? todayFallback).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
             </select>
           </label>
-          <label>
-            แบรนด์
-            <select className="form-input" value={brand} onChange={e => setParam('brand', e.target.value === 'all' ? null : e.target.value)}>
-              <option value="all">ทุกแบรนด์</option>
-              {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </label>
+          <div className={styles.brandGroup} role="group" aria-labelledby="brand-filter-label">
+            <span id="brand-filter-label">แบรนด์</span>
+            <div className={styles.chips}>
+              {(['all', ...BRANDS] as const).map(b => (
+                <button key={b} type="button" className={styles.chip} aria-pressed={brand === b} onClick={() => setParam('brand', b === 'all' ? null : b)}>
+                  {b === 'all' ? 'ทุกแบรนด์' : b}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 // Comparisons and plain rule-based findings for the ข้อมูลตลาด pages. Pure functions so tests can pin them.
 import {
-  change, costPerResult, daysInMonth, emptyMetrics, addMetrics, monthLabel, PLATFORM_INFO, results, shiftMonth, sumMetrics,
+  change, costPerResult, daysInMonth, emptyMetrics, addMetrics, monthLabel, PLATFORM_INFO, PLATFORMS, results, shiftMonth, sumMetrics,
   type Brand, type CampaignRow, type DayRow, type KeywordKind, type KeywordRow, type KeywordStat, type MarketData, type Metrics,
   type MonthRow, type Platform,
 } from './ads-data';
@@ -138,7 +138,21 @@ export function breakdown(data: MarketData, f: Filter, by: 'platform' | 'brand')
 
 // ---------- findings ----------
 
-export interface Finding { tone: 'good' | 'warn' | 'info'; title: string; detail: string }
+/**
+ * `trend` findings are month-level comparisons shown as figure cards, `campaign` ones name a campaign,
+ * and `mix` carries the platform split. `title` + `detail` are the full sentence; `label` + `value` the card form.
+ */
+export interface Finding {
+  tone: 'good' | 'warn' | 'info';
+  kind: 'trend' | 'campaign' | 'mix';
+  title: string;
+  detail: string;
+  label: string;
+  value: string;
+  /** Campaign the finding names. */
+  campaign?: string;
+  shares?: { platform: Platform; label: string; share: number }[];
+}
 
 const baht = (n: number) => `฿${Math.round(n).toLocaleString('th-TH')}`;
 const pct = (n: number) => `${n > 0 ? '+' : ''}${Math.round(n * 100)}%`;
@@ -150,50 +164,79 @@ const NOTABLE_CHANGE = 0.2;
 export function findings(data: MarketData, f: Filter): Finding[] {
   const out: Finding[] = [];
   const c = compare(data, f);
-  const span = c.partialDay ? ` (1–${c.partialDay} ${monthLabel(data.month)} เทียบช่วงวันเดียวกัน)` : '';
 
   const spendMoM = change(c.current.spend, c.prevMonth.spend);
   if (spendMoM !== null && Math.abs(spendMoM) >= NOTABLE_CHANGE) {
-    out.push({ tone: 'info', title: `ค่าโฆษณา${spendMoM > 0 ? 'เพิ่มขึ้น' : 'ลดลง'} ${pct(spendMoM)} จากเดือนก่อน`, detail: `${baht(c.current.spend)} เทียบ ${baht(c.prevMonth.spend)}${span}` });
+    out.push({
+      tone: 'info', kind: 'trend', label: 'ค่าโฆษณา เทียบเดือนก่อน', value: pct(spendMoM),
+      title: `ค่าโฆษณา${spendMoM > 0 ? 'เพิ่มขึ้น' : 'ลดลง'} ${pct(spendMoM)} จากเดือนก่อน`,
+      detail: `${baht(c.current.spend)} เทียบ ${baht(c.prevMonth.spend)}`,
+    });
   }
   const cprNow = costPerResult(c.current);
   const cprPrev = costPerResult(c.prevMonth);
   const cprMoM = change(cprNow, cprPrev);
   if (cprNow !== null && cprPrev !== null && cprMoM !== null && Math.abs(cprMoM) >= NOTABLE_CHANGE) {
     out.push({
-      tone: cprMoM > 0 ? 'warn' : 'good',
+      tone: cprMoM > 0 ? 'warn' : 'good', kind: 'trend', label: 'ต้นทุนต่อผลลัพธ์ เทียบเดือนก่อน', value: pct(cprMoM),
       title: `ต้นทุนต่อผลลัพธ์${cprMoM > 0 ? 'แพงขึ้น' : 'ถูกลง'} ${pct(cprMoM)} จากเดือนก่อน`,
-      detail: `${baht(cprNow)} เทียบ ${baht(cprPrev)} ต่อผลลัพธ์${span}`,
+      detail: `${baht(cprNow)} เทียบ ${baht(cprPrev)} ต่อผลลัพธ์`,
     });
   }
   const spendYoY = change(c.current.spend, c.lastYear.spend);
   if (spendYoY !== null) {
-    out.push({ tone: 'info', title: `เทียบเดือนเดียวกันปีก่อน ค่าโฆษณา ${pct(spendYoY)}`, detail: `${baht(c.current.spend)} เทียบ ${baht(c.lastYear.spend)} (${monthLabel(shiftMonth(data.month, -12))})${span}` });
+    const lastYearLabel = monthLabel(shiftMonth(data.month, -12));
+    out.push({
+      tone: 'info', kind: 'trend', label: `ค่าโฆษณา เทียบ ${lastYearLabel}`, value: pct(spendYoY),
+      title: `เทียบเดือนเดียวกันปีก่อน ค่าโฆษณา ${pct(spendYoY)}`,
+      detail: `${baht(c.current.spend)} เทียบ ${baht(c.lastYear.spend)}`,
+    });
   }
 
   if (c.partialDay && c.partialDay < daysInMonth(data.month) && c.current.spend > 0) {
     const projected = (c.current.spend / c.partialDay) * daysInMonth(data.month);
-    out.push({ tone: 'info', title: `ถ้าใช้จ่ายเท่าเดิมทุกวัน สิ้นเดือนจะใช้ราว ${baht(projected)}`, detail: `ใช้ไปแล้ว ${baht(c.current.spend)} ใน ${c.partialDay} วัน (เฉลี่ยวันละ ${baht(c.current.spend / c.partialDay)})` });
+    out.push({
+      tone: 'info', kind: 'trend', label: 'คาดการณ์ค่าโฆษณาทั้งเดือน', value: baht(projected),
+      title: `ถ้าใช้จ่ายเท่าเดิมทุกวัน สิ้นเดือนจะใช้ราว ${baht(projected)}`,
+      detail: `ใช้ไปแล้ว ${baht(c.current.spend)} ใน ${c.partialDay} วัน (เฉลี่ยวันละ ${baht(c.current.spend / c.partialDay)})`,
+    });
   }
 
   const lines = campaignLines(data, f);
   const sizable = lines.filter(l => l.spend >= MIN_CAMPAIGN_SPEND);
+  const where = (l: CampaignLine) => `${PLATFORM_INFO[l.platform].label} · ${l.accountName}`;
   for (const l of sizable.filter(l => results(l) === 0).slice(0, 5)) {
-    out.push({ tone: 'warn', title: `แคมเปญใช้เงินแต่ยังไม่มีผลลัพธ์: ${l.campaignName}`, detail: `${PLATFORM_INFO[l.platform].label} · ${l.accountName} · ใช้ ${baht(l.spend)} ไม่มีลีด/แชท/Conversion (บางแคมเปญตั้งใจทำยอดเห็น/ผู้ติดตาม)` });
+    out.push({
+      tone: 'warn', kind: 'campaign', label: 'ใช้เงินแต่ยังไม่มีผลลัพธ์', value: baht(l.spend), campaign: l.campaignName,
+      title: `แคมเปญใช้เงินแต่ยังไม่มีผลลัพธ์: ${l.campaignName}`,
+      detail: `${where(l)} · ไม่มีลีด/แชท/Conversion (บางแคมเปญตั้งใจทำยอดเห็น/ผู้ติดตาม)`,
+    });
   }
   const ranked = sizable.filter(l => results(l) > 0).sort((a, b) => costPerResult(a)! - costPerResult(b)!);
   if (ranked.length >= 2) {
     const best = ranked[0];
     const worst = ranked[ranked.length - 1];
-    out.push({ tone: 'good', title: `ต้นทุนต่อผลลัพธ์ดีที่สุด: ${best.campaignName}`, detail: `${PLATFORM_INFO[best.platform].label} · ${baht(costPerResult(best)!)} ต่อผลลัพธ์ (${Math.round(results(best)).toLocaleString('th-TH')} ผลลัพธ์ จาก ${baht(best.spend)})` });
-    out.push({ tone: 'warn', title: `ต้นทุนต่อผลลัพธ์สูงที่สุด: ${worst.campaignName}`, detail: `${PLATFORM_INFO[worst.platform].label} · ${baht(costPerResult(worst)!)} ต่อผลลัพธ์ (${Math.round(results(worst)).toLocaleString('th-TH')} ผลลัพธ์ จาก ${baht(worst.spend)})` });
+    const resultsOf = (l: CampaignLine) => `${Math.round(results(l)).toLocaleString('th-TH')} ผลลัพธ์ จาก ${baht(l.spend)}`;
+    out.push({
+      tone: 'good', kind: 'campaign', label: 'ต้นทุนต่อผลลัพธ์ดีที่สุด', value: `${baht(costPerResult(best)!)}/ผลลัพธ์`, campaign: best.campaignName,
+      title: `ต้นทุนต่อผลลัพธ์ดีที่สุด: ${best.campaignName}`, detail: `${where(best)} · ${resultsOf(best)}`,
+    });
+    out.push({
+      tone: 'warn', kind: 'campaign', label: 'ต้นทุนต่อผลลัพธ์สูงที่สุด', value: `${baht(costPerResult(worst)!)}/ผลลัพธ์`, campaign: worst.campaignName,
+      title: `ต้นทุนต่อผลลัพธ์สูงที่สุด: ${worst.campaignName}`, detail: `${where(worst)} · ${resultsOf(worst)}`,
+    });
   }
 
   if (!f.platform) {
-    const parts = breakdown(data, f, 'platform').filter(p => p.spend > 0);
+    const parts = PLATFORMS.map(platform => ({ platform, spend: compare(data, { ...f, platform }).current.spend }))
+      .filter(p => p.spend > 0).sort((a, b) => b.spend - a.spend);
     const total = parts.reduce((sum, p) => sum + p.spend, 0);
     if (parts.length > 1 && total > 0) {
-      out.push({ tone: 'info', title: 'สัดส่วนค่าโฆษณาตามช่องทาง', detail: parts.map(p => `${p.label} ${Math.round((p.spend / total) * 100)}%`).join(' · ') });
+      const shares = parts.map(p => ({ platform: p.platform, label: PLATFORM_INFO[p.platform].label, share: p.spend / total }));
+      out.push({
+        tone: 'info', kind: 'mix', label: 'สัดส่วนค่าโฆษณาตามช่องทาง', value: '', shares,
+        title: 'สัดส่วนค่าโฆษณาตามช่องทาง', detail: shares.map(s => `${s.label} ${Math.round(s.share * 100)}%`).join(' · '),
+      });
     }
   }
   return out;

@@ -103,6 +103,9 @@ test('campaign lines carry last month and findings flag spend without results', 
   const titles = findings(data, { brand: 'all' }).map(f => f.title);
   assert.ok(titles.some(t => t.includes('ยังไม่มีผลลัพธ์') && t.includes('Awareness')));
   assert.ok(titles.some(t => t.startsWith('ค่าโฆษณาเพิ่มขึ้น +100%')));
+  const all = findings(data, { brand: 'all' });
+  assert.deepEqual(all.find(f => f.label === 'ค่าโฆษณา เทียบเดือนก่อน')?.value, '+100%');
+  assert.equal(all.find(f => f.kind === 'campaign' && f.tone === 'warn' && f.label === 'ใช้เงินแต่ยังไม่มีผลลัพธ์')?.campaign, 'Awareness');
 });
 
 test('keyword rows merge per account, text and match type, and keep the biggest spenders per account', () => {
