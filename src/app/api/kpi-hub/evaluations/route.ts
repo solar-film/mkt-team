@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { readJsonBody, RequestBodyError } from '@/lib/request-body';
 import { secretMatches } from '@/lib/integration-security';
+import { invalidateWorkspace } from '@/lib/workspace-cache';
 import { parseEvaluations, EvaluationInputError } from '@/lib/member-evaluation';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
       create: { memberId, year, month, ...fields },
       update: fields,
     })));
+    // The KPI กลาง page is cached until the next save; this upload is one.
+    invalidateWorkspace();
     return NextResponse.json({ saved: evaluations.length, year, month });
   } catch (error) {
     if (error instanceof EvaluationInputError) return NextResponse.json({ error: error.message }, { status: 400 });
