@@ -538,7 +538,10 @@ export default function GbpReviewsPage() {
       <div className={styles.businessGrid}>
         {locations.map(loc => {
           const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
-          const locReviews = reviews.filter(r => r.locationId === loc.id).slice(0, MAX_PER_BUSINESS);
+          const locReviews = reviews
+            .filter(r => r.locationId === loc.id)
+            .sort((a, b) => (b.reviewDate || '').localeCompare(a.reviewDate || ''))
+            .slice(0, MAX_PER_BUSINESS);
           const total = Number(loc.totalReviews || 0);
           const hasReviewData = locReviews.length > 0;
           const repliedLatest = locReviews.filter(r => Boolean(r.replyText?.trim())).length;
@@ -593,7 +596,7 @@ export default function GbpReviewsPage() {
                     {locReviews.length}{' '}
                     <small style={{ fontSize: '0.72rem', fontWeight: 500 }}>/ {MAX_PER_BUSINESS}</small>
                   </span>
-                  <span className={styles.metricLabel}>รีวิวล่าสุดในระบบ</span>
+                  <span className={styles.metricLabel}>รีวิวที่ดึงได้ในระบบ</span>
                 </div>
                 <div className={styles.metricCell}>
                   {hasReplyTracking && hasReviewData ? (
@@ -702,10 +705,10 @@ export default function GbpReviewsPage() {
         >
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              10 รีวิวล่าสุด แยกแต่ละธุรกิจ
+              รีวิวจาก Google Maps แยกแต่ละธุรกิจ (วันที่ใหม่สุดอยู่บน)
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
-              ข้อมูลรีวิวที่ดึงมาเก็บไว้ในฐานข้อมูล (แสดงธุรกิจละ {MAX_PER_BUSINESS} รายการล่าสุด)
+              Google API ทางการส่งเฉพาะรีวิวเด่นที่ Google คัดให้ (ไม่ใช่รีวิวใหม่ทุกรายการ) · รีวิวใหม่ที่ไม่ได้มาสามารถกด “บันทึกรีวิวเสริม” ได้
             </p>
           </div>
 
@@ -782,6 +785,7 @@ export default function GbpReviewsPage() {
               const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
               const locLatest10 = reviews
                 .filter(r => r.locationId === loc.id)
+                .sort((a, b) => (b.reviewDate || '').localeCompare(a.reviewDate || ''))
                 .slice(0, MAX_PER_BUSINESS)
                 .filter(matchesReviewFilters);
 
@@ -820,7 +824,7 @@ export default function GbpReviewsPage() {
                           color: brand.color,
                         }}
                       >
-                        แสดง {locLatest10.length} / {MAX_PER_BUSINESS} รีวิวล่าสุด
+                        {locLatest10.length} รีวิว · ใหม่สุดก่อน
                       </span>
                     </div>
                   </div>
