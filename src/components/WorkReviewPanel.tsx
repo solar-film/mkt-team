@@ -64,7 +64,7 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
     <section aria-label="ผลงาน KPI" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.9rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--color-primary)' }}>
         <HiChartBar aria-hidden /> ผลงาน KPI
-        <small style={{ marginLeft: 'auto', fontWeight: 400, color: 'var(--color-text-secondary)' }}>นับในหน้า KPI กลาง</small>
+        <small style={{ marginLeft: 'auto', fontWeight: 400, color: 'var(--color-text-secondary)' }}>นับในหน้า สรุปผลงาน &amp; ประเมิน</small>
       </header>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
         <label style={field}>

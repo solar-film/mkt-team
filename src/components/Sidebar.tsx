@@ -56,7 +56,7 @@ const navLinks = [
   { group: 'จัดการงาน/KPI', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { group: 'จัดการงาน/KPI', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
   { group: 'จัดการงาน/KPI', path: '/kpis', label: 'เป้าหมาย KPI', icon: <HiChartBar /> },
-  { group: 'จัดการงาน/KPI', path: '/kpi-hub', label: 'KPI กลาง', icon: <HiTableCells /> },
+  { group: 'จัดการงาน/KPI', path: '/kpi-hub', label: 'สรุปผลงาน & ประเมิน', icon: <HiTableCells /> },
   { group: 'จัดการงาน/KPI', path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
   { group: 'ข้อมูลตลาด', path: '/market', label: 'ภาพรวมค่าโฆษณา', icon: <HiBanknotes /> },
   { group: 'ข้อมูลตลาด', path: '/market/google', label: 'Google Ads', icon: <SiGoogleads /> },

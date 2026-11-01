@@ -59,7 +59,7 @@ export default function KpiHubPage() {
     <div className={styles.page}>
       <div className="page-header">
         <div className="page-header-content">
-          <h1>KPI กลาง</h1>
+          <h1>สรุปผลงาน &amp; ประเมิน</h1>
           <p className={styles.muted}>ผลงานทีมการตลาด ส่งตรงเวลา · คุณภาพ · ผลคอนเทนต์ · KPI รายคน · ประเมินโดยมะลิ (AI)</p>
         </div>
         <div className={styles.monthPicker} role="group" aria-label="เลือกเดือน">
