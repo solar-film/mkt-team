@@ -16,10 +16,12 @@ export interface WorkReviewValues {
 }
 
 /** "ผลงาน KPI" inside a task/content popup: the facts KPI กลาง counts. */
-export default function WorkReviewPanel({ kind, id, values, onSaved }: {
+export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }: {
   kind: 'task' | 'content';
   id: string;
   values: WorkReviewValues;
+  /** Only the Admin may set the first review result; the API enforces the same rule. */
+  canReview: boolean;
   onSaved: (saved: WorkReviewValues) => void;
 }) {
   const [form, setForm] = useState({
@@ -63,8 +65,8 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          kind, id, submittedAt, waitingOn: form.waitingOn, firstReview: form.firstReview,
-          reviseReason: form.firstReview === 'revise' ? form.reviseReason : null,
+          kind, id, submittedAt, waitingOn: form.waitingOn,
+          ...(canReview ? { firstReview: form.firstReview, reviseReason: form.firstReview === 'revise' ? form.reviseReason : null } : {}),
           ...(kind === 'content' ? { promotion: form.promotion, reach7 } : {}),
         }),
       });
@@ -95,8 +97,8 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
           <input type="date" className="form-input" value={form.submittedDay} onChange={e => setForm({ ...form, submittedDay: e.target.value })} />
         </label>
         <label style={field}>
-          <span style={label}>ผลตรวจรอบแรก</span>
-          <select className="form-select" value={form.firstReview} onChange={e => setForm({ ...form, firstReview: e.target.value })}>
+          <span style={label}>ผลตรวจรอบแรก{canReview ? '' : ' (เฉพาะ Admin)'}</span>
+          <select className="form-select" value={form.firstReview} disabled={!canReview} title={canReview ? undefined : 'เฉพาะ Admin เป็นผู้ตรวจ'} onChange={e => setForm({ ...form, firstReview: e.target.value })}>
             <option value="">ยังไม่ตรวจ</option>
             {Object.entries(FIRST_REVIEW).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
           </select>
@@ -104,7 +106,7 @@ export default function WorkReviewPanel({ kind, id, values, onSaved }: {
         {form.firstReview === 'revise' && (
           <label style={field}>
             <span style={label}>สาเหตุการแก้</span>
-            <select className="form-select" value={form.reviseReason} onChange={e => setForm({ ...form, reviseReason: e.target.value })}>
+            <select className="form-select" value={form.reviseReason} disabled={!canReview} onChange={e => setForm({ ...form, reviseReason: e.target.value })}>
               <option value="">ไม่ระบุ</option>
               {Object.entries(REVISE_REASON).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>

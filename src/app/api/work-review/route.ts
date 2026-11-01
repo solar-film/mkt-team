@@ -4,7 +4,7 @@ import { readJsonBody, RequestBodyError } from '@/lib/request-body';
 import { invalidateWorkspace } from '@/lib/workspace-cache';
 import { MEMBER_HEADER } from '@/lib/member-auth';
 import { D7_SNAPSHOT } from '@/lib/facebook-posts';
-import { parseReach7, parseWorkReview, WorkReviewError } from '@/lib/work-review';
+import { changesFirstReview, parseReach7, parseWorkReview, REVIEWER_ROLE, WorkReviewError } from '@/lib/work-review';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +38,18 @@ export async function PUT(request: Request) {
     if (!kind || !id) return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
 
     const data = parseWorkReview(body, kind);
+    if (data.firstReview !== undefined || data.reviseReason !== undefined) {
+      const memberId = request.headers.get(MEMBER_HEADER);
+      const select = { firstReview: true, reviseReason: true } as const;
+      const [before, member] = await Promise.all([
+        kind === 'task' ? prisma.task.findUnique({ where: { id }, select }) : prisma.content.findUnique({ where: { id }, select }),
+        memberId ? prisma.teamMember.findUnique({ where: { id: memberId }, select: { role: true } }) : null,
+      ]);
+      if (!before) return NextResponse.json({ error: 'ไม่พบงานนี้' }, { status: 404 });
+      if (changesFirstReview(before, data) && member?.role !== REVIEWER_ROLE) {
+        return NextResponse.json({ error: 'ผลตรวจรอบแรกแก้ได้เฉพาะ Admin' }, { status: 403 });
+      }
+    }
     if (kind === 'task') {
       const saved = await prisma.task.update({ where: { id }, data, select: REVIEW_FIELDS });
       invalidateWorkspace();

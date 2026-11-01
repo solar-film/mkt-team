@@ -52,6 +52,22 @@ export function parseWorkReview(body: Record<string, unknown>, kind: 'task' | 'c
   return review;
 }
 
+/** Only this role may set the first review result (user decision 2 Nov 69: Admin เท่านั้น). */
+export const REVIEWER_ROLE = 'Admin';
+
+/**
+ * True when an update would change the stored first review or its reason. The panel sends
+ * these fields on every save, so an unchanged value from a non-Admin is not a change.
+ */
+export function changesFirstReview(
+  before: { firstReview: string | null; reviseReason: string | null },
+  update: WorkReview
+): boolean {
+  const nextFirst = update.firstReview === undefined ? before.firstReview : update.firstReview;
+  const nextReason = update.reviseReason === undefined ? before.reviseReason : update.reviseReason;
+  return nextFirst !== before.firstReview || nextReason !== before.reviseReason;
+}
+
 const MAX_REACH = 2_147_483_647;
 
 /**

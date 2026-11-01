@@ -1179,6 +1179,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                 kind={viewItem.itemType}
                 id={viewItem.id}
                 values={viewItem}
+                canReview={members.some(m => m.id === currentUserId && m.role === 'Admin')}
                 onSaved={saved => {
                   setViewItem(prev => (prev ? { ...prev, ...saved } : prev));
                   setItems(prev => prev.map(i => (i.id === viewItem.id ? { ...i, ...saved } : i)));
