@@ -62,20 +62,33 @@ function Tile({ label, value, notes, goodUp = false }: { label: string; value: s
 }
 
 function YearChart({ data, filter, title }: { data: MarketData; filter: Filter; title: string }) {
+  const [tab, setTab] = useState<Brand | 'all'>('all');
+  const showTabs = filter.brand === 'all';
+  const chartFilter: Filter = showTabs ? { ...filter, brand: tab } : filter;
   const year = Number(data.month.slice(0, 4));
-  const bars = spendByMonth(data, filter).map(b => ({ ...b, name: thaiMonthShort(b.monthNumber) }));
+  const bars = spendByMonth(data, chartFilter).map(b => ({ ...b, name: thaiMonthShort(b.monthNumber) }));
   const thisYear = `ปี ${year + 543}`;
   const lastYear = `ปี ${year + 542}`;
+  const shownTitle = showTabs && tab !== 'all' ? `${title} · ${tab}` : title;
   return (
     <section className={styles.card}>
       <div className={styles.cardHead}>
-        <h2>{title}</h2>
+        <h2>{shownTitle}</h2>
         <div className={styles.legend}>
           <span><i className={styles.swatch} style={{ background: 'var(--series-this-year)' }} />{thisYear}</span>
           <span><i className={styles.swatch} style={{ background: 'var(--series-last-year)' }} />{lastYear}</span>
         </div>
       </div>
-      <div className={styles.chart} role="img" aria-label={`${title} รายเดือน ${thisYear} เทียบ ${lastYear}`}>
+      {showTabs && (
+        <div className={styles.chips} role="group" aria-label="เลือกธุรกิจของกราฟ" style={{ marginBottom: '0.75rem' }}>
+          {(['all', ...BRANDS] as const).map(b => (
+            <button key={b} type="button" className={styles.chip} aria-pressed={tab === b} onClick={() => setTab(b)}>
+              {b === 'all' ? 'ทุกธุรกิจ' : b}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className={styles.chart} role="img" aria-label={`${shownTitle} ${thisYear} เทียบ ${lastYear}`}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={bars} barGap={2} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="#eef0f3" />
