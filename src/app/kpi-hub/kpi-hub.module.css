@@ -350,25 +350,104 @@
   color: var(--color-primary);
 }
 
-.evalCard p {
+.evalCard {
+  gap: 0.75rem;
+}
+
+.evalScore {
+  flex: none;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: rgba(3, 74, 173, 0.08);
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.evalScoreDone {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-success);
+}
+
+/* Key numbers of the month: one short fact per line in a quiet box. */
+.evalFacts {
+  list-style: none;
   margin: 0;
-  font-size: 0.9rem;
-  white-space: pre-line;
+  padding: 0.55rem 0.75rem;
+  display: grid;
+  gap: 0.2rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.evalFacts li::before {
+  content: '·';
+  margin-right: 0.4rem;
+  font-weight: 700;
 }
 
 .evalPart {
-  border-left: 3px solid var(--color-border);
-  padding: 0.1rem 0 0.1rem 0.6rem;
+  --tone: var(--color-text-secondary);
+  display: grid;
+  gap: 0.3rem;
 }
 
 .evalPart b {
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
   font-weight: 600;
+  color: var(--tone);
 }
 
-.good { border-left-color: var(--color-success); }
-.improve { border-left-color: var(--color-warning); }
-.next { border-left-color: var(--color-primary); }
+.evalPart b svg {
+  width: 16px;
+  height: 16px;
+}
+
+.evalPart ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.evalPart li {
+  position: relative;
+  padding-left: 0.95rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--color-text-primary);
+}
+
+.evalPart li::before {
+  content: '';
+  position: absolute;
+  left: 0.15rem;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.good { --tone: var(--color-success); }
+.improve { --tone: #d97706; } /* darker than --color-warning so the heading text stays readable */
+.next { --tone: var(--color-primary); }
+
+.evalFoot {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
 
 /* ---------- reach drill-down modal ---------- */
 .overlay {

@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-  HiChartBar, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles, HiXMark,
+  HiArrowTrendingUp, HiChartBar, HiCheckCircle, HiLightBulb, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles, HiXMark,
 } from 'react-icons/hi2';
 import styles from './kpi-hub.module.css';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -310,30 +310,51 @@ function Evaluations({ members }: { members: MemberSummary[] }) {
       </div>
       <p className={styles.muted}>มะลิอ่านตัวเลขในหน้านี้แล้วสรุปจุดเด่น สิ่งที่ควรพัฒนา และสิ่งที่ควรทำเดือนหน้า · ใช้ประกอบการคุยกัน ไม่ใช่คำตัดสินสุดท้าย</p>
       <div className={styles.evalGrid}>
-        {members.map(m => (
-          <article key={m.memberId} className={styles.evalCard}>
-            <header className={styles.who}><MemberAvatar name={m.name} size="sm" /><b>{m.name}</b></header>
-            {m.evaluation ? (
-              <>
-                <p>{m.evaluation.summary}</p>
-                {m.evaluation.strengths && <EvalPart title="จุดเด่น" text={m.evaluation.strengths} tone="good" />}
-                {m.evaluation.improvements && <EvalPart title="ควรพัฒนา" text={m.evaluation.improvements} tone="improve" />}
-                {m.evaluation.nextSteps && <EvalPart title="เดือนหน้าลองทำ" text={m.evaluation.nextSteps} tone="next" />}
-                <small className={styles.muted}>{m.evaluation.source} · อัปเดต {thaiDay(bangkokDateKey(m.evaluation.updatedAt))}</small>
-              </>
-            ) : <p className={styles.empty}>มะลิยังไม่ได้ประเมินเดือนนี้</p>}
-          </article>
-        ))}
+        {members.map(m => {
+          const scorePct = percent(kpiScore(m.kpis));
+          const evaluation = m.evaluation;
+          return (
+            <article key={m.memberId} className={styles.evalCard}>
+              <header className={styles.kpiHead}>
+                <span className={styles.who}><MemberAvatar name={m.name} size="sm" /><b>{m.name}</b></span>
+                {scorePct !== null && (
+                  <span className={`${styles.evalScore} ${scorePct >= 100 ? styles.evalScoreDone : ''}`} title="คะแนน KPI เดือนนี้">KPI {scorePct}%</span>
+                )}
+              </header>
+              {evaluation ? (
+                <>
+                  <ul className={styles.evalFacts}>
+                    {evalLines(evaluation.summary, true).map((line, i) => <li key={i}>{line}</li>)}
+                  </ul>
+                  {evaluation.strengths && <EvalPart title="จุดเด่น" text={evaluation.strengths} tone="good" icon={<HiCheckCircle aria-hidden />} />}
+                  {evaluation.improvements && <EvalPart title="ควรพัฒนา" text={evaluation.improvements} tone="improve" icon={<HiArrowTrendingUp aria-hidden />} />}
+                  {evaluation.nextSteps && <EvalPart title="เดือนหน้าลองทำ" text={evaluation.nextSteps} tone="next" icon={<HiLightBulb aria-hidden />} />}
+                  <small className={styles.evalFoot}>{evaluation.source.split(' · ')[0]} · อัปเดต {thaiDay(bangkokDateKey(evaluation.updatedAt))}</small>
+                </>
+              ) : <p className={styles.empty}>มะลิยังไม่ได้ประเมินเดือนนี้</p>}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-function EvalPart({ title, text, tone }: { title: string; text: string; tone: 'good' | 'improve' | 'next' }) {
+/** One point per line; the summary also splits on " · ". Leading "-", "•" or "1." marks are dropped. */
+function evalLines(text: string, splitDots = false): string[] {
+  return text
+    .split(splitDots ? /\n| · / : /\n/)
+    .map(line => line.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function EvalPart({ title, text, tone, icon }: { title: string; text: string; tone: 'good' | 'improve' | 'next'; icon: ReactNode }) {
   return (
     <div className={`${styles.evalPart} ${styles[tone]}`}>
-      <b>{title}</b>
-      <p>{text}</p>
+      <b>{icon}{title}</b>
+      <ul>
+        {evalLines(text).map((line, i) => <li key={i}>{line}</li>)}
+      </ul>
     </div>
   );
 }

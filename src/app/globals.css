@@ -1090,6 +1090,46 @@ b, strong { font-weight: 600; }
   margin-top: 1rem;
 }
 
+/* Add/edit work form on /tasks: even 0.75rem rhythm, 40px fields.
+   !important beats the inline margins and the dropdown's inline min-height in that markup. */
+.compact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.compact-form > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.compact-form .form-group { margin-bottom: 0; }
+.compact-form .form-row,
+.compact-form .form-row-2col { gap: 0.75rem; }
+
+.compact-form .form-label {
+  margin-bottom: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.compact-form .form-input,
+.compact-form .form-select {
+  min-height: 40px !important;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.compact-form .form-select { padding-right: 2rem; }
+
+.compact-form textarea.form-input,
+.compact-form .form-textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+/* The KPI box and LINE checkbox keep their own padding, just less of it. */
+.compact-form > .form-group[style*="padding"] { padding: 0.75rem !important; }
+
 /* Animations */
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

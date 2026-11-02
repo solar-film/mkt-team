@@ -833,7 +833,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? (newItemType === 'task' ? "แก้ไขงาน" : "แก้ไขคอนเท้น") : "เพิ่มรายการใหม่"}>
         {!isEditing && (
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', padding: '0.25rem', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', padding: '0.25rem', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
             <button 
               type="button"
               onClick={() => setNewItemType('task')}
@@ -851,7 +851,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
           </div>
         )}
         {newItemType === 'task' ? (
-          <form onSubmit={guard(handleTaskSubmit)}>
+          <form className="compact-form" onSubmit={guard(handleTaskSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่องาน *</label>
               <input type="text" className="form-input" required value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
@@ -945,7 +945,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             </div>
           </form>
         ) : (
-          <form onSubmit={guard(handleContentSubmit)}>
+          <form className="compact-form" onSubmit={guard(handleContentSubmit)}>
             <div className="form-group">
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
