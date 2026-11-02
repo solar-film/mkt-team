@@ -17,7 +17,7 @@ export default function UnifiedTasksPage() {
           animation: custom-pulse 1.2s ease-in-out infinite;
         }
       `}</style>
-      <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="page-header" style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div className="page-header-content">
           <h1>จัดการงาน & คอนเท้น</h1>
           <p className="desktop-only">ติดตามสถานะงานของทุกคนในทีมและวางแผนการตลาดในบอร์ดเดียว</p>

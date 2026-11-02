@@ -6,7 +6,7 @@ import { matchesMemberSelection, matchesCompanySelection, memberSelectionLabel }
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
-import { HiPlus, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
+import { HiPlus, HiOutlineMagnifyingGlass, HiOutlineCalendar, HiOutlineCalendarDays, HiOutlineTrash, HiOutlinePencilSquare, HiArrowRight, HiArrowLeft, HiDocumentText, HiClipboardDocumentList } from 'react-icons/hi2';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -615,23 +615,30 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
 
   return (
     <div style={{ padding: '0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="🔍 ค้นหา..."
-            style={{ minWidth: '150px', maxWidth: '200px', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <select 
-            className="form-select" 
-            style={{ minWidth: '110px', maxWidth: '150px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
-            value={filterMemberId}
-            onChange={(e) => setFilterMemberId(e.target.value)}
-          >
-            <option value="">-- ทุกคน --</option>
+      <div className="task-toolbar">
+        <div className="task-toolbar-top">
+          <div className="view-tabs desktop-only-flex" role="tablist" aria-label="รูปแบบการแสดง">
+            <button type="button" role="tab" aria-selected={view === 'board'} className={view === 'board' ? 'active' : ''} onClick={() => chooseView('board')}>บอร์ด</button>
+            <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'active' : ''} onClick={() => chooseView('list')}>รายการ</button>
+          </div>
+          <button type="button" className="btn btn-primary task-toolbar-add" onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
+            <HiPlus aria-hidden /> เพิ่มรายการใหม่
+          </button>
+        </div>
+        <div className="task-toolbar-filters">
+          <label className="task-toolbar-field task-toolbar-search">
+            <HiOutlineMagnifyingGlass aria-hidden />
+            <input
+              type="search"
+              className="form-input"
+              placeholder="ค้นหา..."
+              aria-label="ค้นหางานหรือคอนเทนต์"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </label>
+          <select className="form-select" aria-label="ผู้รับผิดชอบ" value={filterMemberId} onChange={(e) => setFilterMemberId(e.target.value)}>
+            <option value="">ทุกคน</option>
             {members.filter(m => m.status !== 'inactive').sort((a, b) => {
               const order = ['OIL', 'TAW', 'PLENG', 'NON'];
               const idxA = order.indexOf(a.name);
@@ -644,33 +651,18 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
-          <select 
-            className="form-select" 
-            style={{ minWidth: '90px', maxWidth: '110px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
-            value={filterCompany}
-            onChange={(e) => setFilterCompany(e.target.value)}
-          >
+          <select className="form-select" aria-label="บริษัท" value={filterCompany} onChange={(e) => setFilterCompany(e.target.value)}>
             <option value="all">ทุกบริษัท</option>
             <option value="GFS">GFS</option>
             <option value="MHL">MHL</option>
             <option value="CAR">CAR</option>
           </select>
-          <select 
-            className="form-select" 
-            style={{ minWidth: '90px', maxWidth: '110px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
+          <select className="form-select" aria-label="ประเภท" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             <option value="task">งานทั่วไป</option>
             <option value="content">คอนเทนต์</option>
           </select>
-          <select 
-            className="form-select" 
-            style={{ minWidth: '110px', maxWidth: '130px', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.85rem' }}
-            value={filterPlatform}
-            onChange={(e) => setFilterPlatform(e.target.value)}
-          >
+          <select className="form-select" aria-label="แพลตฟอร์ม" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
             <option value="all">ทุกแพลตฟอร์ม</option>
             <option value="Facebook">Facebook</option>
             <option value="Instagram">Instagram</option>
@@ -679,51 +671,34 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
             <option value="YouTube">YouTube</option>
             <option value="Google Map">Google Map</option>
           </select>
-          <div style={{ display: 'flex', gap: '0.4rem', zIndex: 10 }}>
-            <div style={{ width: '90px' }}>
-              <DatePicker
-                selected={filterMonthYear}
-                onChange={(date: Date | null) => { setFilterMonthYear(date); setFilterExactDate(null); }}
-                onInputClick={() => setFilterExactDate(null)}
-                dateFormat="MM/yyyy"
-                showMonthYearPicker
-                className="form-select"
-                placeholderText="เดือน/ปี"
-                wrapperClassName="w-full"
-              />
-            </div>
-            <div style={{ width: '130px' }}>
-              <DatePicker
-                selected={filterExactDate}
-                onChange={(date: Date | null) => { setFilterExactDate(date); setFilterMonthYear(null); }}
-                onInputClick={() => setFilterMonthYear(null)}
-                dateFormat="dd/MM/yyyy"
-                className="form-select"
-                placeholderText="📅 ระบุวันที่"
-                isClearable
-                wrapperClassName="w-full"
-              />
-            </div>
+          <div className="task-toolbar-field task-toolbar-month" title="เดือน/ปี">
+            <HiOutlineCalendar aria-hidden />
+            <DatePicker
+              selected={filterMonthYear}
+              onChange={(date: Date | null) => { setFilterMonthYear(date); setFilterExactDate(null); }}
+              onInputClick={() => setFilterExactDate(null)}
+              dateFormat="MM/yyyy"
+              showMonthYearPicker
+              className="form-input"
+              placeholderText="เดือน/ปี"
+            />
           </div>
-        </div>
-        <div style={{ display: 'flex', flexShrink: 0 }}>
-          <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }} onClick={() => { setIsEditing(false); setNewItemType('task'); setTaskForm({ title: '', description: '', memberId: '', priority: 'medium', startDate: '', deadline: '', kpiId: '', link: '', company: '' }); setContentForm({ title: '', description: '', type: '', platform: '', memberId: '', company: '', publishDate: '', kpiId: '', link: '' }); setIsModalOpen(true); }}>
-            <HiPlus /> เพิ่มรายการใหม่
-          </button>
-          {events.length > 0 && (
-            <span style={{ fontSize: '10px', color: 'transparent', userSelect: 'none' }}>
-              DB:{events.find(e => e.title?.includes('OIL'))?.date?.substring(0, 10)} | 
-              T:{format(filterExactDate ? new Date(filterExactDate) : new Date(), 'yyyy-MM-dd')}
-            </span>
-          )}
+          <div className="task-toolbar-field task-toolbar-day" title="เลือกวันที่">
+            <HiOutlineCalendarDays aria-hidden />
+            <DatePicker
+              selected={filterExactDate}
+              onChange={(date: Date | null) => { setFilterExactDate(date); setFilterMonthYear(null); }}
+              onInputClick={() => setFilterMonthYear(null)}
+              dateFormat="dd/MM/yyyy"
+              className="form-input"
+              placeholderText="วันที่"
+              isClearable
+            />
+          </div>
         </div>
       </div>
 
       <div className="desktop-only">
-        <div className="view-tabs" role="tablist" aria-label="รูปแบบการแสดง">
-          <button type="button" role="tab" aria-selected={view === 'board'} className={view === 'board' ? 'active' : ''} onClick={() => chooseView('board')}>บอร์ด</button>
-          <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'active' : ''} onClick={() => chooseView('list')}>รายการ</button>
-        </div>
         {view === 'board' ? (
           <div className="kanban-board">
             {renderColumn('todo', 'รอดำเนินการ')}

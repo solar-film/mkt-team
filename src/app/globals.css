@@ -520,6 +520,103 @@ b, strong { font-weight: 600; }
   box-shadow: 0 1px 3px rgba(15, 42, 77, 0.12);
 }
 
+/* /tasks toolbar: row 1 = view tabs + add button, row 2 = filters; every control is 36px tall. */
+.task-toolbar {
+  position: relative;
+  z-index: 10; /* date picker popups open above the board */
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.task-toolbar-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.task-toolbar .view-tabs {
+  flex: none;
+  height: 36px;
+  margin-bottom: 0;
+}
+
+.task-toolbar .view-tabs button {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.task-toolbar-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-toolbar .form-input,
+.task-toolbar .form-select {
+  height: 36px;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.task-toolbar .form-select {
+  width: auto;
+  max-width: 150px;
+  padding-right: 1.75rem;
+  cursor: pointer;
+}
+
+.task-toolbar-field {
+  position: relative;
+  flex: none;
+  margin: 0;
+}
+
+.task-toolbar-field > svg {
+  position: absolute;
+  top: 50%;
+  left: 0.65rem;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.task-toolbar-field .form-input {
+  padding-left: 2rem;
+}
+
+.task-toolbar-search { flex: 1 1 180px; min-width: 160px; max-width: 320px; }
+.task-toolbar-month { width: 112px; }
+.task-toolbar-day { width: 140px; }
+.task-toolbar-month .form-input,
+.task-toolbar-day .form-input { cursor: pointer; }
+
+.task-toolbar-add {
+  flex: none;
+  height: 36px;
+  margin-left: auto;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .task-toolbar-filters > * {
+    flex: 1 1 calc(50% - 0.25rem);
+    width: auto;
+    max-width: none;
+  }
+
+  .task-toolbar .form-select { max-width: none; width: 100%; }
+  .task-toolbar-search { flex-basis: 100%; max-width: none; }
+  .task-toolbar-add { width: 100%; margin-left: 0; justify-content: center; }
+}
+
 .kanban-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
