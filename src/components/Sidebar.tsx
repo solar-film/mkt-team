@@ -58,7 +58,7 @@ const navLinks = [
   { group: 'จัดการงาน/KPI', path: '/calendar', label: 'ปฏิทินงาน', icon: <HiCalendarDays /> },
   { group: 'จัดการงาน/KPI', path: '/tasks', label: 'จัดการงาน', icon: <HiClipboardDocumentList /> },
   { group: 'จัดการงาน/KPI', path: '/ideas', label: 'โน๊ตไอเดีย', icon: <HiLightBulb /> },
-  { group: 'จัดการงาน/KPI', path: '/kpi-hub', label: 'สรุปผลงาน & ประเมิน', icon: <HiTableCells /> },
+  { group: 'จัดการงาน/KPI', path: '/kpi-hub', label: 'สรุป & ประเมิน KPI', icon: <HiTableCells /> },
   { group: 'จัดการงาน/KPI', path: '/content-stats', label: 'สถิติคอนเทนต์', icon: <HiChartPie /> },
   { group: 'ข้อมูลตลาด', path: '/market', label: 'ภาพรวมค่าโฆษณา', icon: <HiBanknotes /> },
   { group: 'ข้อมูลตลาด', path: '/market/google', label: 'Google Ads', icon: <SiGoogleads /> },
@@ -79,7 +79,7 @@ const MOBILE_BAR = new Set(['/', '/reports', '/calendar', '/tasks', '/ideas', '/
 
 export default function Sidebar() {
   const currentPath = usePathname();
-  // เป้าหมาย KPI is no longer in the menu; it opens from สรุปผลงาน & ประเมิน, which stays highlighted there.
+  // เป้าหมาย KPI is no longer in the menu; it opens from สรุป & ประเมิน KPI, which stays highlighted there.
   const pathname = currentPath === '/kpis' ? '/kpi-hub' : currentPath;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
