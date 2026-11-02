@@ -70,17 +70,18 @@
   flex: none;
   display: inline-flex;
   font-size: 1rem;
-  color: var(--color-text-secondary);
+  color: #d97706; /* งาน = ส้ม */
 }
 
 .kindIcon.content {
-  color: var(--color-primary);
+  color: var(--color-primary); /* คอนเทนต์ = น้ำเงิน */
 }
 
-/* New row: two icon buttons pick task or content. */
+/* New row: pick task or content — icon + word, the chosen one is filled in its colour. */
 .kindToggle {
   flex: none;
   display: inline-flex;
+  gap: 2px;
   padding: 2px;
   border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
@@ -88,19 +89,33 @@
 
 .kindToggle button {
   display: inline-flex;
-  padding: 0.25rem 0.35rem;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
   border: none;
   border-radius: 4px;
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.kindToggle button[aria-pressed='true'] {
-  background: var(--color-surface);
+.kindToggle button svg {
+  font-size: 0.95rem;
+}
+
+.kindToggle .kindTask[aria-pressed='true'] {
+  background: #fff7ed;
+  color: #c2410c;
+  box-shadow: inset 0 0 0 1px #fdba74;
+}
+
+.kindToggle .kindContent[aria-pressed='true'] {
+  background: #eff6ff;
   color: var(--color-primary);
-  box-shadow: 0 1px 2px rgba(15, 42, 77, 0.15);
+  box-shadow: inset 0 0 0 1px #93c5fd;
 }
 
 /* Cells look like text until hovered or focused, so the table reads like a sheet. */
@@ -214,10 +229,55 @@
   white-space: nowrap;
 }
 
+/* Live line under the new row: what is still missing, or ready to add. */
+.addStatusRow td {
+  background: #f8fbff;
+  padding: 0 0.75rem 0.5rem;
+  border-bottom: none;
+}
+
+.addStatus {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full, 999px);
+}
+
+.addStatus_idle {
+  color: var(--color-text-secondary);
+}
+
+.addStatus_missing {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.addStatus_ready {
+  color: #15803d;
+  background: #f0fdf4;
+}
+
 .hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
   margin: 0;
   padding: 0.45rem 0.75rem;
   font-size: 0.72rem;
   color: var(--color-text-secondary);
   border-top: 1px solid var(--color-border);
+}
+
+.hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.hintTask {
+  color: #d97706;
+}
+
+.hintContent {
+  color: var(--color-primary);
 }

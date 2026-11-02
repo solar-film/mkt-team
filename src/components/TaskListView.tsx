@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import { HiClipboardDocumentList, HiDocumentText, HiOutlinePencilSquare, HiOutlineTrash, HiPlus } from 'react-icons/hi2';
+import { HiBriefcase, HiMegaphone, HiOutlinePencilSquare, HiOutlineTrash, HiPlus } from 'react-icons/hi2';
+
+/** งาน = กระเป๋างาน (สีส้ม), คอนเทนต์ = โทรโข่ง/โพสต์ (สีน้ำเงิน) ใช้ทั้งในแถวและปุ่มเลือกประเภท */
+const KindIcon = ({ kind }: { kind: 'task' | 'content' }) => (kind === 'task' ? <HiBriefcase /> : <HiMegaphone />);
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { requireOk, saveErrorMessage } from '@/lib/save-result';
 import { memberSelectionLabel, parseSelection } from '@/lib/assignments';
@@ -83,7 +86,13 @@ export default function TaskListView({ items, members, kpis, defaultMemberId, de
           <AddRow people={people} kpis={kpis} defaultMemberId={defaultMemberId} defaultCompany={defaultCompany} onSaved={onSaved} />
         </tfoot>
       </table>
-      <p className={styles.hint}>แก้ในช่องได้เลย บันทึกเองเมื่อออกจากช่อง · ชื่อกด Enter เพื่อบันทึก · แถวใหม่ครบกำหนด 17:00 น. · เวลา รายละเอียด และลิงก์ แก้ที่ปุ่มดินสอ</p>
+      <p className={styles.hint}>
+        <span><HiBriefcase className={styles.hintTask} /> งาน</span>
+        <span><HiMegaphone className={styles.hintContent} /> คอนเทนต์</span>
+        <span>แก้ในช่องได้เลย ระบบบันทึกให้เอง</span>
+        <span><HiOutlinePencilSquare /> แก้เวลา รายละเอียด ลิงก์</span>
+        <span>แถวใหม่ครบกำหนด 17:00 น.</span>
+      </p>
     </div>
   );
 }
@@ -174,7 +183,7 @@ function Row({ item, people, members, kpis, onSaved, onStatusChange, onOpen, onD
       <td>
         <div className={styles.titleCell}>
           <span className={`${styles.kindIcon}${isTask ? '' : ` ${styles.content}`}`} title={isTask ? 'งาน' : 'คอนเทนต์'} aria-label={isTask ? 'งาน' : 'คอนเทนต์'}>
-            {isTask ? <HiClipboardDocumentList /> : <HiDocumentText />}
+            <KindIcon kind={isTask ? 'task' : 'content'} />
           </span>
           <input className={styles.cell} value={title} aria-label="ชื่อ"
             onChange={e => setTitle(e.target.value)} onBlur={commitTitle}
@@ -260,19 +269,27 @@ function AddRow({ people, kpis, defaultMemberId, defaultCompany, onSaved }: {
   const onEnter = (e: React.KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); void submit(); } };
   const memberOptions: [string, string][] = [...(kind === 'task' ? [['all', 'ทุกคน'] as [string, string]] : []), ...people.map(m => [m.id, m.name] as [string, string])];
 
+  // บอกตรง ๆ ว่ายังขาดช่องไหน หรือพร้อมเพิ่มแล้ว
+  const status = !title.trim()
+    ? { tone: 'idle', text: `เพิ่ม${kind === 'task' ? 'งาน' : 'คอนเทนต์'}ใหม่: พิมพ์ชื่อ แล้วเลือกช่องที่เหลือให้ครบ` }
+    : missing.length
+      ? { tone: 'missing', text: `ยังขาด: ${missing.join(' · ')}` }
+      : { tone: 'ready', text: 'ครบแล้ว กด Enter หรือปุ่ม "เพิ่ม" ได้เลย' };
+
   return (
+    <>
     <tr className={styles.addRow}>
       <td>
         <div className={styles.titleCell}>
           <span className={styles.kindToggle} role="group" aria-label="ประเภทรายการใหม่">
-            <button type="button" aria-pressed={kind === 'task'} onClick={() => setKind('task')} title="งาน" aria-label="งาน"><HiClipboardDocumentList /></button>
-            <button type="button" aria-pressed={kind === 'content'} onClick={() => setKind('content')} title="คอนเทนต์" aria-label="คอนเทนต์"><HiDocumentText /></button>
+            <button type="button" className={styles.kindTask} aria-pressed={kind === 'task'} onClick={() => setKind('task')} title="เพิ่มเป็นงานทั่วไป"><KindIcon kind="task" /> งาน</button>
+            <button type="button" className={styles.kindContent} aria-pressed={kind === 'content'} onClick={() => setKind('content')} title="เพิ่มเป็นคอนเทนต์ (โพสต์/คลิป)"><KindIcon kind="content" /> คอนเทนต์</button>
           </span>
           <input ref={titleRef} className={styles.cell} value={title} placeholder={kind === 'task' ? 'พิมพ์ชื่องาน แล้วกด Enter' : 'พิมพ์ชื่อคอนเทนต์ แล้วกด Enter'} aria-label="ชื่อรายการใหม่" onChange={e => setTitle(e.target.value)} onKeyDown={onEnter} />
         </div>
       </td>
-      <td><Choice label="บริษัทรายการใหม่" value={company} placeholder="เลือก" options={COMPANIES.map(c => [c, c])} onChange={setCompany} /></td>
-      <td><Choice label="ผู้รับผิดชอบรายการใหม่" value={assignee} placeholder="เลือก" options={memberOptions} onChange={setMemberId} /></td>
+      <td><Choice label="บริษัทรายการใหม่" value={company} placeholder="บริษัท" options={COMPANIES.map(c => [c, c])} onChange={setCompany} /></td>
+      <td><Choice label="ผู้รับผิดชอบรายการใหม่" value={assignee} placeholder="ผู้รับผิดชอบ" options={memberOptions} onChange={setMemberId} /></td>
       <td><input type="date" className={styles.cell} value={when} aria-label="วันที่รายการใหม่" title={`ครบกำหนด ${NEW_ROW_TIME} น.`} onChange={e => setWhen(e.target.value)} onKeyDown={onEnter} /></td>
       <td>{kind === 'task' ? <span className={styles.muted}>—</span> : (
         <div className={styles.stack}>
@@ -291,5 +308,11 @@ function AddRow({ people, kpis, defaultMemberId, defaultCompany, onSaved }: {
         </button>
       </td>
     </tr>
+    <tr className={styles.addStatusRow}>
+      <td colSpan={8}>
+        <span className={`${styles.addStatus} ${styles[`addStatus_${status.tone}`]}`} role="status">{status.text}</span>
+      </td>
+    </tr>
+    </>
   );
 }
