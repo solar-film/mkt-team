@@ -275,7 +275,9 @@ export default function ReportsPage() {
           </div>
 
           {dateFilterType === 'month' && (
-            <div className="form-group" style={{ marginBottom: 0, display: 'flex', gap: '0.5rem' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.75rem' }}><HiCalendar /> เดือน / ปี</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
               <select className="form-input" value={dateMonth} onChange={e => setDateMonth(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem', flex: 1 }}>
                 {Array.from({length: 12}, (_, i) => i + 1).map(m => (
                   <option key={m} value={m.toString()}>เดือน {m}</option>
@@ -284,12 +286,14 @@ export default function ReportsPage() {
               <select className="form-input" value={dateYear} onChange={e => setDateYear(e.target.value)} style={{ padding: '0.4rem', fontSize: '0.85rem', flex: 1 }}>
                 {yearOptions().map(year => <option key={year} value={year}>{year}</option>)}
               </select>
+              </div>
             </div>
           )}
 
           {dateFilterType === 'day' && (
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <DatePicker 
+              <label className="form-label" style={{ fontSize: '0.75rem' }}><HiCalendar /> วันที่</label>
+              <DatePicker
                 selected={dateDay ? new Date(dateDay) : null} 
                 onChange={(date: Date | null) => setDateDay(date ? format(date, 'yyyy-MM-dd') : '')} 
                 dateFormat="dd/MM/yyyy" 
