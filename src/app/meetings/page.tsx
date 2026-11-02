@@ -670,7 +670,7 @@ export default function MeetingsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'แก้ไขบันทึกประชุม' : 'สร้างบันทึกประชุมใหม่'} maxWidth="1000px">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'แก้ไขบันทึกประชุม' : 'สร้างบันทึกประชุมใหม่'} maxWidth="1240px">
         <form onSubmit={handleSubmit} className="meeting-form">
           <div className="form-group">
             <label className="form-label">หัวข้อการประชุม *</label>

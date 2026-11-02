@@ -999,7 +999,7 @@ export default function GbpReviewsPage() {
         isOpen={isSheetModalOpen}
         onClose={() => setIsSheetModalOpen(false)}
         title="ตั้งค่าลิงก์ Google Sheet สำหรับเก็บข้อมูลรีวิวอัตโนมัติ"
-        maxWidth="620px"
+        maxWidth="900px"
       >
         <form onSubmit={handleSaveSheetAndSync}>
           {syncInfo?.sheetUrl && (
@@ -1205,7 +1205,7 @@ export default function GbpReviewsPage() {
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
         title="บันทึกรีวิวบน Google Maps เสริม"
-        maxWidth="540px"
+        maxWidth="800px"
       >
         <form onSubmit={handleSaveReview}>
           <div className="form-group">
@@ -1311,7 +1311,7 @@ export default function GbpReviewsPage() {
         isOpen={!!replyTarget}
         onClose={() => setReplyTarget(null)}
         title={`บันทึกการตอบกลับรีวิวของ ${replyTarget?.reviewerName || ''}`}
-        maxWidth="500px"
+        maxWidth="760px"
       >
         <form onSubmit={handleSaveReply}>
           <div className="form-group">
@@ -1349,7 +1349,7 @@ export default function GbpReviewsPage() {
         isOpen={!!locEditTarget}
         onClose={() => setLocEditTarget(null)}
         title={`อัปเดตคะแนนรีวิว: ${locEditTarget ? BUSINESS_BRAND[locEditTarget.businessKey]?.shortTitle || locEditTarget.name : ''}`}
-        maxWidth="460px"
+        maxWidth="700px"
       >
         <form onSubmit={handleSaveLocation}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>

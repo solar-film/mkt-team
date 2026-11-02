@@ -801,7 +801,7 @@ b, strong { font-weight: 600; }
   background-color: var(--color-surface);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 500px;
+  max-width: 760px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;

@@ -40,7 +40,7 @@ export default function ConfirmModal({
 
   return (
     <div className="modal-overlay">
-      <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: '540px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-body" style={{ textAlign: 'center', padding: '2rem 1.5rem 1.5rem' }}>
           <div style={{ 
             display: 'inline-flex', 
