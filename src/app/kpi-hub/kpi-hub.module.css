@@ -370,6 +370,136 @@
 .improve { border-left-color: var(--color-warning); }
 .next { border-left-color: var(--color-primary); }
 
+/* ---------- reach drill-down modal ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.18));
+  width: 100%;
+  max-width: 560px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 0.7rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.modalHead h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modalBody {
+  overflow-y: auto;
+  padding: 0.6rem 0;
+  flex: 1;
+}
+
+.postList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.postRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 0.75rem;
+  align-items: start;
+  padding: 0.6rem 1.1rem;
+  border-bottom: 1px solid var(--color-border-subtle, var(--color-border));
+}
+
+.postRow:last-child {
+  border-bottom: none;
+}
+
+.postTitle {
+  font-size: 0.88rem;
+  font-weight: 500;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+}
+
+.postMeta {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.postReach {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.sourceBadge {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius-full);
+  background: rgba(3, 74, 173, 0.08);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.sourceBadgeManual {
+  background: rgba(232, 118, 45, 0.1);
+  color: var(--color-warning, #d97706);
+}
+
+.drillBtn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.drillBtn:hover {
+  text-decoration: underline;
+}
+
+.reachBarClickable {
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .statValue {
     font-size: 2rem;

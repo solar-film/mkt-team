@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-  HiChartBar, HiCheckBadge, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles,
+  HiChartBar, HiCheckBadge, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles, HiXMark,
 } from 'react-icons/hi2';
 import styles from './kpi-hub.module.css';
 import MemberAvatar from '@/components/MemberAvatar';
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import { kpiScore, percent, type KpiHubSummary, type MemberSummary, type Ratio } from '@/lib/kpi-summary';
+import type { ReachPost } from '@/app/api/kpi-hub/reach/route';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -25,10 +26,12 @@ const thaiDay = (iso: string) => {
 };
 
 type Load = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: KpiHubSummary };
+type DrillTarget = { memberId: string; name: string };
 
 export default function KpiHubPage() {
   const [period, setPeriod] = useState<{ year: number; month: number } | null>(null);
   const [load, setLoad] = useState<Load>({ status: 'loading' });
+  const [drill, setDrill] = useState<DrillTarget | null>(null);
 
   useEffect(() => {
     // Thai "today" is read in the browser so the default month never differs from the server render.
@@ -87,12 +90,21 @@ export default function KpiHubPage() {
           <button type="button" className="btn" onClick={() => void fetchMonth(period.year, period.month)}>ลองใหม่</button>
         </div>
       )}
-      {load.status === 'ready' && <Report data={load.data} />}
+      {load.status === 'ready' && <Report data={load.data} onDrill={setDrill} />}
+      {drill && period && (
+        <ReachDrillModal
+          name={drill.name}
+          memberId={drill.memberId}
+          year={period.year}
+          month={period.month}
+          onClose={() => setDrill(null)}
+        />
+      )}
     </div>
   );
 }
 
-function Report({ data }: { data: KpiHubSummary }) {
+function Report({ data, onDrill }: { data: KpiHubSummary; onDrill: (t: DrillTarget) => void }) {
   const { team, members } = data;
   const published = team.published.organic + team.published.paid + team.published.unknown;
   return (
@@ -119,10 +131,10 @@ function Report({ data }: { data: KpiHubSummary }) {
 
       <section className={styles.charts}>
         <QualityChart members={members} />
-        <ReachChart members={members} />
+        <ReachChart members={members} onDrill={onDrill} />
       </section>
 
-      <MemberTable members={members} />
+      <MemberTable members={members} onDrill={onDrill} />
       <KpiCards members={members} />
       <Evaluations members={members} />
     </>
@@ -181,22 +193,27 @@ function QualityChart({ members }: { members: MemberSummary[] }) {
   );
 }
 
-function ReachChart({ members }: { members: MemberSummary[] }) {
+function ReachChart({ members, onDrill }: { members: MemberSummary[]; onDrill: (t: DrillTarget) => void }) {
   // One series: few posts are marked organic/paid yet, so splitting would hide most of them.
-  const rows = members.map(m => ({ name: m.name, all: m.reach7.all }));
+  const rows = members.map(m => ({ name: m.name, all: m.reach7.all, memberId: m.memberId, posts: m.reach7.posts }));
   const empty = rows.every(r => r.all === null);
+  const handleBarClick = (data: unknown) => {
+    const d = data as { activePayload?: { payload: (typeof rows)[number] }[] } | null;
+    const p = d?.activePayload?.[0]?.payload;
+    if (p?.all != null && p.posts > 0) onDrill({ memberId: p.memberId, name: p.name });
+  };
   return (
     <article className={styles.card}>
       <h2>Reach เฉลี่ยต่อโพสต์ @ 7 วัน</h2>
-      <p className={styles.muted}>เทียบโพสต์ที่อายุครบ 7 วันเท่ากัน · Facebook ดึงอัตโนมัติจากเพจ ช่องทางอื่นกรอกเอง · ยังไม่ตั้งเป้า (เฟส 2)</p>
+      <p className={styles.muted}>เทียบโพสต์ที่อายุครบ 7 วันเท่ากัน · Facebook ดึงอัตโนมัติจากเพจ ช่องทางอื่นกรอกเอง · ยังไม่ตั้งเป้า (เฟส 2) · <b>คลิกแท่งเพื่อดูรายชิ้น</b></p>
       {empty ? <p className={styles.empty}>ยังไม่มีสถิติ D+7 ของคอนเทนต์เดือนนี้</p> : (
         <div className={styles.chart} role="img" aria-label="กราฟ Reach เฉลี่ยต่อโพสต์ที่ 7 วันรายคน">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rows} barGap={2} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+            <BarChart data={rows} barGap={2} margin={{ top: 8, right: 4, bottom: 0, left: 0 }} onClick={handleBarClick} className={styles.reachBarClickable}>
               <CartesianGrid vertical={false} stroke="var(--color-border)" />
               <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} interval={0} />
               <YAxis tickLine={false} axisLine={false} fontSize={11} width={44} tickFormatter={v => Number(v).toLocaleString('th-TH', { notation: 'compact' })} />
-              <Tooltip content={<ChartTip unit="" />} cursor={{ fill: 'rgba(3,74,173,0.05)' }} />
+              <Tooltip content={<ChartTip unit="" />} cursor={{ fill: 'rgba(3,74,173,0.08)' }} />
               <Bar dataKey="all" name="Reach เฉลี่ย" fill="var(--kpi-series-1)" radius={[4, 4, 0, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
@@ -206,7 +223,7 @@ function ReachChart({ members }: { members: MemberSummary[] }) {
   );
 }
 
-function MemberTable({ members }: { members: MemberSummary[] }) {
+function MemberTable({ members, onDrill }: { members: MemberSummary[]; onDrill: (t: DrillTarget) => void }) {
   return (
     <section className={styles.card}>
       <h2>ผลงานรายคน</h2>
@@ -227,13 +244,23 @@ function MemberTable({ members }: { members: MemberSummary[] }) {
                 <td>{ratioText(m.firstPass)}</td>
                 <td>{m.published.organic}</td>
                 <td>{m.published.paid}</td>
-                <td>{m.reach7.all === null ? '—' : `${m.reach7.all.toLocaleString('th-TH')} (${m.reach7.posts} โพสต์)`}</td>
+                <td>
+                  {m.reach7.all === null ? '—' : (
+                    <button
+                      type="button"
+                      className={styles.drillBtn}
+                      onClick={() => onDrill({ memberId: m.memberId, name: m.name })}
+                    >
+                      {m.reach7.all.toLocaleString('th-TH')} ({m.reach7.posts} โพสต์)
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className={styles.foot}>ข้อมูลมาจากหน้าจัดการงาน: กดงาน → ส่วน &quot;ผลงาน KPI&quot; · วันส่งจริงบันทึกเองเมื่อย้ายงานเป็นเสร็จแล้ว</p>
+      <p className={styles.foot}>ข้อมูลมาจากหน้าจัดการงาน: กดงาน → ส่วน &quot;ผลงาน KPI&quot; · กดตัวเลข Reach เพื่อดูรายชิ้น · วันส่งจริงบันทึกเองเมื่อย้ายงานเป็นเสร็จแล้ว</p>
     </section>
   );
 }
@@ -316,6 +343,74 @@ function EvalPart({ title, text, tone }: { title: string; text: string; tone: 'g
     <div className={`${styles.evalPart} ${styles[tone]}`}>
       <b>{title}</b>
       <p>{text}</p>
+    </div>
+  );
+}
+
+type DrillLoad = { status: 'loading' } | { status: 'error' } | { status: 'ready'; posts: ReachPost[] };
+
+function ReachDrillModal({ name, memberId, year, month, onClose }: {
+  name: string; memberId: string; year: number; month: number; onClose: () => void;
+}) {
+  const [load, setLoad] = useState<DrillLoad>({ status: 'loading' });
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeBtnRef.current?.focus();
+    void fetchWorkspace(`/api/kpi-hub/reach?year=${year}&month=${month}&memberId=${encodeURIComponent(memberId)}`)
+      .then(res => res.ok ? res.json() : Promise.reject(res.status))
+      .then((posts: ReachPost[]) => setLoad({ status: 'ready', posts }))
+      .catch(() => setLoad({ status: 'error' }));
+  }, [memberId, year, month]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const isAuto = (source: string) => source === 'api' || source === 'windsor';
+
+  return (
+    <div className={styles.overlay} role="dialog" aria-modal aria-label={`Reach รายชิ้นของ ${name}`} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={styles.modal}>
+        <div className={styles.modalHead}>
+          <h2>Reach D+7 รายชิ้น — {name}</h2>
+          <button ref={closeBtnRef} type="button" className={styles.iconButton} onClick={onClose} aria-label="ปิด"><HiXMark /></button>
+        </div>
+        <div className={styles.modalBody}>
+          {load.status === 'loading' && <p className={styles.muted} style={{ padding: '1rem 1.1rem' }}>กำลังโหลด…</p>}
+          {load.status === 'error' && <p className={styles.muted} style={{ padding: '1rem 1.1rem' }}>โหลดไม่สำเร็จ</p>}
+          {load.status === 'ready' && (
+            load.posts.length === 0
+              ? <p className={styles.empty} style={{ padding: '1rem 1.1rem' }}>ไม่มีโพสต์ที่มีข้อมูล Reach D+7 ในเดือนนี้</p>
+              : (
+                <ul className={styles.postList}>
+                  {load.posts.map(p => (
+                    <li key={p.id} className={styles.postRow}>
+                      <div>
+                        <p className={styles.postTitle}>{p.title}</p>
+                        <p className={styles.postMeta}>
+                          <span>{thaiDay(p.publishDate)}</span>
+                          <span>·</span>
+                          <span>{p.platform}</span>
+                          {p.promotion && <><span>·</span><span>{p.promotion === 'organic' ? 'Organic' : 'Paid'}</span></>}
+                          <span className={`${styles.sourceBadge} ${isAuto(p.source) ? '' : styles.sourceBadgeManual}`}>
+                            {isAuto(p.source) ? 'ดึงอัตโนมัติ' : 'กรอกเอง'}
+                          </span>
+                        </p>
+                      </div>
+                      <div className={styles.postReach}>
+                        {p.reach7.toLocaleString('th-TH')}
+                        <br /><small style={{ fontWeight: 400, fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>คน</small>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )
+          )}
+        </div>
+      </div>
     </div>
   );
 }
