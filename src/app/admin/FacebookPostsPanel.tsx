@@ -51,13 +51,17 @@ export function FacebookPostsPanel() {
     d.setUTCMonth(d.getUTCMonth() - 1);
     return d.toISOString().slice(0, 7);
   });
+  // After a failed part, the next click on the same month starts from that part.
+  const [resume, setResume] = useState<{ month: string; part: number; parts: number } | null>(null);
+  const resumeFrom = resume && resume.month === month ? resume : null;
   const backfill = async () => {
-    if (!confirm(`เติม Reach D+7 ของเดือน ${month} จาก Windsor?\n\n• คอนเทนต์ที่ยังไม่มี D+7 → สร้างใหม่\n• D+7 ที่ช่อง Reach ว่างหรือเป็น 0 → ใส่ค่าจากเพจ\n• Reach ที่กรอกไว้แล้ว (มากกว่า 0) → คงเดิม\n\nค่าที่ได้เป็นยอดสะสม ณ วันนี้ ไม่ใช่ยอดวันที่ 7 พอดี`)) return;
+    if (!resumeFrom && !confirm(`เติม Reach D+7 ของเดือน ${month} จาก Windsor?\n\n• คอนเทนต์ที่ยังไม่มี D+7 → สร้างใหม่\n• D+7 ที่ช่อง Reach ว่างหรือเป็น 0 → ใส่ค่าจากเพจ\n• Reach ที่กรอกไว้แล้ว (มากกว่า 0) → คงเดิม\n\nค่าที่ได้เป็นยอดสะสม ณ วันนี้ ไม่ใช่ยอดวันที่ 7 พอดี`)) return;
     setRunning(true);
     // One request per week of the month (a whole month is too slow for one request); stop at the first failure.
     const total = { posts: 0, matched: 0, created: 0, filled: 0, kept: 0 };
-    let part = 0;
-    let parts = 1;
+    let part = resumeFrom?.part ?? 0;
+    let parts = resumeFrom?.parts ?? 1;
+    setResume(null);
     try {
       while (part < parts) {
         setProgress(parts > 1 ? `${part + 1}/${parts}` : `${part + 1}`);
@@ -70,8 +74,9 @@ export function FacebookPostsPanel() {
       }
       toast.success(`${month}: ได้ ${total.posts} โพสต์ · จับคู่ใหม่ ${total.matched} · สร้าง D+7 ${total.created} · เติม Reach ${total.filled} · คงค่าที่กรอก ${total.kept}`, { duration: 10000 });
     } catch (error) {
-      const done = part ? ` (สำเร็จแล้ว ${part} ช่วง: สร้าง ${total.created} · เติม ${total.filled})` : "";
-      toast.error(`${error instanceof Error ? error.message : "ดึงไม่สำเร็จ"}${done}`, { duration: 10000 });
+      setResume({ month, part, parts });
+      const done = ` (รอบนี้: สร้าง ${total.created} · เติม ${total.filled}) · กดปุ่มอีกครั้งเพื่อทำต่อจากช่วงที่ ${part + 1}`;
+      toast.error(`${error instanceof Error ? error.message : "ดึงไม่สำเร็จ"}${done}`, { duration: 12000 });
     } finally {
       setRunning(false);
       setProgress("");
@@ -99,7 +104,7 @@ export function FacebookPostsPanel() {
         <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>เติม Reach ย้อนหลัง</span>
         <input type="month" className="form-input" style={{ width: "auto", padding: "0.3rem 0.5rem" }} value={month} onChange={e => setMonth(e.target.value)} aria-label="เดือนที่จะเติม Reach" />
         <button className="btn btn-secondary btn-sm" disabled={running || configured === false || !month} onClick={() => void backfill()}>
-          {running ? (progress ? `กำลังดึงช่วง ${progress}…` : "กำลังดึง…") : "เติม Reach เดือนนี้จาก Windsor"}
+          {running ? (progress ? `กำลังดึงช่วง ${progress}…` : "กำลังดึง…") : resumeFrom ? `ทำต่อจากช่วงที่ ${resumeFrom.part + 1}/${resumeFrom.parts}` : "เติม Reach เดือนนี้จาก Windsor"}
         </button>
         <span style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะช่องว่างหรือ 0 · สร้าง D+7 ให้คอนเทนต์ที่ยังไม่มี · ค่าที่กรอกไว้คงเดิม · เป็นยอดสะสม ณ วันที่ดึง</span>
       </div>

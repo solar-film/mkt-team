@@ -11,6 +11,22 @@ export const FACEBOOK_LOOKBACK_DAYS = 12;
 const WINDSOR_WAIT_MS = 40_000;
 const SHARE_LINK_WAIT_MS = 5_000;
 
+/**
+ * Page posts from Windsor. Windsor sometimes answers "An unexpected error has occurred. Please
+ * retry your request later" for one page (seen 2 Nov 69, fine on the next try), so a quick failure
+ * is retried once within the same time budget; a timeout is not retried.
+ */
+async function fetchPagePosts(from: string, to: string): Promise<unknown> {
+  const started = Date.now();
+  try {
+    return await fetchWindsorConnector(FACEBOOK_SYNC_PLATFORM, from, to, [...FACEBOOK_POST_FIELDS], WINDSOR_WAIT_MS);
+  } catch (error) {
+    const left = WINDSOR_WAIT_MS - (Date.now() - started);
+    if (left < 10_000) throw error;
+    return fetchWindsorConnector(FACEBOOK_SYNC_PLATFORM, from, to, [...FACEBOOK_POST_FIELDS], left);
+  }
+}
+
 /** A content link's reel number: read from the link itself, or from where a share/r|v link redirects. */
 async function contentVideoId(link: string | null): Promise<string | null> {
   const direct = videoIdFromUrl(link);
@@ -35,7 +51,7 @@ const isoDay = (value: string) => new Date(`${value}T00:00:00.000Z`);
 export async function syncFacebookPosts(from: string, to: string, trigger: 'cron' | 'admin', now = new Date()): Promise<FacebookSyncResult> {
   const run = await prisma.adSyncRun.create({ data: { platform: FACEBOOK_SYNC_PLATFORM, trigger, dateFrom: isoDay(from), dateTo: isoDay(to) } });
   try {
-    const posts = normalizeFacebookPosts(await fetchWindsorConnector(FACEBOOK_SYNC_PLATFORM, from, to, [...FACEBOOK_POST_FIELDS], WINDSOR_WAIT_MS));
+    const posts = normalizeFacebookPosts(await fetchPagePosts(from, to));
     const existing = new Map((await prisma.facebookPost.findMany({
       where: { id: { in: posts.map(p => p.id) } }, select: { id: true, contentId: true, matchedBy: true },
     })).map(p => [p.id, p]));
