@@ -61,58 +61,98 @@ function Tile({ label, value, notes, goodUp = false }: { label: string; value: s
   );
 }
 
+const BRAND_COLOR: Record<Brand, string> = {
+  'GFS B2B': '#1d4ed8', 'GFS B2C': '#0d9488', 'MHL อาคาร': '#f59e0b', 'MHL CAR': '#e11d48', 'อื่น ๆ': '#94a3b8',
+};
+
 function YearChart({ data, filter, title }: { data: MarketData; filter: Filter; title: string }) {
-  const [tab, setTab] = useState<Brand | 'all'>('all');
-  const showTabs = filter.brand === 'all';
-  const chartFilter: Filter = showTabs ? { ...filter, brand: tab } : filter;
+  const [view, setView] = useState<'total' | 'brand'>('total');
+  const canSplit = filter.brand === 'all';
+  const split = canSplit && view === 'brand';
   const year = Number(data.month.slice(0, 4));
-  const bars = spendByMonth(data, chartFilter).map(b => ({ ...b, name: thaiMonthShort(b.monthNumber) }));
   const thisYear = `ปี ${year + 543}`;
   const lastYear = `ปี ${year + 542}`;
-  const shownTitle = showTabs && tab !== 'all' ? `${title} · ${tab}` : title;
+  const bars = spendByMonth(data, filter).map(b => ({ ...b, name: thaiMonthShort(b.monthNumber) }));
+  const perBrand = BRANDS.map(brand => ({ brand, rows: spendByMonth(data, { ...filter, brand }) }));
+  const brands = perBrand.filter(p => p.rows.some(r => r.thisYear !== null && r.thisYear > 0));
+  const brandBars = bars.map((b, i) => ({
+    name: b.name, monthNumber: b.monthNumber,
+    ...Object.fromEntries(brands.map(p => [p.brand, p.rows[i].thisYear])),
+  })) as Array<{ name: string; monthNumber: number } & Record<string, number | string | null>>;
+  const heading = split ? `${title} · แยกตามธุรกิจ ${thisYear}` : title;
   return (
     <section className={styles.card}>
       <div className={styles.cardHead}>
-        <h2>{shownTitle}</h2>
+        <h2>{heading}</h2>
         <div className={styles.legend}>
-          <span><i className={styles.swatch} style={{ background: 'var(--series-this-year)' }} />{thisYear}</span>
-          <span><i className={styles.swatch} style={{ background: 'var(--series-last-year)' }} />{lastYear}</span>
+          {split ? brands.map(p => (
+            <span key={p.brand}><i className={styles.swatch} style={{ background: BRAND_COLOR[p.brand] }} />{p.brand}</span>
+          )) : (
+            <>
+              <span><i className={styles.swatch} style={{ background: 'var(--series-this-year)' }} />{thisYear}</span>
+              <span><i className={styles.swatch} style={{ background: 'var(--series-last-year)' }} />{lastYear}</span>
+            </>
+          )}
         </div>
       </div>
-      {showTabs && (
-        <div className={styles.chips} role="group" aria-label="เลือกธุรกิจของกราฟ" style={{ marginBottom: '0.75rem' }}>
-          {(['all', ...BRANDS] as const).map(b => (
-            <button key={b} type="button" className={styles.chip} aria-pressed={tab === b} onClick={() => setTab(b)}>
-              {b === 'all' ? 'ทุกธุรกิจ' : b}
-            </button>
-          ))}
+      {canSplit && (
+        <div className={styles.chips} role="group" aria-label="มุมมองของกราฟ" style={{ marginBottom: '0.75rem' }}>
+          <button type="button" className={styles.chip} aria-pressed={view === 'total'} onClick={() => setView('total')}>รวม เทียบปีที่แล้ว</button>
+          <button type="button" className={styles.chip} aria-pressed={view === 'brand'} onClick={() => setView('brand')}>แยกตามธุรกิจ</button>
         </div>
       )}
-      <div className={styles.chart} role="img" aria-label={`${shownTitle} ${thisYear} เทียบ ${lastYear}`}>
+      <div className={styles.chart} role="img" aria-label={split ? `${heading} ธุรกิจละแท่ง` : `${heading} ${thisYear} เทียบ ${lastYear}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={bars} barGap={2} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="#eef0f3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
-            <YAxis tickFormatter={compact} tickLine={false} axisLine={false} fontSize={11} width={44} />
-            <Tooltip formatter={(value) => baht(Number(value))} cursor={{ fill: 'rgba(15,23,42,0.04)' }} />
-            <Bar dataKey="thisYear" name={thisYear} fill="var(--series-this-year)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-            <Bar dataKey="lastYear" name={lastYear} fill="var(--series-last-year)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-          </BarChart>
+          {split ? (
+            <BarChart data={brandBars} barGap={1} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid vertical={false} stroke="#eef0f3" />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
+              <YAxis tickFormatter={compact} tickLine={false} axisLine={false} fontSize={11} width={44} />
+              <Tooltip formatter={(value) => baht(Number(value))} cursor={{ fill: 'rgba(15,23,42,0.04)' }} />
+              {brands.map(p => <Bar key={p.brand} dataKey={p.brand} name={p.brand} fill={BRAND_COLOR[p.brand]} radius={[3, 3, 0, 0]} maxBarSize={14} />)}
+            </BarChart>
+          ) : (
+            <BarChart data={bars} barGap={2} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid vertical={false} stroke="#eef0f3" />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
+              <YAxis tickFormatter={compact} tickLine={false} axisLine={false} fontSize={11} width={44} />
+              <Tooltip formatter={(value) => baht(Number(value))} cursor={{ fill: 'rgba(15,23,42,0.04)' }} />
+              <Bar dataKey="thisYear" name={thisYear} fill="var(--series-this-year)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+              <Bar dataKey="lastYear" name={lastYear} fill="var(--series-last-year)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </div>
       <details className={styles.foot}>
         <summary>ดูเป็นตาราง</summary>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>เดือน</th><th>{thisYear}</th><th>{lastYear}</th><th>เปลี่ยนแปลง</th></tr></thead>
-            <tbody>
-              {bars.map(b => (
-                <tr key={b.monthNumber}>
-                  <td>{b.name}</td><td>{baht(b.thisYear)}</td><td>{baht(b.lastYear)}</td>
-                  <td>{change(b.thisYear, b.lastYear) === null ? '—' : percent(change(b.thisYear, b.lastYear), 1)}</td>
-                </tr>
-              ))}
-            </tbody>
+            {split ? (
+              <>
+                <thead><tr><th>เดือน</th>{brands.map(p => <th key={p.brand}>{p.brand}</th>)}<th>รวม</th></tr></thead>
+                <tbody>
+                  {brandBars.map((b, i) => (
+                    <tr key={b.monthNumber}>
+                      <td>{b.name}</td>
+                      {brands.map(p => <td key={p.brand}>{baht(p.rows[i].thisYear)}</td>)}
+                      <td>{baht(bars[i].thisYear)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </>
+            ) : (
+              <>
+                <thead><tr><th>เดือน</th><th>{thisYear}</th><th>{lastYear}</th><th>เปลี่ยนแปลง</th></tr></thead>
+                <tbody>
+                  {bars.map(b => (
+                    <tr key={b.monthNumber}>
+                      <td>{b.name}</td><td>{baht(b.thisYear)}</td><td>{baht(b.lastYear)}</td>
+                      <td>{change(b.thisYear, b.lastYear) === null ? '—' : percent(change(b.thisYear, b.lastYear), 1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </>
+            )}
           </table>
         </div>
       </details>
