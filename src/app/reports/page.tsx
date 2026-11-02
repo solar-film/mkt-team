@@ -12,6 +12,20 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { getCompanyColor } from '@/lib/colors';
+import type { ReportReach } from '@/app/api/reports/reach/route';
+
+const isAutoReach = (source: string) => source === 'api' || source === 'windsor';
+
+const ReachCell = ({ reach }: { reach?: ReportReach }) => {
+  if (!reach) return <span style={{ color: '#cbd5e1' }}>—</span>;
+  const auto = isAutoReach(reach.source);
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.2 }}>
+      <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{reach.reach7.toLocaleString('th-TH')}</span>
+      <span style={{ fontSize: '0.65rem', color: auto ? '#034aad' : '#d97706' }}>{auto ? 'ดึงอัตโนมัติ' : 'กรอกเอง'}</span>
+    </span>
+  );
+};
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
@@ -68,6 +82,7 @@ const getPlatformOrPriorityIcon = (itemType: string, platform?: string, priority
 export default function ReportsPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reachByContent, setReachByContent] = useState<Record<string, ReportReach>>({});
 
   const [memberFilter, setMemberFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -99,6 +114,11 @@ export default function ReportsPage() {
         console.error(err);
         setLoading(false);
       });
+    // Reach D+7 โหลดแยก ถ้าล้มตารางยังแสดงได้ (คอลัมน์ Reach เป็น —)
+    fetchWorkspace('/api/reports/reach', { cache: 'no-store' })
+      .then(res => (res.ok ? res.json() : {}))
+      .then((data: Record<string, ReportReach> | { error: string }) => setReachByContent(data && typeof data === 'object' && !('error' in data) ? data as Record<string, ReportReach> : {}))
+      .catch(err => console.error(err));
   }, []);
 
   if (loading) {
@@ -299,6 +319,7 @@ export default function ReportsPage() {
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '90px' }}>ประเภท</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '180px' }}>หัวข้อ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ลิงก์</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '100px', textAlign: 'right' }} title="Reach ของโพสต์เมื่อครบ 7 วัน (D+7)">Reach @7 วัน</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '120px' }}>ผู้รับผิดชอบ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '100px' }}>สถานะ</th>
               </tr>
@@ -327,6 +348,9 @@ export default function ReportsPage() {
                         </a>
                       </div>
                     )}
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    {item.itemType === 'content' ? <ReachCell reach={reachByContent[item.id]} /> : null}
                   </td>
                   <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.memberName}</td>
                   <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
@@ -366,6 +390,9 @@ export default function ReportsPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.75rem' }}>
                 <span style={{ color: '#64748b' }}>{item.date ? formatDateTime(item.date) : '-'}</span>
+                {item.itemType === 'content' && reachByContent[item.id] && (
+                  <span style={{ color: '#475569' }}>Reach @7: <ReachCell reach={reachByContent[item.id]} /></span>
+                )}
                 {getStatusBadge(item.status)}
               </div>
             </div>
