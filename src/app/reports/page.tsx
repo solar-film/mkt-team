@@ -317,7 +317,7 @@ export default function ReportsPage() {
               <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left' }}>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '110px' }}>วันที่</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '90px' }}>ประเภท</th>
-                <th style={{ padding: '0.75rem', color: '#64748b', width: '180px' }}>หัวข้อ</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '360px' }}>หัวข้อ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ลิงก์</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '100px', textAlign: 'right' }} title="Reach ของโพสต์เมื่อครบ 7 วัน (D+7)">Reach @7 วัน</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '120px' }}>ผู้รับผิดชอบ</th>
@@ -334,7 +334,7 @@ export default function ReportsPage() {
                       {item.itemType === 'task' ? 'งาน' : 'คอนเทนต์'}
                     </span>
                   </td>
-                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '0.75rem', fontWeight: 500, maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.company ? <span style={{ color: getCompanyColor(item.company), marginRight: '4px' }}>[{item.company}]</span> : null}{item.title}
                   </td>
                   <td style={{ padding: '0.75rem', wordBreak: 'break-all' }}>
