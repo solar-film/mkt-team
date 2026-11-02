@@ -32,6 +32,7 @@ import {
   HiEllipsisHorizontal,
   HiBuildingOffice2,
   HiBanknotes,
+  HiTag,
   HiPresentationChartLine,
   HiCircleStack,
   HiTableCells,
@@ -74,6 +75,7 @@ const navLinks = [
   { group: 'ทีม & ธุรกิจ', path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
+  { group: 'ลิงก์ภายนอก', path: 'https://goodfilm-price.pages.dev/', label: 'ราคาขาย', icon: <HiTag /> },
 ];
 const MOBILE_BAR = new Set(['/', '/reports', '/calendar', '/tasks', '/ideas', '/kpi-hub']);
 
