@@ -87,23 +87,26 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
     }
   };
 
-  const field = { display: 'flex', flexDirection: 'column' as const, gap: '0.25rem' };
-  const label = { fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 };
+  const field = { display: 'flex', flexDirection: 'column' as const, gap: '0.3rem', minWidth: 0 };
+  const label = { fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 };
+  const input = { padding: '0.55rem 0.75rem', fontSize: '0.9rem' };
+  // Fields sit in a 2-column grid; "สถานะรอ" fills the last row when the count is even, so no cell is left empty.
+  const gridFields = 2 + (form.firstReview === 'revise' ? 1 : 0) + (kind === 'content' ? 2 : 0);
 
   return (
-    <section aria-label="ผลงาน KPI" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.9rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+    <section aria-label="ผลงาน KPI" style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+      <header style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', fontWeight: 700, color: 'var(--color-primary)' }}>
         <HiChartBar aria-hidden /> ผลงาน KPI
-        <small style={{ marginLeft: 'auto', fontWeight: 400, color: 'var(--color-text-secondary)' }}>นับในหน้า สรุปผลงาน &amp; ประเมิน</small>
+        <small style={{ marginLeft: 'auto', fontWeight: 400, fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>นับในหน้า สรุปผลงาน &amp; ประเมิน</small>
       </header>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem 1rem', alignItems: 'start' }}>
         <label style={field}>
           <span style={label}>วันส่งจริง</span>
-          <input type="date" className="form-input" value={form.submittedDay} onChange={e => setForm({ ...form, submittedDay: e.target.value })} />
+          <input type="date" className="form-input" style={input} value={form.submittedDay} onChange={e => setForm({ ...form, submittedDay: e.target.value })} />
         </label>
         <label style={field}>
           <span style={label}>ผลตรวจรอบแรก{canReview ? '' : ' (เฉพาะ Admin)'}</span>
-          <select className="form-select" value={form.firstReview} disabled={!canReview} title={canReview ? undefined : 'เฉพาะ Admin เป็นผู้ตรวจ'} onChange={e => setForm({ ...form, firstReview: e.target.value })}>
+          <select className="form-select" style={input} value={form.firstReview} disabled={!canReview} title={canReview ? undefined : 'เฉพาะ Admin เป็นผู้ตรวจ'} onChange={e => setForm({ ...form, firstReview: e.target.value })}>
             <option value="">ยังไม่ตรวจ</option>
             {Object.entries(FIRST_REVIEW).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
           </select>
@@ -111,7 +114,7 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
         {form.firstReview === 'revise' && (
           <label style={field}>
             <span style={label}>สาเหตุการแก้</span>
-            <select className="form-select" value={form.reviseReason} disabled={!canReview} onChange={e => setForm({ ...form, reviseReason: e.target.value })}>
+            <select className="form-select" style={input} value={form.reviseReason} disabled={!canReview} onChange={e => setForm({ ...form, reviseReason: e.target.value })}>
               <option value="">ไม่ระบุ</option>
               {Object.entries(REVISE_REASON).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
@@ -120,7 +123,7 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
         {kind === 'content' && (
           <label style={field}>
             <span style={label}>Organic / Paid</span>
-            <select className="form-select" value={form.promotion} onChange={e => setForm({ ...form, promotion: e.target.value })}>
+            <select className="form-select" style={input} value={form.promotion} onChange={e => setForm({ ...form, promotion: e.target.value })}>
               <option value="">ไม่ระบุ</option>
               {Object.entries(PROMOTION).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
             </select>
@@ -129,7 +132,7 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
         {kind === 'content' && (
           <label style={field}>
             <span style={label}>Reach @7 วัน (คน)</span>
-            <input type="text" inputMode="numeric" className="form-input" maxLength={13}
+            <input type="text" inputMode="numeric" className="form-input" style={input} maxLength={13}
               value={reach.typed} disabled={reach.status !== 'ready'}
               placeholder={reach.status === 'loading' ? 'กำลังโหลด…' : reach.status === 'failed' ? 'โหลดไม่สำเร็จ' : 'ยอด Reach วันที่ 7 หลังโพสต์'}
               onChange={e => setReach({ ...reach, typed: e.target.value.replace(/[^\d,]/g, '') })} />
@@ -138,6 +141,10 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
             )}
           </label>
         )}
+        <label style={{ ...field, gridColumn: gridFields % 2 === 0 ? '1 / -1' : undefined }}>
+          <span style={label}>สถานะรอ</span>
+          <input type="text" className="form-input" style={input} maxLength={200} value={form.waitingOn} placeholder='เช่น "รอรูปจากช่าง"' title="ใส่ถ้าช้าเพราะรอคนอื่น เว้นว่างถ้าไม่ได้รอใคร" onChange={e => setForm({ ...form, waitingOn: e.target.value })} />
+        </label>
       </div>
       {values.aiReview && (
         <div role="note" style={{ border: '1px solid #c7d2fe', background: '#eef2ff', borderRadius: '10px', padding: '0.6rem 0.8rem', fontSize: '0.85rem', lineHeight: 1.6 }}>
@@ -153,11 +160,7 @@ export default function WorkReviewPanel({ kind, id, values, canReview, onSaved }
           <small style={{ color: 'var(--color-text-secondary)' }}>เป็นคำแนะนำ ผลตรวจจริงให้ Admin เลือกเอง</small>
         </div>
       )}
-      <label style={field}>
-        <span style={label}>สถานะรอ (ถ้าช้าเพราะรอคนอื่น เช่น "รอรูปจากช่าง")</span>
-        <input type="text" className="form-input" maxLength={200} value={form.waitingOn} placeholder="เว้นว่างถ้าไม่ได้รอใคร" onChange={e => setForm({ ...form, waitingOn: e.target.value })} />
-      </label>
-      <button type="button" className="btn btn-primary" onClick={save} disabled={saving} style={{ alignSelf: 'flex-end' }}>
+      <button type="button" className="btn btn-primary" onClick={save} disabled={saving} style={{ alignSelf: 'flex-end', padding: '0.55rem 1.25rem' }}>
         {saving ? 'กำลังบันทึก…' : 'บันทึกผลงาน KPI'}
       </button>
     </section>

@@ -1093,7 +1093,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
       {/* View Item Modal */}
       {viewItem && (
         <Modal isOpen={!!viewItem} onClose={() => setViewItem(null)} title="รายละเอียด">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               {viewItem.itemType === 'task' ? <HiClipboardDocumentList size={24} style={{ color: 'var(--color-text-secondary)' }} /> : <HiDocumentText size={24} style={{ color: 'var(--color-primary)' }} />}
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
@@ -1117,7 +1117,8 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
               )}
             </div>
 
-            <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', border: '1px solid #e2e8f0' }}>
+            {viewItem.description && (
+            <div style={{ backgroundColor: 'var(--color-surface)', padding: '0.85rem 1rem', borderRadius: '10px', fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', border: '1px solid #e2e8f0' }}>
               {(() => {
                 const descStr = viewItem.description || '';
                 let displayDesc = descStr;
@@ -1142,39 +1143,38 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                   );
                 }
 
-                return viewItem.description || viewItem.platform || 'ไม่มีรายละเอียดเพิ่มเติม';
+                return viewItem.description;
               })()}
             </div>
+            )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{viewItem.itemType === 'task' ? 'วันที่เริ่ม' : 'วันที่เผยแพร่'}</span>
-                <span style={{ fontSize: '0.9rem', color: '#1e293b' }}>
-                  {viewItem.itemType === 'task' 
+            {/* Dates, platform and the attached link share one compact row. */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem 2rem', backgroundColor: 'var(--color-surface)', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.75rem 1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{viewItem.itemType === 'task' ? 'วันที่เริ่ม' : 'วันที่เผยแพร่'}</span>
+                <span style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 500 }}>
+                  {viewItem.itemType === 'task'
                     ? (viewItem.startDate ? formatDateTime(viewItem.startDate) : '-')
                     : (viewItem.publishDate ? formatDateTime(viewItem.publishDate) : '-')}
                 </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{viewItem.itemType === 'task' ? 'กำหนดส่ง' : 'แพลตฟอร์ม'}</span>
-                <span style={{ fontSize: '0.9rem', color: '#1e293b' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{viewItem.itemType === 'task' ? 'กำหนดส่ง' : 'แพลตฟอร์ม'}</span>
+                <span style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 500 }}>
                   {viewItem.itemType === 'task'
                     ? (viewItem.deadline ? formatDateTime(viewItem.deadline) : '-')
                     : (viewItem.platform || '-')}
                 </span>
               </div>
-            </div>
-
-            {viewItem.link && (
-              <div style={{ marginTop: '0.5rem' }}>
-                <a href={viewItem.link.startsWith('http') ? viewItem.link : `https://${viewItem.link}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1.2rem', height: '1.2rem', marginRight: '0.5rem' }}>
+              {viewItem.link && (
+                <a href={viewItem.link.startsWith('http') ? viewItem.link : `https://${viewItem.link}`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>
+                  <svg aria-hidden xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1rem', height: '1rem' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                   </svg>
                   เปิดลิงก์แนบ
                 </a>
-              </div>
-            )}
+              )}
+            </div>
 
             {!viewItem.id.startsWith('idea_') && (
               <WorkReviewPanel
@@ -1190,7 +1190,7 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
               />
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
               <button className="btn btn-secondary" onClick={() => setViewItem(null)}>ปิด</button>
               {viewItem.id.startsWith('idea_') && (
                 <button className="btn btn-primary" onClick={() => window.location.href = `/ideas?id=${viewItem.id.replace('idea_', '')}`}>
