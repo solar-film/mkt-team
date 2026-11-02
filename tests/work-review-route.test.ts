@@ -75,12 +75,12 @@ test('clearing an existing reach keeps the row and empties the number', async ()
   assert.equal(body.reach7Source, null);
 });
 
-test('bad reach is refused before anything is saved; tasks ignore reach', async () => {
+test('bad reach is refused before anything is saved; tasks have nothing to save here', async () => {
   const { prisma, state } = fakePrisma(null);
   assert.equal((await put(prisma, { reach7: '-3' })).status, 400);
   assert.deepEqual(state.writes, []);
   const task = await route(prisma).PUT(jsonRequest('/api/work-review', 'PUT', { kind: 'task', id: 't1', reach7: 50 }));
-  assert.equal(task.status, 200);
+  assert.equal(task.status, 400);
   assert.deepEqual(state.writes, []);
 });
 

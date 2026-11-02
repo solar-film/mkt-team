@@ -10,7 +10,7 @@ const th = (day: string, hour = 12) => new Date(`${day}T${String(hour).padStart(
 
 const base = (over: Partial<ReviewItem>): ReviewItem => ({
   id: Math.random().toString(36).slice(2), kind: 'task', title: 't', memberId: 'a', memberIds: [], status: 'todo',
-  due: null, submittedAt: null, waitingOn: null, firstReview: null, reviseReason: null, ...over,
+  due: null, submittedAt: null, ...over,
 });
 const members = [{ id: 'a', name: 'แต้ว', avatar: null, company: 'GFS' }, { id: 'b', name: 'นน', avatar: null, company: 'MHL' }];
 const run = (items: ReviewItem[], today = '2026-11-20') =>
@@ -32,21 +32,12 @@ test('work due after today or outside the month is not counted yet', () => {
   assert.equal(run([], '2027-01-05').countedThrough, '2026-11-30');
 });
 
-test('work held up by someone else is set aside, not counted late', () => {
-  const s = run([base({ due: th('2026-11-03'), waitingOn: 'รอรูปจากช่าง' })]);
-  assert.equal(s.members[0].waiting, 1);
-  assert.deepEqual(s.members[0].onTime, { done: 0, total: 0 });
-});
-
-test('first pass: a revision for a changed brief is not the worker\'s mistake', () => {
-  const s = run([
-    base({ due: th('2026-11-03'), firstReview: 'pass' }),
-    base({ due: th('2026-11-03'), firstReview: 'revise', reviseReason: 'brief' }),
-    base({ due: th('2026-11-03'), firstReview: 'revise', reviseReason: 'quality' }),
-    base({ due: th('2026-11-03') }),
-  ]);
-  assert.deepEqual(s.members[0].firstPass, { done: 2, total: 3 });
-  assert.equal(percent(s.members[0].firstPass), 67);
+test('late is late: no waiting exception, and no first-review score any more (2 Nov 69)', () => {
+  const s = run([base({ due: th('2026-11-03') }), base({ due: th('2026-11-03'), submittedAt: th('2026-11-04') })]);
+  assert.deepEqual(s.members[0].onTime, { done: 0, total: 2 });
+  assert.equal('firstPass' in s.team || 'waiting' in s.team, false);
+  assert.equal('firstPass' in s.members[0] || 'waiting' in s.members[0], false);
+  assert.equal(percent({ done: 2, total: 3 }), 67);
   assert.equal(percent({ done: 0, total: 0 }), null);
 });
 
@@ -75,14 +66,12 @@ test('month query range covers Thai days 1st 00:00 to last day 23:59', () => {
   assert.equal(lt.toISOString(), '2026-11-30T17:00:00.000Z');
 });
 
-test('review input: validates choices, clears with empty, drops reason on pass', () => {
-  assert.deepEqual(parseWorkReview({ firstReview: 'pass', reviseReason: 'quality' }, 'task'), { firstReview: 'pass', reviseReason: null });
-  assert.deepEqual(parseWorkReview({ firstReview: 'revise', reviseReason: 'brief' }, 'task'), { firstReview: 'revise', reviseReason: 'brief' });
-  assert.deepEqual(parseWorkReview({ waitingOn: '  ', submittedAt: '' }, 'task'), { waitingOn: null, submittedAt: null });
+test('review input: only Organic/Paid is typed; hand-in time and the old review fields are ignored', () => {
   assert.deepEqual(parseWorkReview({ promotion: 'paid' }, 'task'), {}, 'tasks have no organic/paid');
   assert.deepEqual(parseWorkReview({ promotion: 'paid' }, 'content'), { promotion: 'paid' });
-  assert.throws(() => parseWorkReview({ firstReview: 'maybe' }, 'task'), WorkReviewError);
-  assert.throws(() => parseWorkReview({ submittedAt: 'not a date' }, 'task'), WorkReviewError);
+  assert.deepEqual(parseWorkReview({ promotion: '' }, 'content'), { promotion: null });
+  assert.deepEqual(parseWorkReview({ submittedAt: '2026-11-01', firstReview: 'pass', waitingOn: 'รอรูป' }, 'content'), {});
+  assert.throws(() => parseWorkReview({ promotion: 'boost' }, 'content'), WorkReviewError);
   assert.equal(parseReach7(undefined), undefined, 'missing reach is left unchanged');
   assert.equal(parseReach7(''), null);
   assert.equal(parseReach7('  '), null, 'blank is cleared, not 0');
@@ -148,11 +137,10 @@ test('content with the older "published" status counts as published', () => {
 
 test('team totals leave out work assigned only to people not on the list (the Admin)', () => {
   const s = run([
-    base({ memberId: 'admin', memberIds: ['admin'], due: th('2026-11-02'), submittedAt: th('2026-11-01'), firstReview: 'pass' }),
+    base({ memberId: 'admin', memberIds: ['admin'], due: th('2026-11-02'), submittedAt: th('2026-11-01') }),
     base({ memberId: 'a', memberIds: ['a', 'admin'], due: th('2026-11-03'), submittedAt: th('2026-11-03') }),
   ]);
   assert.deepEqual(s.team.onTime, { done: 1, total: 1 });
-  assert.deepEqual(s.team.firstPass, { done: 0, total: 0 });
   assert.deepEqual(s.members.map(m => m.name), ['แต้ว', 'นน']);
 });
 

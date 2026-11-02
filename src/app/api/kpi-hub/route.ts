@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store' };
 const REVIEW_SELECT = {
   id: true, title: true, memberId: true, memberIds: true, status: true,
-  submittedAt: true, waitingOn: true, firstReview: true, reviseReason: true,
+  submittedAt: true,
 } as const;
 
 /**

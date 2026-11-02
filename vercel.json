@@ -23,6 +23,10 @@
       "schedule": "30 23 * * *"
     },
     {
+      "path": "/api/cron/tiktok-posts",
+      "schedule": "45 23 * * *"
+    },
+    {
       "path": "/api/cron/gbp-reviews",
       "schedule": "0 0 * * *"
     }

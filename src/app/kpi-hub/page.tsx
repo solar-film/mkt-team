@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-  HiChartBar, HiCheckBadge, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles, HiXMark,
+  HiChartBar, HiChevronLeft, HiChevronRight, HiClock, HiInformationCircle, HiMegaphone, HiPencilSquare, HiSparkles, HiXMark,
 } from 'react-icons/hi2';
 import styles from './kpi-hub.module.css';
 import MemberAvatar from '@/components/MemberAvatar';
@@ -63,7 +63,7 @@ export default function KpiHubPage() {
       <div className="page-header">
         <div className="page-header-content">
           <h1>สรุปผลงาน &amp; ประเมิน</h1>
-          <p className={styles.muted}>ผลงานทีมการตลาด ส่งตรงเวลา · คุณภาพ · ผลคอนเทนต์ · KPI รายคน · ประเมินโดยมะลิ (AI)</p>
+          <p className={styles.muted}>ผลงานทีมการตลาด ส่งตรงเวลา · ผลคอนเทนต์ · KPI รายคน · ประเมินโดยมะลิ (AI)</p>
         </div>
         <div className={styles.headerActions}>
           {/* เป้าหมาย KPI left the main menu; it is reached from here. */}
@@ -115,12 +115,7 @@ function Report({ data, onDrill }: { data: KpiHubSummary; onDrill: (t: DrillTarg
           detail={team.onTime.total ? `${team.onTime.done} จาก ${team.onTime.total} งานที่ถึงกำหนด` : NO_DATA}
           note={data.countedThrough < data.trackingStart
             ? `เริ่มบันทึกวันส่งจริง ${thaiDay(data.trackingStart)} เดือนก่อนหน้านั้นจึงไม่มีข้อมูล`
-            : `นับถึง ${thaiDay(data.countedThrough)}${team.waiting ? ` · แยกงานรอข้อมูล/รออนุมัติ ${team.waiting} งาน` : ''}`}
-        />
-        <StatTile
-          icon={<HiCheckBadge />} label="ผ่านบรีฟรอบแรก" value={percent(team.firstPass)}
-          detail={team.firstPass.total ? `${team.firstPass.done} จาก ${team.firstPass.total} งานที่ตรวจแล้ว` : NO_DATA}
-          note="แก้เพราะเปลี่ยนบรีฟ ไม่นับเป็นข้อผิดพลาด"
+            : `นับถึง ${thaiDay(data.countedThrough)} · วันส่ง = เวลาโพสต์จริง (Facebook/TikTok) หรือเวลาที่กดเสร็จ`}
         />
         <StatTile
           icon={<HiMegaphone />} label="คอนเทนต์เผยแพร่" value={published || null} unit="ชิ้น"
@@ -130,7 +125,7 @@ function Report({ data, onDrill }: { data: KpiHubSummary; onDrill: (t: DrillTarg
       </section>
 
       <section className={styles.charts}>
-        <QualityChart members={members} />
+        <OnTimeChart members={members} />
         <ReachChart members={members} onDrill={onDrill} />
       </section>
 
@@ -167,24 +162,22 @@ function ChartTip({ active, label, payload, unit }: { active?: boolean; label?: 
   );
 }
 
-function QualityChart({ members }: { members: MemberSummary[] }) {
-  const rows = members.map(m => ({ name: m.name, onTime: percent(m.onTime), firstPass: percent(m.firstPass) }));
-  const empty = rows.every(r => r.onTime === null && r.firstPass === null);
+function OnTimeChart({ members }: { members: MemberSummary[] }) {
+  const rows = members.map(m => ({ name: m.name, onTime: percent(m.onTime) }));
+  const empty = rows.every(r => r.onTime === null);
   return (
     <article className={styles.card}>
-      <h2>ส่งตรงเวลา vs ผ่านบรีฟรอบแรก</h2>
+      <h2>ส่งตรงเวลา รายคน</h2>
       <p className={styles.muted}>รายคน (%) · คนที่ยังไม่มีงานถึงกำหนดจะไม่มีแท่ง</p>
       {empty ? <p className={styles.empty}>{NO_DATA}</p> : (
-        <div className={styles.chart} role="img" aria-label="กราฟส่งตรงเวลาและผ่านบรีฟรอบแรกรายคน">
+        <div className={styles.chart} role="img" aria-label="กราฟส่งตรงเวลารายคน">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows} barGap={2} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid vertical={false} stroke="var(--color-border)" />
               <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} interval={0} />
               <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickLine={false} axisLine={false} fontSize={11} width={32} />
               <Tooltip content={<ChartTip unit="%" />} cursor={{ fill: 'rgba(3,74,173,0.05)' }} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} itemSorter={null} />
               <Bar dataKey="onTime" name="ส่งตรงเวลา" fill="var(--kpi-series-1)" radius={[4, 4, 0, 0]} maxBarSize={26} />
-              <Bar dataKey="firstPass" name="ผ่านรอบแรก" fill="var(--kpi-series-2)" radius={[4, 4, 0, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -205,7 +198,7 @@ function ReachChart({ members, onDrill }: { members: MemberSummary[]; onDrill: (
   return (
     <article className={styles.card}>
       <h2>Reach เฉลี่ยต่อโพสต์ @ 7 วัน</h2>
-      <p className={styles.muted}>เทียบโพสต์ที่อายุครบ 7 วันเท่ากัน · Facebook ดึงอัตโนมัติจากเพจ ช่องทางอื่นกรอกเอง · ยังไม่ตั้งเป้า (เฟส 2) · <b>คลิกแท่งเพื่อดูรายชิ้น</b></p>
+      <p className={styles.muted}>เทียบโพสต์ที่อายุครบ 7 วันเท่ากัน · Facebook และ TikTok ดึงอัตโนมัติ ช่องทางอื่นกรอกในหน้ารายงานรวม · ยังไม่ตั้งเป้า (เฟส 2) · <b>คลิกแท่งเพื่อดูรายชิ้น</b></p>
       {empty ? <p className={styles.empty}>ยังไม่มีสถิติ D+7 ของคอนเทนต์เดือนนี้</p> : (
         <div className={styles.chart} role="img" aria-label="กราฟ Reach เฉลี่ยต่อโพสต์ที่ 7 วันรายคน">
           <ResponsiveContainer width="100%" height="100%">
@@ -231,7 +224,7 @@ function MemberTable({ members, onDrill }: { members: MemberSummary[]; onDrill: 
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>ผู้รับผิดชอบ</th><th>ส่งตรงเวลา</th><th>รอข้อมูล/อนุมัติ</th><th>ผ่านบรีฟรอบแรก</th>
+              <th>ผู้รับผิดชอบ</th><th>ส่งตรงเวลา</th>
               <th>Organic</th><th>Paid</th><th>Reach @7 วัน (เฉลี่ย)</th>
             </tr>
           </thead>
@@ -240,8 +233,6 @@ function MemberTable({ members, onDrill }: { members: MemberSummary[]; onDrill: 
               <tr key={m.memberId}>
                 <th scope="row"><span className={styles.who}><MemberAvatar name={m.name} size="sm" />{m.name}</span></th>
                 <td>{ratioText(m.onTime)}</td>
-                <td>{m.waiting || '—'}</td>
-                <td>{ratioText(m.firstPass)}</td>
                 <td>{m.published.organic}</td>
                 <td>{m.published.paid}</td>
                 <td>
@@ -260,7 +251,7 @@ function MemberTable({ members, onDrill }: { members: MemberSummary[]; onDrill: 
           </tbody>
         </table>
       </div>
-      <p className={styles.foot}>ข้อมูลมาจากหน้าจัดการงาน: กดงาน → ส่วน &quot;ผลงาน KPI&quot; · กดตัวเลข Reach เพื่อดูรายชิ้น · วันส่งจริงบันทึกเองเมื่อย้ายงานเป็นเสร็จแล้ว</p>
+      <p className={styles.foot}>วันส่งจริง: เวลาโพสต์จริงจาก Facebook/TikTok ถ้าหาไม่เจอใช้เวลาที่ย้ายงานเป็นเสร็จแล้ว · Organic/Paid และ Reach ช่องทางอื่นกรอกในหน้ารายงานรวม · กดตัวเลข Reach เพื่อดูรายชิ้น</p>
     </section>
   );
 }

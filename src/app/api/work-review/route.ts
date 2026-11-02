@@ -4,11 +4,10 @@ import { readJsonBody, RequestBodyError } from '@/lib/request-body';
 import { invalidateWorkspace } from '@/lib/workspace-cache';
 import { MEMBER_HEADER } from '@/lib/member-auth';
 import { D7_SNAPSHOT } from '@/lib/facebook-posts';
-import { changesFirstReview, parseReach7, parseWorkReview, REVIEWER_ROLE, WorkReviewError } from '@/lib/work-review';
+import { parseReach7, parseWorkReview, WorkReviewError } from '@/lib/work-review';
 
 export const dynamic = 'force-dynamic';
 
-const REVIEW_FIELDS = { id: true, submittedAt: true, waitingOn: true, firstReview: true, reviseReason: true } as const;
 const REACH_FIELDS = { reach: true, source: true } as const;
 
 const reachView = (metric: { reach: number | null; source: string } | null) => ({
@@ -16,7 +15,7 @@ const reachView = (metric: { reach: number | null; source: string } | null) => (
   reach7Source: metric?.reach == null ? null : metric.source,
 });
 
-/** Reach @7 วัน of one content for the review panel: GET ?id=<contentId>. */
+/** Reach @7 วัน of one content: GET ?id=<contentId>. */
 export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get('id') ?? '';
   if (!id || id.length > 64) return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
@@ -29,37 +28,21 @@ export async function GET(request: Request) {
   }
 }
 
-/** Saves the KPI review of one task or content: { kind, id, submittedAt?, waitingOn?, firstReview?, reviseReason?, promotion?, reach7? }. */
+/**
+ * Saves what the รายงานรวม page lets members type for one content: { kind: 'content', id, promotion?, reach7? }.
+ * The hand-in time is never taken from the request: the system sets it (see lib/work-review.ts).
+ */
 export async function PUT(request: Request) {
   try {
     const body = await readJsonBody(request);
-    const kind = body.kind === 'task' || body.kind === 'content' ? body.kind : null;
     const id = typeof body.id === 'string' && body.id.length <= 64 ? body.id : '';
-    if (!kind || !id) return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
+    if (body.kind !== 'content' || !id) return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
 
-    const data = parseWorkReview(body, kind);
-    if (data.firstReview !== undefined || data.reviseReason !== undefined) {
-      const memberId = request.headers.get(MEMBER_HEADER);
-      const select = { firstReview: true, reviseReason: true } as const;
-      const [before, member] = await Promise.all([
-        kind === 'task' ? prisma.task.findUnique({ where: { id }, select }) : prisma.content.findUnique({ where: { id }, select }),
-        memberId ? prisma.teamMember.findUnique({ where: { id: memberId }, select: { role: true } }) : null,
-      ]);
-      if (!before) return NextResponse.json({ error: 'ไม่พบงานนี้' }, { status: 404 });
-      if (changesFirstReview(before, data) && member?.role !== REVIEWER_ROLE) {
-        return NextResponse.json({ error: 'ผลตรวจรอบแรกแก้ได้เฉพาะ Admin' }, { status: 403 });
-      }
-    }
-    if (kind === 'task') {
-      const saved = await prisma.task.update({ where: { id }, data, select: REVIEW_FIELDS });
-      invalidateWorkspace();
-      return NextResponse.json(saved);
-    }
-
+    const data = parseWorkReview(body, 'content');
     const reach7 = parseReach7(body.reach7);
     const recordedById = request.headers.get(MEMBER_HEADER);
     const [saved, metric] = await prisma.$transaction(async tx => {
-      const content = await tx.content.update({ where: { id }, data, select: { ...REVIEW_FIELDS, promotion: true } });
+      const content = await tx.content.update({ where: { id }, data, select: { id: true, promotion: true } });
       const key = { contentId_snapshot: { contentId: id, snapshot: D7_SNAPSHOT } };
       const before = await tx.contentMetric.findUnique({ where: key, select: REACH_FIELDS });
       if (reach7 === undefined || reach7 === (before?.reach ?? null)) return [content, before] as const;

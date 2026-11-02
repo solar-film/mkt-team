@@ -6,10 +6,9 @@ import { taskHasKpi } from '@/lib/task-kpi';
  * Monthly KPI กลาง numbers per member, worked out from tasks and contents in the app.
  * No money: advertising or sales figures never enter this module.
  *
- * - ส่งตรงเวลา: work due this month (up to today) handed in on or before its due day,
- *   leaving out work held up by someone else (waitingOn).
- * - ผ่านบรีฟรอบแรก: reviewed work that passed first time; a revision caused by a changed
- *   brief is not the worker's mistake, so it counts as passed.
+ * - ส่งตรงเวลา: work due this month (up to today) handed in on or before its due day. The
+ *   hand-in time is the real post time when the post is found on Facebook/TikTok, otherwise
+ *   the moment the work was marked done. Late is late: no exceptions (user decision 2 Nov 69).
  * - ชิ้นงานเผยแพร่: content finished with its publish day in this month, split organic/paid.
  * - Reach @7 วัน: the D+7 snapshot, averaged per post.
  */
@@ -22,9 +21,6 @@ export interface ReviewItem {
   status: string;
   due: Date | null;
   submittedAt: Date | null;
-  waitingOn: string | null;
-  firstReview: string | null;
-  reviseReason: string | null;
   promotion?: string | null;
   reach7?: number | null;
   engagement7?: number | null;
@@ -40,8 +36,6 @@ export interface MemberSummary {
   avatar: string | null;
   company: string;
   onTime: Ratio;
-  waiting: number;
-  firstPass: Ratio;
   published: { organic: number; paid: number; unknown: number };
   /** Average D+7 reach per post: every post, and split by organic/paid where a member marked it. */
   reach7: { all: number | null; organic: number | null; paid: number | null; posts: number };
@@ -57,7 +51,7 @@ export interface KpiHubSummary {
   /** Last day counted for "due" work: today for the current month, the month end otherwise. */
   countedThrough: string;
   trackingStart: string;
-  team: { onTime: Ratio; firstPass: Ratio; waiting: number; published: { organic: number; paid: number; unknown: number } };
+  team: { onTime: Ratio; published: { organic: number; paid: number; unknown: number } };
   members: MemberSummary[];
 }
 
@@ -132,24 +126,15 @@ export function summarizeMonth(input: {
   const members: MemberSummary[] = input.members.map(member => {
     const mine = input.items.filter(item => assignees(item).includes(member.id));
     const onTime: Ratio = { done: 0, total: 0 };
-    const firstPass: Ratio = { done: 0, total: 0 };
     const published = { organic: 0, paid: 0, unknown: 0 };
     const reach: Record<'all' | 'organic' | 'paid', number[]> = { all: [], organic: [], paid: [] };
-    let waiting = 0;
 
     for (const item of mine) {
       const day = inMonth(item);
       if (!day) continue;
       if (timed(day)) {
-        if (item.waitingOn) waiting++;
-        else {
-          onTime.total++;
-          if (item.submittedAt && bangkokDateKey(item.submittedAt) <= day) onTime.done++;
-        }
-      }
-      if (item.firstReview === 'pass' || item.firstReview === 'revise') {
-        firstPass.total++;
-        if (item.firstReview === 'pass' || item.reviseReason === 'brief') firstPass.done++;
+        onTime.total++;
+        if (item.submittedAt && bangkokDateKey(item.submittedAt) <= day) onTime.done++;
       }
       if (item.kind === 'content' && isContentDone(item.status)) {
         const side = item.promotion === 'organic' || item.promotion === 'paid' ? item.promotion : null;
@@ -169,8 +154,6 @@ export function summarizeMonth(input: {
       avatar: member.avatar,
       company: member.company,
       onTime,
-      waiting,
-      firstPass,
       published,
       reach7: { all: average(reach.all), organic: average(reach.organic), paid: average(reach.paid), posts: reach.all.length },
       kpis: input.kpis.filter(k => k.memberId === member.id).map(({ memberId: _, ...kpi }) => kpi),
@@ -183,23 +166,14 @@ export function summarizeMonth(input: {
   const listed = new Set(input.members.map(member => member.id));
   const team = {
     onTime: { done: 0, total: 0 },
-    firstPass: { done: 0, total: 0 },
-    waiting: 0,
     published: { organic: 0, paid: 0, unknown: 0 },
   };
   for (const item of input.items) {
     const day = inMonth(item);
     if (!day || !assignees(item).some(id => listed.has(id))) continue;
     if (timed(day)) {
-      if (item.waitingOn) team.waiting++;
-      else {
-        team.onTime.total++;
-        if (item.submittedAt && bangkokDateKey(item.submittedAt) <= day) team.onTime.done++;
-      }
-    }
-    if (item.firstReview === 'pass' || item.firstReview === 'revise') {
-      team.firstPass.total++;
-      if (item.firstReview === 'pass' || item.reviseReason === 'brief') team.firstPass.done++;
+      team.onTime.total++;
+      if (item.submittedAt && bangkokDateKey(item.submittedAt) <= day) team.onTime.done++;
     }
     if (item.kind === 'content' && isContentDone(item.status)) {
       const side = item.promotion === 'organic' || item.promotion === 'paid' ? item.promotion : 'unknown';

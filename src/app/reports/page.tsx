@@ -13,19 +13,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { getCompanyColor } from '@/lib/colors';
 import type { ReportReach } from '@/app/api/reports/reach/route';
-
-const isAutoReach = (source: string) => source === 'api' || source === 'windsor';
-
-const ReachCell = ({ reach }: { reach?: ReportReach }) => {
-  if (!reach) return <span style={{ color: '#cbd5e1' }}>—</span>;
-  const auto = isAutoReach(reach.source);
-  return (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.2 }}>
-      <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{reach.reach7.toLocaleString('th-TH')}</span>
-      <span style={{ fontSize: '0.65rem', color: auto ? '#034aad' : '#d97706' }}>{auto ? 'ดึงอัตโนมัติ' : 'กรอกเอง'}</span>
-    </span>
-  );
-};
+import { PromotionField, ReachField } from '@/components/ReportContentFacts';
 
 interface Task {
   id: string; title: string; description: string | null; status: string;
@@ -45,6 +33,7 @@ interface Content {
   link?: string;
   kpiId?: string;
   createdAt?: string | null;
+  promotion?: string | null;
 }
 interface TeamMember {
   id: string; name: string; role: string; avatar: string | null; status: string;
@@ -83,6 +72,15 @@ export default function ReportsPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [reachByContent, setReachByContent] = useState<Record<string, ReportReach>>({});
+  // Organic/Paid chosen on this page since it loaded; the rest comes from the content itself.
+  const [promotionById, setPromotionById] = useState<Record<string, string | null>>({});
+  const reachSaved = (id: string) => (reach: ReportReach | null) => setReachByContent(prev => {
+    const next = { ...prev };
+    if (reach) next[id] = reach; else delete next[id];
+    return next;
+  });
+  const promotionSaved = (id: string) => (promotion: string | null) => setPromotionById(prev => ({ ...prev, [id]: promotion }));
+  const promotionOf = (item: { id: string; promotion?: string | null }) => (item.id in promotionById ? promotionById[item.id] : item.promotion);
 
   const [memberFilter, setMemberFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -323,7 +321,8 @@ export default function ReportsPage() {
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '90px' }}>ประเภท</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '360px' }}>หัวข้อ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b' }}>ลิงก์</th>
-                <th style={{ padding: '0.75rem', color: '#64748b', width: '100px', textAlign: 'right' }} title="Reach ของโพสต์เมื่อครบ 7 วัน (D+7)">Reach @7 วัน</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '110px', textAlign: 'right' }} title="Reach ของโพสต์เมื่อครบ 7 วัน (D+7) · Facebook/TikTok ดึงอัตโนมัติ ช่องทางอื่นกรอกในช่อง">Reach @7 วัน</th>
+                <th style={{ padding: '0.75rem', color: '#64748b', width: '120px' }}>Organic / Paid</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '120px' }}>ผู้รับผิดชอบ</th>
                 <th style={{ padding: '0.75rem', color: '#64748b', width: '100px' }}>สถานะ</th>
               </tr>
@@ -354,14 +353,17 @@ export default function ReportsPage() {
                     )}
                   </td>
                   <td style={{ padding: '0.75rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    {item.itemType === 'content' ? <ReachCell reach={reachByContent[item.id]} /> : null}
+                    {item.itemType === 'content' ? <ReachField contentId={item.id} title={item.title} reach={reachByContent[item.id]} onSaved={reachSaved(item.id)} /> : null}
+                  </td>
+                  <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
+                    {item.itemType === 'content' ? <PromotionField contentId={item.id} title={item.title} value={promotionOf(item)} onSaved={promotionSaved(item.id)} /> : null}
                   </td>
                   <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.memberName}</td>
                   <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td>
+                  <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td>
                 </tr>
               )}
             </tbody>
@@ -394,11 +396,14 @@ export default function ReportsPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.75rem' }}>
                 <span style={{ color: '#64748b' }}>{item.date ? formatDateTime(item.date) : '-'}</span>
-                {item.itemType === 'content' && reachByContent[item.id] && (
-                  <span style={{ color: '#475569' }}>Reach @7: <ReachCell reach={reachByContent[item.id]} /></span>
-                )}
                 {getStatusBadge(item.status)}
               </div>
+              {item.itemType === 'content' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#475569' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>Reach @7 <ReachField contentId={item.id} title={item.title} reach={reachByContent[item.id]} onSaved={reachSaved(item.id)} /></span>
+                  <PromotionField contentId={item.id} title={item.title} value={promotionOf(item)} onSaved={promotionSaved(item.id)} />
+                </div>
+              )}
             </div>
           )) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #e2e8f0', borderRadius: '12px' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>

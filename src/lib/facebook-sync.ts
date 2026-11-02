@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { bangkokDateKey } from './bangkok-date';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
@@ -79,11 +80,14 @@ export async function syncFacebookPosts(from: string, to: string, trigger: 'cron
     const byText = matchPosts(unmatched.filter(p => !byLink.has(p.id)), contents, new Set([...taken, ...byLink.values()]));
     const matches = new Map([...byLink, ...byText]);
 
-    await prisma.$transaction(posts.map(post => {
+    await prisma.$transaction(posts.flatMap(post => {
       const contentId = existing.get(post.id)?.contentId ?? matches.get(post.id) ?? null;
       const matchedBy = existing.get(post.id)?.matchedBy ?? (byLink.has(post.id) ? 'link' : matches.has(post.id) ? 'auto' : null);
       const data = { pageId: post.pageId, createdTime: post.createdTime, message: post.message, reach: post.reach, reactions: post.reactions, comments: post.comments, contentId, matchedBy, fetchedAt: now };
-      return prisma.facebookPost.upsert({ where: { id: post.id }, create: { id: post.id, ...data }, update: data });
+      const writes: Prisma.PrismaPromise<unknown>[] = [prisma.facebookPost.upsert({ where: { id: post.id }, create: { id: post.id, ...data }, update: data })];
+      // วันส่งจริง = the real post time once the post is found (user decision 2 Nov 69).
+      if (contentId) writes.push(prisma.content.updateMany({ where: { id: contentId }, data: { submittedAt: post.createdTime } }));
+      return writes;
     }));
 
     const due = posts

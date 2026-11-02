@@ -21,7 +21,6 @@ import { bangkokDateKey } from '@/lib/bangkok-date';
 import { toast } from 'react-hot-toast';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import TaskKpiSelect from '@/components/TaskKpiSelect';
-import WorkReviewPanel from '@/components/WorkReviewPanel';
 import { validTaskKpiIds } from '@/lib/task-kpi';
 import { hasLink, requiresLinkToComplete } from '@/lib/completion-link';
 import { isKpiMatchPlatform } from '@/lib/content-kpi';
@@ -49,15 +48,8 @@ export interface UnifiedItem {
   link?: string;
   meetingId?: string;
 
-  // KPI กลาง review (WorkReviewPanel)
+  // Hand-in time for KPI กลาง, set by the system only (see lib/work-review.ts)
   submittedAt?: string | null;
-  waitingOn?: string | null;
-  firstReview?: string | null;
-  reviseReason?: string | null;
-  promotion?: string | null;
-  aiReview?: string | null;
-  aiReviewNote?: string | null;
-  aiReviewedAt?: string | null;
 }
 
 export interface TeamMember {
@@ -1166,6 +1158,13 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                     : (viewItem.platform || '-')}
                 </span>
               </div>
+              {/* Set by the system only: the real post time (Facebook/TikTok) or when it was marked done. */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }} title="ระบบบันทึกเอง: เวลาโพสต์จริงจาก Facebook/TikTok ถ้าหาไม่เจอใช้เวลาที่ย้ายเป็นเสร็จแล้ว">
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>วันส่งจริง</span>
+                <span style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 500 }}>
+                  {viewItem.submittedAt ? formatDateTime(viewItem.submittedAt) : '-'}
+                </span>
+              </div>
               {viewItem.link && (
                 <a href={viewItem.link.startsWith('http') ? viewItem.link : `https://${viewItem.link}`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>
                   <svg aria-hidden xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '1rem', height: '1rem' }}>
@@ -1175,20 +1174,6 @@ export default function TaskBoard({ onEventsChange }: TaskBoardProps) {
                 </a>
               )}
             </div>
-
-            {!viewItem.id.startsWith('idea_') && (
-              <WorkReviewPanel
-                key={viewItem.id}
-                kind={viewItem.itemType}
-                id={viewItem.id}
-                values={viewItem}
-                canReview={members.some(m => m.id === currentUserId && m.role === 'Admin')}
-                onSaved={saved => {
-                  setViewItem(prev => (prev ? { ...prev, ...saved } : prev));
-                  setItems(prev => prev.map(i => (i.id === viewItem.id ? { ...i, ...saved } : i)));
-                }}
-              />
-            )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
               <button className="btn btn-secondary" onClick={() => setViewItem(null)}>ปิด</button>
