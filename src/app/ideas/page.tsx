@@ -196,7 +196,7 @@ export default function IdeasPage() {
   if (loading || authLoading) return <div className="loading-container"><div className="loading-spinner"></div></div>;
 
   return (
-    <div className="app-page-container" style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+    <div className="app-page-container" style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: '1rem' }}>
         <div style={{ flex: '1 1 auto', minWidth: '280px' }}>

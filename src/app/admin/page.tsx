@@ -87,7 +87,7 @@ export default function AdminPanel() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "var(--color-bg)" }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100%", backgroundColor: "var(--color-bg)" }}>
         <form onSubmit={handleLogin} className="card" style={{ padding: "2rem", width: "100%", maxWidth: "400px", textAlign: "center" }}>
           <HiOutlineDatabase style={{ fontSize: "3rem", color: "var(--color-primary)", marginBottom: "1rem" }} />
           <h2 style={{ marginBottom: "1.5rem" }}>Admin Database Panel</h2>
