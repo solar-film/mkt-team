@@ -67,7 +67,7 @@ export function FacebookPostsPanel() {
         setProgress(parts > 1 ? `${part + 1}/${parts}` : `${part + 1}`);
         const res = await fetchWorkspace("/api/admin/facebook-posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ month, part }) });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(`ช่วงที่ ${part + 1}: ${data.message || data.error || (res.status === 504 ? "ใช้เวลานานเกิน 60 วินาที" : "ดึงไม่สำเร็จ")}`);
+        if (!res.ok) throw new Error(`ช่วงที่ ${part + 1}: ${data.message || data.error || (res.status === 504 ? "ใช้เวลานานเกินขีดจำกัดของเซิร์ฟเวอร์" : "ดึงไม่สำเร็จ")}`);
         for (const key of Object.keys(total) as (keyof typeof total)[]) total[key] += Number(data[key]) || 0;
         parts = data.parts;
         part++;

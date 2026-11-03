@@ -8,7 +8,7 @@ import { D7_SNAPSHOT, backfillParts } from '@/lib/facebook-posts';
 import { backfillFacebookReach, facebookWindow, syncFacebookPosts } from '@/lib/facebook-sync';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const headers = { 'Cache-Control': 'private, no-store' };
 
