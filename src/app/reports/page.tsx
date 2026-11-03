@@ -211,16 +211,22 @@ export default function ReportsPage() {
   };
 
   const today0 = new Date(); today0.setHours(0, 0, 0, 0);
-  type RowBand = 'collected' | 'upcoming' | 'none';
+  type RowBand = 'collected' | 'soon1' | 'soon2' | 'overdue' | 'none';
   const getRowBand = (item: { itemType: string; id: string; date?: string | null }): RowBand => {
     if (item.itemType !== 'content' || !item.date) return 'none';
     if (reachByContent[item.id]) return 'collected';
     const d7 = new Date(item.date); d7.setDate(d7.getDate() + 7);
-    return d7 >= today0 ? 'upcoming' : 'none';
+    const daysLeft = Math.round((d7.getTime() - today0.getTime()) / 86400000);
+    if (daysLeft < 0) return 'overdue';
+    if (daysLeft <= 1) return 'soon1';
+    if (daysLeft === 2) return 'soon2';
+    return 'none';
   };
   const bandStyle: Record<RowBand, { tr: React.CSSProperties; firstTd: React.CSSProperties }> = {
     collected: { tr: { backgroundColor: '#f0fdf4', borderBottom: '1px solid #d1fae5' }, firstTd: { borderLeft: '3px solid #22c55e' } },
-    upcoming:  { tr: { backgroundColor: '#fffbeb', borderBottom: '1px solid #fef3c7' }, firstTd: { borderLeft: '3px solid #f59e0b' } },
+    soon1:     { tr: { backgroundColor: '#fefce8', borderBottom: '1px solid #fde047' }, firstTd: { borderLeft: '3px solid #ca8a04' } },
+    soon2:     { tr: { backgroundColor: '#fefce8', borderBottom: '1px solid #fef08a' }, firstTd: { borderLeft: '3px solid #fde68a' } },
+    overdue:   { tr: { backgroundColor: '#fff1f2', borderBottom: '1px solid #fecdd3' }, firstTd: { borderLeft: '3px solid #f87171' } },
     none:      { tr: {}, firstTd: {} },
   };
 
@@ -386,17 +392,19 @@ export default function ReportsPage() {
               )}
             </tbody>
           </table>
-          <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.25rem', marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#bbf7d0', display: 'inline-block' }} />เก็บ Reach D+7 แล้ว</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#fde68a', display: 'inline-block' }} />อยู่ในช่วงรอเก็บข้อมูล (≤ D+7)</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#ca8a04', display: 'inline-block' }} />จะเก็บใน ≤ 1 วัน</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#fde68a', display: 'inline-block' }} />จะเก็บในอีก 2 วัน</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#fca5a5', display: 'inline-block' }} />เกิน D+7 ยังไม่มีข้อมูล</span>
           </div>
         </div>
 
         <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {filteredItems.length > 0 ? filteredItems.map((item, i) => {
             const mband = getRowBand(item);
-            const mborderColor = mband === 'collected' ? '#22c55e' : mband === 'upcoming' ? '#f59e0b' : '#f1f5f9';
-            const mbg = mband === 'collected' ? '#f0fdf4' : mband === 'upcoming' ? '#fffbeb' : undefined;
+            const mborderColor = mband === 'collected' ? '#22c55e' : mband === 'soon1' ? '#ca8a04' : mband === 'soon2' ? '#fde68a' : mband === 'overdue' ? '#f87171' : '#f1f5f9';
+            const mbg = mband === 'collected' ? '#f0fdf4' : mband === 'soon1' ? '#fefce8' : mband === 'soon2' ? '#fefce8' : mband === 'overdue' ? '#fff1f2' : undefined;
             return (
             <div key={i} style={{ padding: '1rem', border: `1px solid ${mborderColor}`, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.5rem', ...(mbg ? { backgroundColor: mbg } : {}) }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
