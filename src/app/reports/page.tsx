@@ -204,10 +204,24 @@ export default function ReportsPage() {
     switch(status) {
       case 'todo': return <span className="badge badge-draft">รอดำเนินการ</span>;
       case 'in_progress': return <span className="badge badge-article">กำลังทำ</span>;
-      case 'done': 
+      case 'done':
       case 'published': return <span className="badge badge-published">เสร็จแล้ว</span>;
       default: return null;
     }
+  };
+
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+  type RowBand = 'collected' | 'upcoming' | 'none';
+  const getRowBand = (item: { itemType: string; id: string; date?: string | null }): RowBand => {
+    if (item.itemType !== 'content' || !item.date) return 'none';
+    if (reachByContent[item.id]) return 'collected';
+    const d7 = new Date(item.date); d7.setDate(d7.getDate() + 7);
+    return d7 >= today0 ? 'upcoming' : 'none';
+  };
+  const bandStyle: Record<RowBand, { tr: React.CSSProperties; firstTd: React.CSSProperties }> = {
+    collected: { tr: { backgroundColor: '#f0fdf4', borderBottom: '1px solid #d1fae5' }, firstTd: { borderLeft: '3px solid #22c55e' } },
+    upcoming:  { tr: { backgroundColor: '#fffbeb', borderBottom: '1px solid #fef3c7' }, firstTd: { borderLeft: '3px solid #f59e0b' } },
+    none:      { tr: {}, firstTd: {} },
   };
 
   return (
@@ -328,9 +342,12 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.length > 0 ? filteredItems.map((item, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>{item.date ? formatDateTime(item.date) : '-'}</td>
+              {filteredItems.length > 0 ? filteredItems.map((item, i) => {
+                const band = getRowBand(item);
+                const bs = bandStyle[band];
+                return (
+                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', ...bs.tr }}>
+                  <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', ...bs.firstTd }}>{item.date ? formatDateTime(item.date) : '-'}</td>
                   <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: item.itemType === 'task' ? '#f59e0b' : '#3b82f6' }}>
                       {item.itemType === 'task' ? <HiClipboardDocumentList /> : <HiDocumentText />} 
@@ -361,18 +378,27 @@ export default function ReportsPage() {
                   <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.memberName}</td>
                   <td style={{ padding: '0.75rem' }}>{getStatusBadge(item.status)}</td>
                 </tr>
-              )) : (
+                );
+              }) : (
                 <tr>
                   <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td>
                 </tr>
               )}
             </tbody>
           </table>
+          <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#bbf7d0', display: 'inline-block' }} />เก็บ Reach D+7 แล้ว</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#fde68a', display: 'inline-block' }} />อยู่ในช่วงรอเก็บข้อมูล (≤ D+7)</span>
+          </div>
         </div>
 
         <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filteredItems.length > 0 ? filteredItems.map((item, i) => (
-            <div key={i} style={{ padding: '1rem', border: '1px solid #f1f5f9', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {filteredItems.length > 0 ? filteredItems.map((item, i) => {
+            const mband = getRowBand(item);
+            const mborderColor = mband === 'collected' ? '#22c55e' : mband === 'upcoming' ? '#f59e0b' : '#f1f5f9';
+            const mbg = mband === 'collected' ? '#f0fdf4' : mband === 'upcoming' ? '#fffbeb' : undefined;
+            return (
+            <div key={i} style={{ padding: '1rem', border: `1px solid ${mborderColor}`, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.5rem', ...(mbg ? { backgroundColor: mbg } : {}) }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: item.itemType === 'task' ? '#fffbeb' : '#eff6ff', color: item.itemType === 'task' ? '#f59e0b' : '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -405,7 +431,8 @@ export default function ReportsPage() {
                 </div>
               )}
             </div>
-          )) : (
+            );
+          }) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #e2e8f0', borderRadius: '12px' }}>ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>
           )}
         </div>
