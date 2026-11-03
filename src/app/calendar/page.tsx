@@ -938,7 +938,7 @@ export default function CalendarPage() {
         )}
         
         {newItemType === 'task' ? (
-          <form onSubmit={guard(handleTaskSubmit)}>
+          <form onSubmit={guard(handleTaskSubmit)} className="compact-form">
             <div className="form-group">
               <label className="form-label">ชื่องาน *</label>
               <input type="text" className="form-input" required value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
@@ -1029,7 +1029,7 @@ export default function CalendarPage() {
             </div>
           </form>
         ) : newItemType === 'content' ? (
-          <form onSubmit={guard(handleContentSubmit)}>
+          <form onSubmit={guard(handleContentSubmit)} className="compact-form">
             <div className="form-group">
               <label className="form-label">ชื่อคอนเท้น *</label>
               <input type="text" className="form-input" required value={contentForm.title} onChange={e => setContentForm({...contentForm, title: e.target.value})} />
@@ -1158,7 +1158,7 @@ export default function CalendarPage() {
             </div>
           </form>
         ) : (
-          <form onSubmit={guard(handleEventSubmit)}>
+          <form onSubmit={guard(handleEventSubmit)} className="compact-form">
             <div className="form-group">
               <label className="form-label">ชื่อกิจกรรม / เรื่องที่แจ้งให้ทราบ *</label>
               <input type="text" className="form-input" required placeholder="เช่น วันนี้ประชุม 10 โมง" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
@@ -1183,35 +1183,25 @@ export default function CalendarPage() {
             </div>
             ) : (
             <div className="form-group">
-              <label className="form-label">วันที่ * <span style={{ fontWeight: 400, color: '#64748b' }}>(เลือกได้หลายวัน แต่ละวันใส่เวลาเองได้)</span></label>
-              <DatePicker
-                selectsMultiple
-                selectedDates={eventDays.map(slot => parseISO(slot.date))}
-                onChange={(dates: Date[] | null) => {
-                  const days = [...new Set((dates || []).map(date => format(date, 'yyyy-MM-dd')))].sort();
-                  if (days.length > MAX_EVENT_DATES) { toast.error(`เลือกได้สูงสุด ${MAX_EVENT_DATES} วัน`); return; }
-                  // Days that stay selected keep the time already typed for them.
-                  setEventDays(days.map(date => ({ date, time: eventDays.find(slot => slot.date === date)?.time || '' })));
-                }}
-                shouldCloseOnSelect={false}
-                dateFormat="dd/MM/yyyy"
-                className="form-input"
-                placeholderText="คลิกเพื่อเลือกวัน"
-              />
-              {eventDays.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.6rem' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b' }}>เวลา (ถ้ามี) ของแต่ละวัน</div>
-                  {eventDays.map(slot => {
-                    const label = format(parseISO(slot.date), 'dd/MM/yyyy');
-                    return (
-                      <div key={slot.date} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ minWidth: '6.5rem', fontWeight: 500, color: '#92400e' }}>{label}</span>
-                        <input type="time" className="form-input" aria-label={`เวลา วันที่ ${label}`} value={slot.time} onChange={e => setEventDays(eventDays.map(s => s.date === slot.date ? { ...s, time: e.target.value } : s))} style={{ flex: 1 }} />
-                        <button type="button" className="btn btn-secondary" aria-label={`เอาวันที่ ${label} ออก`} onClick={() => setEventDays(eventDays.filter(s => s.date !== slot.date))} style={{ padding: '0.35rem 0.7rem' }}>×</button>
-                      </div>
-                    );
-                  })}
+              <label className="form-label">วันที่ * <span style={{ fontWeight: 400, color: '#64748b' }}>(เพิ่มได้หลายวัน)</span></label>
+              {eventDays.map((slot, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                  <DatePicker
+                    selected={slot.date ? parseISO(slot.date) : null}
+                    onChange={(date: Date | null) => setEventDays(eventDays.map((s, i) => i === idx ? { ...s, date: date ? format(date, 'yyyy-MM-dd') : '' } : s))}
+                    dateFormat="dd/MM/yyyy"
+                    className="form-input"
+                    placeholderText="วว/ดด/ปปปป"
+                    required={idx === 0}
+                  />
+                  <input type="time" className="form-input" aria-label="เวลา" value={slot.time} onChange={e => setEventDays(eventDays.map((s, i) => i === idx ? { ...s, time: e.target.value } : s))} style={{ width: '9rem', flex: '0 0 auto' }} />
+                  {eventDays.length > 1 && (
+                    <button type="button" className="btn btn-secondary" aria-label="ลบแถวนี้" onClick={() => setEventDays(eventDays.filter((_, i) => i !== idx))} style={{ padding: '0.35rem 0.7rem', flex: '0 0 auto' }}>×</button>
+                  )}
                 </div>
+              ))}
+              {eventDays.length < MAX_EVENT_DATES && (
+                <button type="button" className="btn btn-secondary" onClick={() => setEventDays([...eventDays, { date: '', time: '' }])} style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>+ เพิ่มวันที่</button>
               )}
             </div>
             )}
