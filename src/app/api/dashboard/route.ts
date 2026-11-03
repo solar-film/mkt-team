@@ -41,7 +41,8 @@ async function readGET(request: Request) {
       prisma.content.findMany({
         where: contentWhere,
         include: {
-          member: { select: { id: true, name: true } }
+          member: { select: { id: true, name: true } },
+          metrics: { where: { snapshot: 'D+7' }, select: { reach: true }, take: 1 },
         },
         orderBy: { publishDate: 'asc' }
       }),
@@ -119,9 +120,14 @@ async function readGET(request: Request) {
       }
     });
 
+    const contentsWithReach = finalContents.map((c: any) => {
+      const { metrics, ...rest } = c;
+      return { ...rest, reach7: metrics?.[0]?.reach ?? null };
+    });
+
     return NextResponse.json({
       tasks: finalTasks.map(serializeAssignments),
-      contents: finalContents.map(serializeAssignments),
+      contents: contentsWithReach.map(serializeAssignments),
       members: await withAvatarUrls(members, prisma),
       kpis,
       meetings,
