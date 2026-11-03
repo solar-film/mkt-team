@@ -8,6 +8,7 @@ import { LoginLogPanel, PinPanel } from "./SecurityPanels";
 import { AdsSyncPanel } from "./AdsSyncPanel";
 import { ManualAdsPanel } from "./ManualAdsPanel";
 import { FacebookPostsPanel } from "./FacebookPostsPanel";
+import { SocialReachPanel } from "./SocialReachPanel";
 
 type TableName = "events" | "tasks" | "kpis" | "contents" | "ideas" | "meetings" | "members";
 type AdminTab = TableName | "pins" | "logins" | "ads";
@@ -160,6 +161,7 @@ export default function AdminPanel() {
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <AdsSyncPanel />
           <ManualAdsPanel />
+          <SocialReachPanel />
           <FacebookPostsPanel />
         </div>
       ) : (
