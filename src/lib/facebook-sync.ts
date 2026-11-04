@@ -126,7 +126,7 @@ export interface FacebookBackfillResult extends FacebookSyncResult { created: nu
 /**
  * Fills D+7 reach for a past window from Windsor (admin button): pulls and matches posts like the
  * nightly run, then for every matched post at least 7 days old applies backfillAction — create a
- * D+7, fill an empty/0 reach, or keep a typed one. Each written row says it is the running total.
+ * D+7, fill an empty reach, or keep an existing number including zero. Written rows carry a historical note.
  */
 export async function backfillFacebookReach(from: string, to: string, now = new Date()): Promise<FacebookBackfillResult> {
   const sync = await syncFacebookPosts(from, to, 'admin', now);

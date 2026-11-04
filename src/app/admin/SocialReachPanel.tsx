@@ -49,7 +49,7 @@ export function SocialReachPanel() {
         if (months.length > 24) { setError("เลือกได้ครั้งละไม่เกิน 24 เดือน"); return; }
       }
       const platforms: Platform[] = platform === "all" ? ["instagram", "tiktok_organic"] : [platform];
-      if (!confirm(`เติม Reach ย้อนหลัง ${platforms.map(p => labels[p]).join(" / ")} ช่วง ${from} ถึง ${to}?\n\nเติมเฉพาะช่องว่างของโพสต์ที่ครบ 7 วัน จับคู่ด้วยลิงก์ตรงกันเท่านั้น และคงตัวเลขเดิมรวมถึง 0\n\nค่าที่เติมเป็นยอดสะสม ณ วันที่ดึง พร้อมหมายเหตุว่าไม่ใช่ยอดวันที่ 7 พอดี`)) return;
+      if (!confirm(`เติม Reach ย้อนหลัง ${platforms.map(p => labels[p]).join(" / ")} ช่วง ${from} ถึง ${to}?\n\nเติมเฉพาะช่องว่างของโพสต์ที่ครบ 7 วัน จับคู่ด้วยลิงก์ตรงกันเท่านั้น และคงตัวเลขเดิมรวมถึง 0\nเมื่อบันทึก Reach สำเร็จ จะเปลี่ยนประเภทเป็น Organic แม้เดิมเป็น Paid\n\nค่าที่เติมเป็นยอดสะสม ณ วันที่ดึง พร้อมหมายเหตุว่าไม่ใช่ยอดวันที่ 7 พอดี`)) return;
       state = { steps: months.flatMap(month => platforms.map(p => ({ month, platform: p }))), index: 0, part: 0, parts: 1, total: empty() };
       setResults([]);
     }
@@ -84,7 +84,7 @@ export function SocialReachPanel() {
   return (
     <section className="card" style={{ display: "flex", flexDirection: "column", gap: "1rem" }} aria-labelledby="social-reach-title">
       <h3 id="social-reach-title" style={{ margin: 0 }}>Reach ย้อนหลัง — Instagram / TikTok</h3>
-      <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะ Reach ที่ยังว่างของโพสต์ที่ครบ 7 วัน จับคู่จากลิงก์โพสต์ตรงกัน และคงค่าที่มีอยู่รวมถึง 0 · บันทึกหมายเหตุว่าเป็นยอดสะสมย้อนหลัง ไม่ใช่ยอดวันที่ 7 พอดี · ไม่รวม YouTube</p>
+      <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะ Reach ที่ยังว่างของโพสต์ที่ครบ 7 วัน จับคู่จากลิงก์โพสต์ตรงกัน และคงค่าที่มีอยู่รวมถึง 0 · เมื่อบันทึกสำเร็จเปลี่ยนเป็น Organic แม้เดิมเป็น Paid · บันทึกหมายเหตุว่าเป็นยอดสะสมย้อนหลัง ไม่ใช่ยอดวันที่ 7 พอดี · ไม่รวม YouTube</p>
       <div style={{ display: "flex", alignItems: "end", gap: "0.75rem", flexWrap: "wrap" }}>
         <label>ช่องทาง Reach ย้อนหลัง<select className="form-input" value={platform} disabled={running} onChange={e => { setPlatform(e.target.value as Platform | "all"); setResume(null); setError(""); }}>
           <option value="all">Instagram และ TikTok</option><option value="instagram">Instagram</option><option value="tiktok_organic">TikTok</option>

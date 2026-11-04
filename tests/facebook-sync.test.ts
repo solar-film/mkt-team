@@ -181,6 +181,18 @@ test('Facebook source failure neither records D+7 nor changes Organic/Paid', asy
   assert.equal(s.runs.at(-1).ok, false);
 });
 
+test('Facebook historical collection keeps a previously recorded zero and its Paid choice', async () => {
+  const s = service([row('recorded-zero', '2026-10-05', 900)], [{ id: 'zero', contentId: 'recorded-zero', reach: 0, note: 'ยอดเดิม' }]);
+  const result = await s.backfill();
+  assert.equal(result.created, 0);
+  assert.equal(result.filled, 0);
+  assert.equal(result.kept, 1);
+  assert.equal(s.metrics.get('recorded-zero')?.reach, 0);
+  assert.equal(s.metrics.get('recorded-zero')?.note, 'ยอดเดิม');
+  assert.equal(s.contents.get('recorded-zero')?.promotion, 'paid');
+  assert.equal(s.promotions.length, 0);
+});
+
 test('Facebook historical windows with 46 new D+7 rows use one bulk create instead of one insert per row', async () => {
   const s = service(Array.from({ length: 46 }, (_, i) => row(`bulk-${i}`, '2026-10-10', 100 + i)));
   const result = await s.backfill();

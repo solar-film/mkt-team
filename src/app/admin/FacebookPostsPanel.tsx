@@ -44,7 +44,7 @@ export function FacebookPostsPanel() {
     } finally { setRunning(false); }
   };
 
-  // Past months: fill D+7 reach from the page (empty or 0 only; typed numbers stay).
+  // Past months: fill only missing D+7 reach; every recorded number including zero stays.
   const [month, setMonth] = useState(() => {
     const d = new Date(Date.now() + 7 * 3_600_000);
     d.setUTCDate(1);
@@ -55,7 +55,7 @@ export function FacebookPostsPanel() {
   const [resume, setResume] = useState<{ month: string; part: number; parts: number } | null>(null);
   const resumeFrom = resume && resume.month === month ? resume : null;
   const backfill = async () => {
-    if (!resumeFrom && !confirm(`เติม Reach D+7 ของเดือน ${month} จาก Windsor?\n\n• คอนเทนต์ที่ยังไม่มี D+7 → สร้างใหม่\n• D+7 ที่ช่อง Reach ว่างหรือเป็น 0 → ใส่ค่าจากเพจ\n• Reach ที่กรอกไว้แล้ว (มากกว่า 0) → คงเดิม\n\nค่าที่ได้เป็นยอดสะสม ณ วันนี้ ไม่ใช่ยอดวันที่ 7 พอดี`)) return;
+    if (!resumeFrom && !confirm(`เติม Reach D+7 ของเดือน ${month} จาก Windsor?\n\n• คอนเทนต์ที่ยังไม่มี D+7 → สร้างใหม่\n• D+7 ที่ช่อง Reach ว่าง → ใส่ค่าจากเพจ\n• Reach ที่มีตัวเลขแล้ว รวมถึง 0 → คงเดิม\n• รายการที่บันทึก Reach สำเร็จ → เปลี่ยนประเภทเป็น Organic แม้เดิมเป็น Paid\n\nค่าที่ได้เป็นยอดสะสม ณ วันนี้ ไม่ใช่ยอดวันที่ 7 พอดี`)) return;
     setRunning(true);
     // One request per week of the month (a whole month is too slow for one request); stop at the first failure.
     const total = { posts: 0, matched: 0, created: 0, filled: 0, kept: 0 };
@@ -106,7 +106,7 @@ export function FacebookPostsPanel() {
         <button className="btn btn-secondary btn-sm" disabled={running || configured === false || !month} onClick={() => void backfill()}>
           {running ? (progress ? `กำลังดึงช่วง ${progress}…` : "กำลังดึง…") : resumeFrom ? `ทำต่อจากช่วงที่ ${resumeFrom.part + 1}/${resumeFrom.parts}` : "เติม Reach เดือนนี้จาก Windsor"}
         </button>
-        <span style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะช่องว่างหรือ 0 · สร้าง D+7 ให้คอนเทนต์ที่ยังไม่มี · ค่าที่กรอกไว้คงเดิม · เป็นยอดสะสม ณ วันที่ดึง</span>
+        <span style={{ fontSize: "0.78rem", color: "var(--color-text-secondary)" }}>เติมเฉพาะช่องว่าง · คงตัวเลขเดิมรวมถึง 0 · เมื่อบันทึกสำเร็จเปลี่ยนเป็น Organic แม้เดิมเป็น Paid · เป็นยอดสะสม ณ วันที่ดึง</span>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>

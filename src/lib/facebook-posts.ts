@@ -227,13 +227,13 @@ export const d7Due = (createdTime: Date, now = new Date()) => {
 export type BackfillAction = 'create' | 'fill' | 'keep';
 
 /**
- * Filling past months from Windsor (user's rule, 1 Nov 69): a content item without D+7 gets one,
- * a D+7 whose reach is empty or 0 takes the page's figure, and any other typed reach stays.
+ * Fill missing Reach only (user's current rule): a content item without D+7 gets one,
+ * a null Reach takes the page's figure, and every recorded number including zero stays.
  * The page figure is the running total on the day it is pulled, not the exact day-7 number.
  */
 export function backfillAction(existing: { reach: number | null } | null): BackfillAction {
   if (!existing) return 'create';
-  return existing.reach === null || existing.reach === 0 ? 'fill' : 'keep';
+  return existing.reach === null ? 'fill' : 'keep';
 }
 
 /** "YYYY-MM" → that month's first day and its last day, cut at `today` (all YYYY-MM-DD); null if invalid or not started. */

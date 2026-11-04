@@ -99,10 +99,10 @@ test('title score: exact start 2, word share otherwise, 0 without the first word
   assert.equal(titleScore('HI-CM 35', text), 0);
 });
 
-test('backfill keeps a typed reach, fills an empty or 0 one, creates a missing D+7', () => {
+test('backfill keeps every recorded reach including zero, fills only null, creates a missing D+7', () => {
   assert.equal(backfillAction(null), 'create');
   assert.equal(backfillAction({ reach: null }), 'fill');
-  assert.equal(backfillAction({ reach: 0 }), 'fill');
+  assert.equal(backfillAction({ reach: 0 }), 'keep');
   assert.equal(backfillAction({ reach: 35 }), 'keep');
 });
 
