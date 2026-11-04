@@ -47,6 +47,7 @@ function service(rows: unknown, contents: Content[], initial: Metric[] = [], bef
   const contentWrites: unknown[] = [];
   let pulls = 0;
   let transactionCount = 0;
+  let bulkCreates = 0;
   const db = {
     content: {
       findMany: async ({ where }: any) => contents.filter(c => (c.platform ?? 'Instagram').toLowerCase() === where.platform.equals.toLowerCase()).map(c => ({ ...c, metrics: metrics.has(c.id) ? [{ ...metrics.get(c.id)! }] : [] })),
@@ -59,10 +60,17 @@ function service(rows: unknown, contents: Content[], initial: Metric[] = [], bef
       },
     },
     contentMetric: {
-      createMany: async ({ data }: any) => {
-        const value = data[0];
-        if (metrics.has(value.contentId)) return { count: 0 };
-        metrics.set(value.contentId, { id: `metric-${value.contentId}`, ...value }); return { count: 1 };
+      createManyAndReturn: async ({ data, skipDuplicates, select }: any) => {
+        bulkCreates++;
+        assert.equal(skipDuplicates, true);
+        assert.deepEqual(Object.keys(select), ['contentId']);
+        const created: { contentId: string }[] = [];
+        for (const value of data) {
+          if (metrics.has(value.contentId)) continue;
+          metrics.set(value.contentId, { id: `metric-${value.contentId}`, ...value });
+          created.push({ contentId: value.contentId });
+        }
+        return created;
       },
       updateMany: async ({ where, data }: any) => {
         const previous = [...metrics.values()].find(metric => metric.id === where.id);
@@ -80,7 +88,7 @@ function service(rows: unknown, contents: Content[], initial: Metric[] = [], bef
       return rows;
     }, safeWindsorMessage: () => 'source failed' },
   });
-  return { metrics, contents: savedContents, contentWrites, pulls: () => pulls, transactions: () => transactionCount,
+  return { metrics, contents: savedContents, contentWrites, pulls: () => pulls, transactions: () => transactionCount, bulkCreates: () => bulkCreates,
     run: (platform = 'instagram', at = now) => module.backfillSocialReach(platform, '2026-10-15', '2026-10-21', at) };
 }
 
@@ -122,6 +130,16 @@ test('fills exact linked blanks including source zero, sets saved items Organic 
     const { promotion: _before, ...originalMetadata } = content;
     assert.deepEqual(metadata, originalMetadata);
   }
+});
+
+test('a busy historical week creates all Reach rows in one bulk request before classifying them', async () => {
+  const contents = Array.from({ length: 50 }, (_, i) => ({ id: `busy-${i}`, link: `https://instagram.com/p/BusyPost${String(i).padStart(4, '0')}/`, promotion: 'paid' }));
+  const s = service(contents.map((_, i) => ig(`BusyPost${String(i).padStart(4, '0')}`, i)), contents);
+  const result = await s.run();
+  assert.equal(result.created, 50);
+  assert.equal(s.bulkCreates(), 1);
+  assert.equal(s.contentWrites.length, 1);
+  assert.ok([...s.contents.values()].every(content => content.promotion === 'organic'));
 });
 
 test('uses a full 168 hours from actual post time, and missing source reach is left blank', async () => {

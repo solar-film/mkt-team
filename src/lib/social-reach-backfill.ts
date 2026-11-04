@@ -24,9 +24,8 @@ export async function backfillSocialReach(platform: SocialReachPlatform, from: s
       select: { id: true, link: true, metrics: { where: { snapshot: D7_SNAPSHOT }, select: { id: true, reach: true, note: true, source: true } } },
     }) : [];
     const seenPosts = new Set<string>();
-    const writes: ((tx: Prisma.TransactionClient) => Prisma.PrismaPromise<{ count: number }>)[] = [];
-    const contentIds: string[] = [];
-    const actions: ('created' | 'filled')[] = [];
+    const creates: Prisma.ContentMetricCreateManyInput[] = [];
+    const fills: { contentId: string; write: (tx: Prisma.TransactionClient) => Prisma.PrismaPromise<{ count: number }> }[] = [];
     for (const content of contents) {
       const postId = socialPostId(platform, content.link);
       const post = postId ? byId.get(postId) : null;
@@ -40,25 +39,26 @@ export async function backfillSocialReach(platform: SocialReachPlatform, from: s
       if (existing && existing.reach !== null) { result.kept++; continue; }
       const note = `Reach จาก ${SOCIAL_CONTENT_PLATFORM[platform]} (Windsor) ย้อนหลัง: ยอดสะสม ณ ${bangkokDateKey(now)} ไม่ใช่ยอดวันที่ 7 พอดี · ${post.url}`;
       if (!existing) {
-        writes.push(tx => tx.contentMetric.createMany({ data: [{ contentId: content.id, snapshot: D7_SNAPSHOT, reach: post.reach, recordedAt: now, source: PAGE_METRIC_SOURCE, note }], skipDuplicates: true }));
-        actions.push('created');
+        creates.push({ contentId: content.id, snapshot: D7_SNAPSHOT, reach: post.reach, recordedAt: now, source: PAGE_METRIC_SOURCE, note });
       } else {
         // Compare-and-set also protects a number or note entered while Windsor was loading.
-        writes.push(tx => tx.contentMetric.updateMany({
+        fills.push({ contentId: content.id, write: tx => tx.contentMetric.updateMany({
           where: { id: existing.id, reach: null, note: existing.note, source: existing.source },
           data: { reach: post.reach, recordedAt: now, source: PAGE_METRIC_SOURCE, note: existing.note ? `${existing.note} · ${note}` : note },
-        }));
-        actions.push('filled');
+        }) });
       }
-      contentIds.push(content.id);
     }
     result.unmatched = normalized.posts.length - seenPosts.size;
-    if (writes.length) {
+    if (creates.length || fills.length) {
       const saved = await recordOrganicReach(async tx => {
-        const saved = await Promise.all(writes.map(write => write(tx)));
-        return { result: saved, contentIds: contentIds.filter((_, index) => saved[index].count > 0) };
+        const created = creates.length ? await tx.contentMetric.createManyAndReturn({ data: creates, skipDuplicates: true, select: { contentId: true } }) : [];
+        const updated = await Promise.all(fills.map(fill => fill.write(tx)));
+        const filledIds = fills.filter((_, index) => updated[index].count > 0).map(fill => fill.contentId);
+        return { result: { created: created.length, filled: filledIds.length }, contentIds: [...created.map(row => row.contentId), ...filledIds] };
       });
-      saved.forEach((write, index) => { if (write.count) result[actions[index]] += write.count; else result.kept++; });
+      result.created += saved.created;
+      result.filled += saved.filled;
+      result.kept += creates.length + fills.length - saved.created - saved.filled;
     }
     result.ok = true;
   } catch (error) { result.message = safeWindsorMessage(error); }

@@ -12,7 +12,7 @@ const row = (id: string, day: string, reach: number | null) => ({
 type Metric = { id: string; contentId: string; reach: number | null; likes?: number | null; comments?: number | null; note?: string | null };
 
 /** Uses the real transaction/classification helper; all persistence and Windsor data stay in memory. */
-function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[] = []) {
+function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[] = [], beforeReachSave?: (metrics: Map<string, Metric>) => void) {
   const contents = new Map((rows ?? []).map(r => {
     const id = r.post_id.slice('page_'.length);
     return [id, { id, title: r.post_message, publishDate: new Date(r.post_created_time),
@@ -25,7 +25,9 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
   const metrics = new Map(initialMetrics.map(m => [m.contentId, { ...m }]));
   const promotions: { ids: string[]; data: Record<string, unknown> }[] = [];
   const runs: any[] = [];
+  const queries = { bulkCreates: 0, singleCreates: 0, fills: 0 };
   let inReachTransaction = false;
+  let beforeSaveCalled = false;
   const lazy = <T>(execute: () => T) => ({ then: (yes: (value: T) => unknown, no: (error: unknown) => unknown) => Promise.resolve().then(execute).then(yes, no) });
   const prisma: any = {
     adSyncRun: { create: async () => ({ id: 'run' }), update: async ({ data }: any) => { runs.push(data); } },
@@ -58,6 +60,7 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
     },
     contentMetric: {
       createManyAndReturn: ({ data, skipDuplicates, select }: any) => lazy(() => {
+        queries.bulkCreates++;
         assert.equal(skipDuplicates, true);
         assert.deepEqual(Object.keys(select), ['contentId']);
         const saved: { contentId: string }[] = [];
@@ -68,8 +71,9 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
         }
         return saved.reverse(); // Prisma does not guarantee returned row order.
       }),
-      findMany: async () => [...metrics.values()],
+      findMany: async () => [...metrics.values()].map(m => ({ ...m })),
       create: ({ data }: any) => lazy(() => {
+        queries.singleCreates++;
         assert.equal(metrics.has(data.contentId), false);
         metrics.set(data.contentId, { id: `m-${data.contentId}`, ...data });
         return { contentId: data.contentId };
@@ -80,9 +84,19 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
         metrics.set(previous.contentId, { ...previous, ...data });
         return { contentId: previous.contentId };
       }),
+      updateMany: ({ where, data }: any) => lazy(() => {
+        queries.fills++;
+        const previous = [...metrics.values()].find(m => Object.entries(where).every(([key, value]) =>
+          value === undefined || (m as any)[key] === value,
+        ));
+        if (!previous) return { count: 0 };
+        metrics.set(previous.contentId, { ...previous, ...data });
+        return { count: 1 };
+      }),
     },
     $transaction: async (writes: any) => {
       if (typeof writes !== 'function') return Promise.all(writes);
+      if (!beforeSaveCalled) { beforeSaveCalled = true; beforeReachSave?.(metrics); }
       inReachTransaction = true;
       try { return await writes(prisma); }
       finally { inReachTransaction = false; }
@@ -94,7 +108,7 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
     './organic-reach': organicReach,
     './windsor': { fetchWindsorConnector: async () => rows, safeWindsorMessage: () => 'source failed' },
   }, { AbortSignal, fetch: async () => { throw new Error('network forbidden in tests'); } });
-  return { contents, metrics, promotions, runs,
+  return { contents, metrics, promotions, runs, queries,
     sync: () => module.syncFacebookPosts('2026-10-01', '2026-11-03', 'cron', now),
     backfill: () => module.backfillFacebookReach('2026-10-01', '2026-11-03', now),
   };
@@ -146,4 +160,37 @@ test('Facebook source failure neither records D+7 nor changes Organic/Paid', asy
   assert.equal(s.metrics.size, 0);
   assert.equal(s.promotions.length, 0);
   assert.equal(s.runs.at(-1).ok, false);
+});
+
+test('Facebook historical windows with 46 new D+7 rows use one bulk create instead of one insert per row', async () => {
+  const s = service(Array.from({ length: 46 }, (_, i) => row(`bulk-${i}`, '2026-10-10', 100 + i)));
+  const result = await s.backfill();
+  assert.equal(result.ok, true);
+  assert.deepEqual([result.created, result.filled, result.kept], [46, 0, 0]);
+  assert.equal(s.queries.bulkCreates, 1, 'one SQL create statement for a seven-day window');
+  assert.equal(s.queries.singleCreates, 0, 'avoid 46 serial inserts inside the timed transaction');
+  assert.equal(s.metrics.size, 46);
+  assert.equal(s.promotions.flatMap(p => p.ids).length, 46);
+  assert.equal([...s.contents.values()].every(c => c.promotion === 'organic'), true);
+});
+
+test('Facebook historical duplicate creates and concurrent edits skipped by CAS keep both member Reach and Paid', async () => {
+  const s = service([
+    row('raced-create', '2026-10-10', 20), row('raced-fill', '2026-10-11', 30), row('saved-fill', '2026-10-12', 40),
+  ], [
+    { id: 'raced-metric', contentId: 'raced-fill', reach: null, likes: 1, comments: 2, note: null },
+    { id: 'saved-metric', contentId: 'saved-fill', reach: null, likes: 3, comments: 4, note: null },
+  ], metrics => {
+    metrics.set('raced-create', { id: 'member-created', contentId: 'raced-create', reach: 0, note: 'member inserted' });
+    metrics.get('raced-fill')!.reach = 99;
+  });
+  const result = await s.backfill();
+  assert.equal(result.ok, true);
+  assert.deepEqual([result.created, result.filled, result.kept], [0, 1, 2]);
+  assert.equal(s.metrics.get('raced-create')?.reach, 0);
+  assert.equal(s.metrics.get('raced-fill')?.reach, 99);
+  assert.equal(s.contents.get('raced-create')?.promotion, 'paid');
+  assert.equal(s.contents.get('raced-fill')?.promotion, 'paid');
+  assert.equal(s.contents.get('saved-fill')?.promotion, 'organic');
+  assert.deepEqual(s.promotions.flatMap(p => p.ids), ['saved-fill']);
 });

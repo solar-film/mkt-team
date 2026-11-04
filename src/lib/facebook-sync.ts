@@ -143,37 +143,40 @@ export async function backfillFacebookReach(from: string, to: string, now = new 
 
   const dayLabel = bangkokDateKey(now);
   const note = (age: number) => `Reach จาก Windsor ย้อนหลัง: ยอดสะสม ณ ${dayLabel} (โพสต์อายุ ${age} วัน) ไม่ใช่ยอดวันที่ 7 พอดี`;
-  const writes: ((tx: Prisma.TransactionClient) => Prisma.PrismaPromise<{ contentId: string }>)[] = [];
+  const creates: Prisma.ContentMetricCreateManyInput[] = [];
+  const fills: { contentId: string; write: (tx: Prisma.TransactionClient) => Prisma.PrismaPromise<{ count: number }> }[] = [];
   const counts = { created: 0, filled: 0, kept: 0 };
   for (const post of ready) {
     const existing = metrics.get(post.contentId!) ?? null;
     const action = backfillAction(existing);
     const age = postAgeDays(post.createdTime, now);
     if (action === 'create') {
-      counts.created++;
-      writes.push(tx => tx.contentMetric.create({
-        data: { contentId: post.contentId!, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments, source: PAGE_METRIC_SOURCE, note: note(age) },
-        select: { contentId: true },
-      }));
+      creates.push({ contentId: post.contentId!, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments, source: PAGE_METRIC_SOURCE, note: note(age) });
     } else if (action === 'fill' && existing) {
-      counts.filled++;
       // Only the empty numbers are filled; likes/comments a member typed stay.
-      writes.push(tx => tx.contentMetric.update({
-        where: { id: existing.id },
+      fills.push({ contentId: post.contentId!, write: tx => tx.contentMetric.updateMany({
+        where: { id: existing.id, reach: existing.reach, likes: existing.likes, comments: existing.comments, note: existing.note },
         data: {
           reach: post.reach,
           likes: existing.likes ?? post.reactions,
           comments: existing.comments ?? post.comments,
           note: existing.note ? `${existing.note} · ${note(age)}` : note(age),
         },
-        select: { contentId: true },
-      }));
+      }) });
     } else counts.kept++;
   }
-  if (writes.length) await recordOrganicReach(async tx => {
-    const saved = await Promise.all(writes.map(write => write(tx)));
-    return { result: undefined, contentIds: saved.map(row => row.contentId) };
-  });
+  if (creates.length || fills.length) {
+    const saved = await recordOrganicReach(async tx => {
+      // One bulk insert keeps a busy historical week within the transaction time budget.
+      const created = creates.length ? await tx.contentMetric.createManyAndReturn({ data: creates, skipDuplicates: true, select: { contentId: true } }) : [];
+      const updated = await Promise.all(fills.map(fill => fill.write(tx)));
+      const filledIds = fills.filter((_, index) => updated[index].count > 0).map(fill => fill.contentId);
+      return { result: { created: created.length, filled: filledIds.length }, contentIds: [...created.map(row => row.contentId), ...filledIds] };
+    });
+    counts.created = saved.created;
+    counts.filled = saved.filled;
+    counts.kept += creates.length + fills.length - saved.created - saved.filled;
+  }
   return { ...sync, ...counts, young: posts.length - ready.length };
 }
 
