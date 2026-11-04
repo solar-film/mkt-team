@@ -73,6 +73,7 @@ const navLinks = [
   { group: 'ทีม & ธุรกิจ', path: '/company', label: 'โครงสร้างธุรกิจ', icon: <HiBuildingOffice2 /> },
   { group: 'ทีม & ธุรกิจ', path: '/sources', label: 'แหล่งข้อมูล', icon: <HiCircleStack /> },
   { group: 'ทีม & ธุรกิจ', path: '/team', label: 'ทีมงาน', icon: <HiUserGroup /> },
+  { group: 'ทีม & ธุรกิจ', path: '/admin', label: 'Admin', icon: <HiLockClosed /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/feedback/admin/', label: 'feedback', icon: <HiChatBubbleLeftRight /> },
   { group: 'ลิงก์ภายนอก', path: 'https://solar-film.github.io/BB/', label: 'BB Meeting', icon: <HiVideoCamera /> },
   { group: 'ลิงก์ภายนอก', path: 'https://goodfilm-price.pages.dev/', label: 'ราคาขาย', icon: <HiTag /> },
@@ -84,10 +85,12 @@ export default function Sidebar() {
   // เป้าหมาย KPI is no longer in the menu; it opens from สรุป & ประเมิน KPI, which stays highlighted there.
   const pathname = currentPath === '/kpis' ? '/kpi-hub' : currentPath;
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const { currentUserId, logout } = useAuth();
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
+  const activeUser = currentUser?.id === currentUserId ? currentUser : null;
+  const isAdmin = activeUser?.role === 'Admin';
+  const canSeeAdminMenu = isAdmin && activeUser?.name === 'OIL';
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMore, setShowMobileMore] = useState(false);
   const activeGroup = navLinks.find(link => link.path === pathname)?.group;
@@ -107,23 +110,22 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    setCurrentUser(null);
     if (currentUserId) {
       if (currentUserId === 'GUEST') {
         setCurrentUser({ id: 'GUEST', name: 'ผู้เยี่ยมชม', role: 'Guest', avatar: null });
         return;
       }
       fetchWorkspace('/api/members')
-        .then(res => res.json())
+        .then(res => res.ok ? res.json() : [])
         .then((data: Member[]) => {
-          const user = data.find(m => m.id === currentUserId);
-          if (user) {
-            setCurrentUser(user);
-            if (user.role === 'Admin') {
-              setIsAdmin(true);
-            }
-          }
-        });
+          if (cancelled) return;
+          const user = Array.isArray(data) ? data.find(m => m.id === currentUserId) : null;
+          setCurrentUser(user || null);
+        }).catch(() => { if (!cancelled) setCurrentUser(null); });
     }
+    return () => { cancelled = true; };
   }, [currentUserId]);
 
   const handleLogout = () => {
@@ -133,6 +135,9 @@ export default function Sidebar() {
   const updateAvatar = (avatar: string | null) => setCurrentUser(prev => (prev ? { ...prev, avatar } : prev));
 
   const visibleLinks = navLinks.filter(link => {
+    if (link.path === '/admin' && !canSeeAdminMenu) {
+      return false;
+    }
     if (link.path === '/team' && !isAdmin) {
       return false;
     }
