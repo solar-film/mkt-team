@@ -39,49 +39,57 @@ test('identical duplicates are deduplicated; conflicting reach, post time, or de
 });
 
 type Metric = { id: string; contentId: string; reach: number | null; note: string | null; source: string; likes?: number };
-type Content = { id: string; link: string; platform?: string; submittedAt?: string };
+type Content = { id: string; link: string; platform?: string; submittedAt?: string; promotion?: string | null };
 
 function service(rows: unknown, contents: Content[], initial: Metric[] = [], beforeSave?: (metrics: Map<string, Metric>) => void) {
   const metrics = new Map(initial.map(metric => [metric.contentId, { ...metric }]));
+  const savedContents = new Map(contents.map(content => [content.id, { ...content }]));
   const contentWrites: unknown[] = [];
   let pulls = 0;
   let transactionCount = 0;
   const db = {
     content: {
       findMany: async ({ where }: any) => contents.filter(c => (c.platform ?? 'Instagram').toLowerCase() === where.platform.equals.toLowerCase()).map(c => ({ ...c, metrics: metrics.has(c.id) ? [{ ...metrics.get(c.id)! }] : [] })),
-      update: (...args: unknown[]) => { contentWrites.push(args); throw new Error('Content must stay unchanged'); },
+      updateMany: async (args: any) => {
+        assert.deepEqual(Object.keys(args.data), ['promotion']);
+        assert.equal(args.data.promotion, 'organic');
+        contentWrites.push(args);
+        for (const id of args.where.id.in) savedContents.get(id)!.promotion = args.data.promotion;
+        return { count: args.where.id.in.length };
+      },
     },
     contentMetric: {
-      createMany: ({ data }: any) => ({ execute: () => {
+      createMany: async ({ data }: any) => {
         const value = data[0];
         if (metrics.has(value.contentId)) return { count: 0 };
         metrics.set(value.contentId, { id: `metric-${value.contentId}`, ...value }); return { count: 1 };
-      } }),
-      updateMany: ({ where, data }: any) => ({ execute: () => {
+      },
+      updateMany: async ({ where, data }: any) => {
         const previous = [...metrics.values()].find(metric => metric.id === where.id);
         if (!previous || previous.reach !== null || previous.note !== where.note || previous.source !== where.source) return { count: 0 };
         metrics.set(previous.contentId, { ...previous, ...data }); return { count: 1 };
-      } }),
+      },
     },
-    $transaction: async (writes: { execute: () => { count: number } }[]) => { transactionCount++; beforeSave?.(metrics); return writes.map(write => write.execute()); },
+    $transaction: async (save: (tx: any) => Promise<unknown>) => { transactionCount++; beforeSave?.(metrics); return save(db); },
   };
+  const organicReach = loadSource('src/lib/organic-reach.ts', { './prisma': { prisma: db } });
   const module = loadSource('src/lib/social-reach-backfill.ts', {
-    './prisma': { prisma: db }, './bangkok-date': { bangkokDateKey }, './facebook-posts': facebookPosts, './social-reach': socialReach,
+    './prisma': { prisma: db }, './organic-reach': organicReach, './bangkok-date': { bangkokDateKey }, './facebook-posts': facebookPosts, './social-reach': socialReach,
     './windsor': { fetchWindsorConnector: async (_platform: string, _from: string, _to: string, fields: string[], timeout: number) => {
       pulls++; assert.ok(fields.includes('media_reach') || fields.includes('video_reach')); assert.equal(timeout, 40_000);
       return rows;
     }, safeWindsorMessage: () => 'source failed' },
   });
-  return { metrics, contentWrites, pulls: () => pulls, transactions: () => transactionCount,
+  return { metrics, contents: savedContents, contentWrites, pulls: () => pulls, transactions: () => transactionCount,
     run: (platform = 'instagram', at = now) => module.backfillSocialReach(platform, '2026-10-15', '2026-10-21', at) };
 }
 
-test('fills every exact linked blank record including real source zero, retains other numbers/notes, and never updates Content', async () => {
+test('fills exact linked blanks including source zero, sets saved items Organic even if Paid, and keeps other metadata/numbers', async () => {
   const contents = [
-    { id: 'new', link: 'https://instagram.com/p/ShortA12345/' },
+    { id: 'new', link: 'https://instagram.com/p/ShortA12345/', promotion: 'paid', submittedAt: '2026-10-20T08:00:00Z' },
     { id: 'duplicate-link', link: 'https://instagram.com/reel/ShortA12345/' },
-    { id: 'empty', link: 'https://instagram.com/p/ShortB12345/' },
-    { id: 'zero', link: 'https://instagram.com/p/ShortC12345/' },
+    { id: 'empty', link: 'https://instagram.com/p/ShortB12345/', promotion: 'paid' },
+    { id: 'zero', link: 'https://instagram.com/p/ShortC12345/', promotion: 'paid' },
     { id: 'typed', link: 'https://instagram.com/p/ShortD12345/' },
     { id: 'wrong-platform', platform: 'YouTube', link: 'https://instagram.com/p/ShortA12345/' },
     { id: 'same-title-but-no-id', link: 'https://instagram.com/p/OtherA12345/' },
@@ -104,7 +112,16 @@ test('fills every exact linked blank record including real source zero, retains 
   assert.deepEqual(s.metrics.get('zero'), initial[1]);
   assert.deepEqual(s.metrics.get('typed'), initial[2]);
   assert.equal(s.metrics.has('wrong-platform'), false);
-  assert.equal(s.contentWrites.length, 0);
+  assert.equal(s.contentWrites.length, 1);
+  assert.equal(s.contents.get('new')?.promotion, 'organic');
+  assert.equal(s.contents.get('empty')?.promotion, 'organic');
+  assert.equal(s.contents.get('zero')?.promotion, 'paid');
+  for (const content of contents) {
+    const saved = s.contents.get(content.id)!;
+    const { promotion: _promotion, ...metadata } = saved;
+    const { promotion: _before, ...originalMetadata } = content;
+    assert.deepEqual(metadata, originalMetadata);
+  }
 });
 
 test('uses a full 168 hours from actual post time, and missing source reach is left blank', async () => {
@@ -122,6 +139,9 @@ test('uses a full 168 hours from actual post time, and missing source reach is l
   assert.deepEqual([result.created, result.young, result.missingReach], [1, 1, 1]);
   assert.equal(s.metrics.has('young'), false);
   assert.equal(s.metrics.has('missing'), false);
+  assert.equal(s.contents.get('exact')?.promotion, 'organic');
+  assert.equal(s.contents.get('young')?.promotion, undefined);
+  assert.equal(s.contents.get('missing')?.promotion, undefined);
 });
 
 test('a concurrent manual create, reach edit, or note edit wins over historical loading', async () => {
@@ -141,12 +161,14 @@ test('a concurrent manual create, reach edit, or note edit wins over historical 
   assert.equal(s.metrics.get('empty')?.reach, 100);
   assert.equal(s.metrics.get('note')?.reach, null);
   assert.equal(s.metrics.get('note')?.note, 'member changed note');
+  assert.equal(s.contentWrites.length, 0, 'concurrent/duplicate no-ops must not set Organic');
 });
 
 test('TikTok identity is exact, an old video can backfill, and failed/ambiguous source data writes nothing', async () => {
   const ttService = service([tt('7699794867555241234', 153)], [{ id: 'tt', platform: 'TikTok', link: 'https://www.tiktok.com/@mhlcarfilm/video/7699794867555241234' }]);
   assert.equal((await ttService.run('tiktok_organic')).created, 1);
   assert.match(ttService.metrics.get('tt')!.note!, /TikTok/);
+  assert.equal(ttService.contents.get('tt')?.promotion, 'organic');
   const failed = service(null, [{ id: 'c', link: 'https://instagram.com/p/ShortA12345/' }]);
   assert.equal((await failed.run()).ok, false);
   assert.equal(failed.transactions(), 0);

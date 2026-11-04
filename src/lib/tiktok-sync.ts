@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
 import { D7_SNAPSHOT, PAGE_METRIC_SOURCE, d7Due, matchByVideo, matchPosts, postAgeDays } from './facebook-posts';
+import { recordOrganicReach } from './organic-reach';
 import {
   TIKTOK_CONTENT_PLATFORM, TIKTOK_SYNC_PLATFORM, TIKTOK_VIDEO_FIELDS, isTikTokShortLink, normalizeTikTokVideos, tiktokVideoIdFromUrl,
 } from './tiktok-posts';
@@ -79,12 +80,16 @@ export async function syncTikTokVideos(from: string, to: string, trigger: 'cron'
     const due = videos
       .map(video => ({ video, contentId: known.get(video.id) ?? fresh.get(video.id) }))
       .filter((v): v is { video: typeof v.video; contentId: string } => Boolean(v.contentId) && d7Due(v.video.createdTime, now) && v.video.reach !== null);
-    const recorded = due.length ? await prisma.contentMetric.createMany({
-      data: due.map(({ video, contentId }) => ({
-        contentId, snapshot: D7_SNAPSHOT, recordedAt: now, reach: video.reach, views: video.views, likes: video.likes, comments: video.comments, shares: video.shares,
-        source: PAGE_METRIC_SOURCE, note: `ดึงอัตโนมัติจาก TikTok (Windsor) ตอนคลิปอายุ ${postAgeDays(video.createdTime, now)} วัน`,
-      })),
-      skipDuplicates: true,
+    const recorded = due.length ? await recordOrganicReach(async tx => {
+      const saved = await tx.contentMetric.createManyAndReturn({
+        data: due.map(({ video, contentId }) => ({
+          contentId, snapshot: D7_SNAPSHOT, recordedAt: now, reach: video.reach, views: video.views, likes: video.likes, comments: video.comments, shares: video.shares,
+          source: PAGE_METRIC_SOURCE, note: `ดึงอัตโนมัติจาก TikTok (Windsor) ตอนคลิปอายุ ${postAgeDays(video.createdTime, now)} วัน`,
+        })),
+        skipDuplicates: true,
+        select: { contentId: true },
+      });
+      return { result: { count: saved.length }, contentIds: saved.map(row => row.contentId) };
     }) : { count: 0 };
 
     await prisma.adSyncRun.update({

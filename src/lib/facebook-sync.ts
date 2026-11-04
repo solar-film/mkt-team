@@ -3,6 +3,7 @@ import { prisma } from './prisma';
 import { bangkokDateKey } from './bangkok-date';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
 import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, PAGE_METRIC_SOURCE, backfillAction, d7Due, isVideoShareLink, matchByVideo, matchPosts, normalizeFacebookPosts, postAgeDays, videoIdFromUrl } from './facebook-posts';
+import { recordOrganicReach } from './organic-reach';
 
 export const FACEBOOK_SYNC_PLATFORM = 'facebook_organic';
 // Long enough that a post seen on day 7 is still re-read on day 9 if a night's run fails.
@@ -93,12 +94,16 @@ export async function syncFacebookPosts(from: string, to: string, trigger: 'cron
     const due = posts
       .map(post => ({ post, contentId: existing.get(post.id)?.contentId ?? matches.get(post.id) }))
       .filter((p): p is { post: typeof p.post; contentId: string } => Boolean(p.contentId) && d7Due(p.post.createdTime, now) && p.post.reach !== null);
-    const recorded = due.length ? await prisma.contentMetric.createMany({
-      data: due.map(({ post, contentId }) => ({
-        contentId, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments,
-        source: PAGE_METRIC_SOURCE, note: `ดึงอัตโนมัติจากเพจ Facebook (Windsor) ตอนโพสต์อายุ ${postAgeDays(post.createdTime, now)} วัน`,
-      })),
-      skipDuplicates: true,
+    const recorded = due.length ? await recordOrganicReach(async tx => {
+      const saved = await tx.contentMetric.createManyAndReturn({
+        data: due.map(({ post, contentId }) => ({
+          contentId, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments,
+          source: PAGE_METRIC_SOURCE, note: `ดึงอัตโนมัติจากเพจ Facebook (Windsor) ตอนโพสต์อายุ ${postAgeDays(post.createdTime, now)} วัน`,
+        })),
+        skipDuplicates: true,
+        select: { contentId: true },
+      });
+      return { result: { count: saved.length }, contentIds: saved.map(row => row.contentId) };
     }) : { count: 0 };
 
     const result = { ok: true, posts: posts.length, matched: matches.size, d7: recorded.count, message: null };
@@ -138,7 +143,7 @@ export async function backfillFacebookReach(from: string, to: string, now = new 
 
   const dayLabel = bangkokDateKey(now);
   const note = (age: number) => `Reach จาก Windsor ย้อนหลัง: ยอดสะสม ณ ${dayLabel} (โพสต์อายุ ${age} วัน) ไม่ใช่ยอดวันที่ 7 พอดี`;
-  const writes = [];
+  const writes: ((tx: Prisma.TransactionClient) => Prisma.PrismaPromise<{ contentId: string }>)[] = [];
   const counts = { created: 0, filled: 0, kept: 0 };
   for (const post of ready) {
     const existing = metrics.get(post.contentId!) ?? null;
@@ -146,13 +151,14 @@ export async function backfillFacebookReach(from: string, to: string, now = new 
     const age = postAgeDays(post.createdTime, now);
     if (action === 'create') {
       counts.created++;
-      writes.push(prisma.contentMetric.create({
+      writes.push(tx => tx.contentMetric.create({
         data: { contentId: post.contentId!, snapshot: D7_SNAPSHOT, recordedAt: now, reach: post.reach, likes: post.reactions, comments: post.comments, source: PAGE_METRIC_SOURCE, note: note(age) },
+        select: { contentId: true },
       }));
     } else if (action === 'fill' && existing) {
       counts.filled++;
       // Only the empty numbers are filled; likes/comments a member typed stay.
-      writes.push(prisma.contentMetric.update({
+      writes.push(tx => tx.contentMetric.update({
         where: { id: existing.id },
         data: {
           reach: post.reach,
@@ -160,10 +166,14 @@ export async function backfillFacebookReach(from: string, to: string, now = new 
           comments: existing.comments ?? post.comments,
           note: existing.note ? `${existing.note} · ${note(age)}` : note(age),
         },
+        select: { contentId: true },
       }));
     } else counts.kept++;
   }
-  if (writes.length) await prisma.$transaction(writes);
+  if (writes.length) await recordOrganicReach(async tx => {
+    const saved = await Promise.all(writes.map(write => write(tx)));
+    return { result: undefined, contentIds: saved.map(row => row.contentId) };
+  });
   return { ...sync, ...counts, young: posts.length - ready.length };
 }
 
