@@ -19,7 +19,7 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
       link: `https://www.facebook.com/page/posts/${id}`, promotion: 'paid', submittedAt: null as string | null }];
   }));
   const posts = new Map((rows ?? []).map(r => [r.post_id, {
-    id: r.post_id, contentId: r.post_id.slice('page_'.length), matchedBy: 'link',
+    id: r.post_id, contentId: r.post_id.slice('page_'.length) as string | null, matchedBy: 'link' as string | null,
     createdTime: new Date(r.post_created_time), reach: r.post_total_media_view_unique,
   }]));
   const metrics = new Map(initialMetrics.map(m => [m.contentId, { ...m }]));
@@ -108,11 +108,30 @@ function service(rows: ReturnType<typeof row>[] | null, initialMetrics: Metric[]
     './organic-reach': organicReach,
     './windsor': { fetchWindsorConnector: async () => rows, safeWindsorMessage: () => 'source failed' },
   }, { AbortSignal, fetch: async () => { throw new Error('network forbidden in tests'); } });
-  return { contents, metrics, promotions, runs, queries,
+  return { contents, posts, metrics, promotions, runs, queries,
     sync: () => module.syncFacebookPosts('2026-10-01', '2026-11-03', 'cron', now),
-    backfill: () => module.backfillFacebookReach('2026-10-01', '2026-11-03', now),
+    backfill: (from = '2026-10-01', to = '2026-11-03') => module.backfillFacebookReach(from, to, now),
   };
 }
+
+test('an exact photo parent-post link pairs despite a generic title, then saves historical Reach and Organic', async () => {
+  const sourceId = '101634951180913_1417619013721591';
+  const s = service([{ ...row('1417619013721591', '2026-07-01', 79), post_id: sourceId }]);
+  const content = [...s.contents.values()][0];
+  content.title = 'ผลงานติดฟิล์มอาคาร';
+  content.link = 'https://www.facebook.com/photo/?fbid=1417619707054855&set=pcb.1417619013721591';
+  s.posts.get(sourceId)!.contentId = null;
+  s.posts.get(sourceId)!.matchedBy = null;
+  const result = await s.backfill('2026-07-01', '2026-07-07');
+  assert.equal(result.ok, true);
+  assert.equal(result.matched, 1);
+  assert.equal(result.created, 1);
+  assert.equal(s.posts.get(sourceId)?.matchedBy, 'link');
+  assert.equal(s.posts.get(sourceId)?.contentId, content.id);
+  assert.equal(s.metrics.get(content.id)?.reach, 79);
+  assert.match(s.metrics.get(content.id)?.note ?? '', /ยอดสะสม ณ/);
+  assert.equal(s.contents.get(content.id)?.promotion, 'organic');
+});
 
 test('Facebook daily changes prior Paid to Organic only for returned newly saved D+7 IDs, including a real zero', async () => {
   const s = service([

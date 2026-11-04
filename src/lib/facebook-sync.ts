@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { bangkokDateKey } from './bangkok-date';
 import { fetchWindsorConnector, safeWindsorMessage } from './windsor';
-import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, PAGE_METRIC_SOURCE, backfillAction, d7Due, isVideoShareLink, matchByVideo, matchPosts, normalizeFacebookPosts, postAgeDays, videoIdFromUrl } from './facebook-posts';
+import { D7_MIN_DAYS, D7_SNAPSHOT, FACEBOOK_POST_FIELDS, PAGE_METRIC_SOURCE, backfillAction, d7Due, isVideoShareLink, matchByPostLink, matchByVideo, matchPosts, normalizeFacebookPosts, postAgeDays, videoIdFromUrl } from './facebook-posts';
 import { recordOrganicReach } from './organic-reach';
 
 export const FACEBOOK_SYNC_PLATFORM = 'facebook_organic';
@@ -71,19 +71,20 @@ export async function syncFacebookPosts(from: string, to: string, trigger: 'cron
       where: { contentId: { in: contents.map(c => c.id) } }, select: { contentId: true },
     })).map(p => p.contentId!));
     const unmatched = posts.filter(p => !existing.get(p.id)?.contentId);
-    // Reels and videos are paired exactly by the number in the content's link; the rest by text and day.
+    // Explicit post IDs (including a photo's parent post) win before video links or title matching.
+    const byPostLink = matchByPostLink(unmatched, contents, taken);
     const videos = new Map<string, string>();
     await Promise.all(contents.filter(c => !taken.has(c.id)).map(async c => {
       const videoId = await contentVideoId(c.link);
       if (videoId) videos.set(c.id, videoId);
     }));
-    const byLink = matchByVideo(unmatched, videos, taken);
-    const byText = matchPosts(unmatched.filter(p => !byLink.has(p.id)), contents, new Set([...taken, ...byLink.values()]));
-    const matches = new Map([...byLink, ...byText]);
+    const byLink = matchByVideo(unmatched.filter(p => !byPostLink.has(p.id)), videos, new Set([...taken, ...byPostLink.values()]));
+    const byText = matchPosts(unmatched.filter(p => !byPostLink.has(p.id) && !byLink.has(p.id)), contents, new Set([...taken, ...byPostLink.values(), ...byLink.values()]));
+    const matches = new Map([...byPostLink, ...byLink, ...byText]);
 
     await prisma.$transaction(posts.flatMap(post => {
       const contentId = existing.get(post.id)?.contentId ?? matches.get(post.id) ?? null;
-      const matchedBy = existing.get(post.id)?.matchedBy ?? (byLink.has(post.id) ? 'link' : matches.has(post.id) ? 'auto' : null);
+      const matchedBy = existing.get(post.id)?.matchedBy ?? (byPostLink.has(post.id) || byLink.has(post.id) ? 'link' : matches.has(post.id) ? 'auto' : null);
       const data = { pageId: post.pageId, createdTime: post.createdTime, message: post.message, reach: post.reach, reactions: post.reactions, comments: post.comments, contentId, matchedBy, fetchedAt: now };
       const writes: Prisma.PrismaPromise<unknown>[] = [prisma.facebookPost.upsert({ where: { id: post.id }, create: { id: post.id, ...data }, update: data })];
       // วันส่งจริง = the real post time once the post is found (user decision 2 Nov 69).

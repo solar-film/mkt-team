@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backfillAction, backfillParts, backfillRange, isVideoShareLink, matchByVideo, videoIdFromUrl, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
+import { backfillAction, backfillParts, backfillRange, isVideoShareLink, matchByVideo, matchByPostLink, videoIdFromUrl, d7Due, matchPosts, normalizeFacebookPosts, postAgeDays, squashText } from '../src/lib/facebook-posts';
 import { ManualAdsError, parseManualAds, skippedPlatforms } from '../src/lib/manual-ads';
 import { brandOf } from '../src/lib/ads-data';
 
@@ -149,6 +149,79 @@ test('Windsor permalink gives the post its reel number, and link pairs are exact
   const videos = new Map([['c1', '2893962230973462'], ['c2', '2893962230973462'], ['c3', '111111111']]);
   assert.deepEqual([...matchByVideo([reel, post], videos)], [['p_1', 'c1']]);
   assert.deepEqual([...matchByVideo([reel], videos, new Set(['c1']))], [['p_1', 'c2']]);
+});
+
+test('the two July photo links match their pcb post IDs, never the individual photo fbid', () => {
+  const matches = matchByPostLink([
+    { id: '101634951180913_1417619013721591' },
+    { id: '109607531869658_1001239392722056' },
+    { id: '101634951180913_1417618987054927' },
+  ], [
+    { id: 'mhl-july-1', link: 'https://www.facebook.com/photo/?fbid=1417618987054927&set=pcb.1417619013721591' },
+    { id: 'car-july-1', link: 'https://www.facebook.com/photo/?fbid=1001239352722060&set=pcb.1001239392722056' },
+  ]);
+  assert.deepEqual([...matches], [
+    ['101634951180913_1417619013721591', 'mhl-july-1'],
+    ['109607531869658_1001239392722056', 'car-july-1'],
+  ]);
+});
+
+test('numeric posts, permalink story_fbid, and photo.php pcb links match on Facebook hosts', () => {
+  assert.deepEqual([...matchByPostLink([
+    { id: 'page_111111111' }, { id: 'page_222222222' }, { id: 'page_333333333' },
+  ], [
+    { id: 'post', link: 'https://www.facebook.com/3MGoodfilm/posts/111111111/?utm_source=test' },
+    { id: 'story', link: 'http://m.facebook.com/permalink.php?story_fbid=222222222&id=123' },
+    { id: 'photo', link: 'https://facebook.com/photo.php?fbid=999999999&set=pcb.333333333&type=3' },
+  ])], [['page_111111111', 'post'], ['page_222222222', 'story'], ['page_333333333', 'photo']]);
+});
+
+test('post-link matching rejects spoofed hosts, credentials, ports, non-http URLs, photo IDs and album sets', () => {
+  const links = [
+    'https://facebook.com.attacker.test/page/posts/123456789',
+    'https://facebook.com@attacker.test/page/posts/123456789',
+    'https://user:password@facebook.com/page/posts/123456789',
+    'https://@facebook.com/page/posts/123456789',
+    'https://facebook.com:444/page/posts/123456789',
+    'https://facebook.com:443/page/posts/123456789',
+    'http://facebook.com:80/page/posts/123456789',
+    'ftp://facebook.com/page/posts/123456789',
+    '//facebook.com/page/posts/123456789',
+    'facebook.com/page/posts/123456789',
+    'https://instagram.com/page/posts/123456789',
+    'https://facebook.com/page/posts/123456789/extra',
+    'https://facebook.com/page/posts/pfbid123456789',
+    'https://facebook.com/photo/?fbid=123456789',
+    'https://facebook.com/photo/?fbid=123456789&set=a.123456789',
+    'https://facebook.com/photo/?set=pcb.123456789.extra',
+    'https://facebook.com/photo/?set=pcb.123456789&set=pcb.987654321',
+    'https://facebook.com/permalink.php?fbid=123456789',
+    'https://facebook.com/permalink.php?story_fbid=123456789&story_fbid=987654321',
+  ];
+  for (const link of links) assert.equal(matchByPostLink([{ id: 'page_123456789' }], [{ id: 'c', link }]).size, 0, link);
+  assert.equal(matchByPostLink([{ id: 'page_123456789' }], [{ id: 'c', link: null }]).size, 0);
+});
+
+test('identical duplicate rows are deduplicated but multiple content IDs or source IDs stay unmatched', () => {
+  const linked = { id: 'c1', link: 'https://facebook.com/page/posts/123456789' };
+  assert.deepEqual([...matchByPostLink([{ id: 'page_123456789' }, { id: 'page_123456789' }], [linked, linked])], [['page_123456789', 'c1']]);
+  assert.equal(matchByPostLink([{ id: 'page_123456789' }], [linked, { ...linked, id: 'c2' }]).size, 0);
+  assert.equal(matchByPostLink([{ id: 'pageA_123456789' }, { id: 'pageB_123456789' }], [linked]).size, 0);
+  // These two content rows really share the same pcb link, so neither is selected.
+  assert.equal(matchByPostLink([{ id: '109607531869658_990305933815402' }], [
+    { id: 'k9ru9l05mqhv3633', link: 'https://www.facebook.com/photo/?fbid=990305900482072&set=pcb.990305933815402' },
+    { id: 'qlj70z9wmqhv1pes', link: 'https://www.facebook.com/photo/?fbid=990305900482072&set=pcb.990305933815402' },
+  ]).size, 0);
+});
+
+test('a content linked to conflicting post IDs or an already taken content is not paired', () => {
+  assert.equal(matchByPostLink([{ id: 'page_111111111' }, { id: 'page_222222222' }], [
+    { id: 'c', link: 'https://facebook.com/page/posts/111111111' },
+    { id: 'c', link: 'https://facebook.com/page/posts/222222222' },
+  ]).size, 0);
+  const taken = new Set(['c']);
+  assert.equal(matchByPostLink([{ id: 'page_111111111' }], [{ id: 'c', link: 'https://facebook.com/page/posts/111111111' }], taken).size, 0);
+  assert.deepEqual([...taken], ['c']);
 });
 
 test('page D+7 figures use a source the live database accepts', async () => {

@@ -157,6 +157,65 @@ export function matchByVideo(posts: Pick<FacebookPostRow, 'id' | 'videoId'>[], c
   return matches;
 }
 
+/** Numeric post links identify posts directly; a photo's pcb set is its post, never its fbid. */
+export function matchByPostLink(
+  posts: Pick<FacebookPostRow, 'id'>[],
+  contents: Pick<{ id: string; link: string | null }, 'id' | 'link'>[],
+  taken = new Set<string>(),
+): Map<string, string> {
+  const postIdFromLink = (link: string | null): string | null => {
+    if (!link) return null;
+    try {
+      const url = new URL(link);
+      const authority = link.match(/^https?:\/\/([^/?#]+)/i)?.[1];
+      // Comparing the raw authority also rejects explicit default ports and empty userinfo.
+      if (!authority || authority.toLowerCase() !== url.hostname.toLowerCase()
+        || (url.protocol !== 'http:' && url.protocol !== 'https:')
+        || (url.hostname !== 'facebook.com' && !url.hostname.endsWith('.facebook.com'))) return null;
+      const pathId = url.pathname.match(/^\/[^/]+\/posts\/(\d+)\/?$/)?.[1];
+      if (pathId) return pathId;
+      if (/^\/permalink\.php\/?$/.test(url.pathname)) {
+        const ids = url.searchParams.getAll('story_fbid');
+        return ids.length === 1 && /^\d+$/.test(ids[0]) ? ids[0] : null;
+      }
+      if (/^\/photo(?:\.php)?\/?$/.test(url.pathname)) {
+        const sets = url.searchParams.getAll('set');
+        return sets.length === 1 ? sets[0].match(/^pcb\.(\d+)$/)?.[1] ?? null : null;
+      }
+    } catch { /* An invalid URL cannot establish a post's identity. */ }
+    return null;
+  };
+  const sources = new Map<string, Set<string>>();
+  for (const post of posts) {
+    const id = post.id.match(/^[^_]+_(\d+)$/)?.[1];
+    if (!id) continue;
+    const ids = sources.get(id) ?? new Set<string>();
+    ids.add(post.id);
+    sources.set(id, ids);
+  }
+  const candidates = new Map<string, Set<string>>();
+  const contentPosts = new Map<string, Set<string>>();
+  for (const content of contents) {
+    if (taken.has(content.id)) continue;
+    const postId = postIdFromLink(content.link);
+    if (!postId) continue;
+    const ids = candidates.get(postId) ?? new Set<string>();
+    ids.add(content.id);
+    candidates.set(postId, ids);
+    const linked = contentPosts.get(content.id) ?? new Set<string>();
+    linked.add(postId);
+    contentPosts.set(content.id, linked);
+  }
+  const matches = new Map<string, string>();
+  for (const [postId, sourceIds] of sources) {
+    const contentIds = candidates.get(postId);
+    if (sourceIds.size !== 1 || contentIds?.size !== 1) continue;
+    const contentId = [...contentIds][0];
+    if (contentPosts.get(contentId)?.size === 1) matches.set([...sourceIds][0], contentId);
+  }
+  return matches;
+}
+
 /** Whole days since the post went up, counted in Thai calendar days. */
 export const postAgeDays = (createdTime: Date, now = new Date()) => dayNumber(now) - dayNumber(createdTime);
 
