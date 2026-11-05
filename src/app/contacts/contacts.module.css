@@ -20,3 +20,7 @@
 .actions { margin-top: 0.75rem; }
 .good { color: #047857; font-weight: 600; }
 .bad { color: #b91c1c; font-weight: 600; white-space: normal !important; }
+
+.groupRow td { background: #eef4fc; font-weight: 700; color: var(--color-text-primary); border-top: 2px solid var(--color-border); }
+.groupRow td small { display: inline; margin-left: 0.4rem; font-weight: 400; }
+td.indent { padding-left: 1.6rem; }

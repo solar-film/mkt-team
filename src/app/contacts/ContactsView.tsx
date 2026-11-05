@@ -30,6 +30,8 @@ const MODE_ICON: Record<ContactsMode, ReactNode> = {
 const count = (n: number | null) => (n === null ? '—' : Math.round(n).toLocaleString('th-TH'));
 const one = (n: number | null) => (n === null ? '—' : n.toLocaleString('th-TH', { maximumFractionDigits: 1 }));
 const baht = (n: number | null) => (n === null ? '—' : `฿${Math.round(n).toLocaleString('th-TH')}`);
+/** Sum that stays null when no value is known (e.g. phone lines have no "new customer" count). */
+const sumOrNull = (values: (number | null)[]) => (values.some(v => v !== null) ? sum(values.map(v => v ?? 0)) : null);
 const percent = (n: number | null) => (n === null ? '—' : `${Math.round(n * 100)}%`);
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 const dayLabel = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -252,6 +254,11 @@ function CompanyTable({ data, filter }: { data: ContactData; filter: Filter }) {
 
 function AccountTable({ data, filter }: { data: ContactData; filter: Filter }) {
   const lines = accountLines(data.rows, data.month, filter);
+  // Group accounts by company (GFS → MHL อาคาร → MHL CAR); keep the busiest-first order inside each group.
+  const groups = COMPANIES.map(company => {
+    const items = lines.filter(l => l.company === company);
+    return { company, lines: items, contacts: sum(items.map(l => l.contacts)), newContacts: sumOrNull(items.map(l => l.newContacts)) };
+  }).filter(g => g.lines.length > 0);
   return (
     <section className={styles.card}>
       <div className={styles.cardHead}>
@@ -261,19 +268,36 @@ function AccountTable({ data, filter }: { data: ContactData; filter: Filter }) {
       {lines.length === 0 ? <p className={styles.foot}>ยังไม่มีข้อมูลเดือนนี้</p> : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>บัญชี</th><th>ช่องทาง</th><th>บริษัท</th><th>การติดต่อ</th><th>ลูกค้าใหม่</th><th>วันที่มีคนติดต่อ</th></tr></thead>
-            <tbody>
-              {lines.map(l => (
-                <tr key={`${l.channel}|${l.company}|${l.account}`}>
-                  <td>{l.account}</td>
-                  <td><i className={styles.swatch} style={{ background: CHANNEL_INFO[l.channel].color }} /> {CHANNEL_INFO[l.channel].label}</td>
-                  <td>{COMPANY_LABEL[l.company]}</td>
-                  <td>{count(l.contacts)}</td>
-                  <td>{count(l.newContacts)}</td>
-                  <td>{l.days}</td>
+            <thead><tr><th>บัญชี</th><th>ช่องทาง</th><th>การติดต่อ</th><th>ลูกค้าใหม่</th><th>วันที่มีคนติดต่อ</th></tr></thead>
+            {groups.map(g => (
+              <tbody key={g.company}>
+                <tr className={own.groupRow}>
+                  <td>{COMPANY_LABEL[g.company]} <small>{g.lines.length} บัญชี</small></td>
+                  <td />
+                  <td>{count(g.contacts)}</td>
+                  <td>{count(g.newContacts)}</td>
+                  <td />
                 </tr>
-              ))}
-            </tbody>
+                {g.lines.map(l => (
+                  <tr key={`${l.channel}|${l.company}|${l.account}`}>
+                    <td className={own.indent}>{l.account}</td>
+                    <td><i className={styles.swatch} style={{ background: CHANNEL_INFO[l.channel].color }} /> {CHANNEL_INFO[l.channel].label}</td>
+                    <td>{count(l.contacts)}</td>
+                    <td>{count(l.newContacts)}</td>
+                    <td>{l.days}</td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+            <tfoot>
+              <tr>
+                <td>รวมทุกบริษัท</td>
+                <td />
+                <td>{count(sum(lines.map(l => l.contacts)))}</td>
+                <td>{count(sumOrNull(lines.map(l => l.newContacts)))}</td>
+                <td />
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
