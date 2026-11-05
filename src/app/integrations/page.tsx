@@ -120,7 +120,7 @@ const INITIAL_LOCATIONS: GbpLocation[] = [
     name: 'บจก.กู๊ดฟิล์ม (GOODFILM)',
     businessKey: 'GFS',
     address: '914/10-11 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
-    owner: 'แต้ว + จ๋าย',
+    owner: 'แต้ว',
     rating: 4.9,
     totalReviews: 110,
     repliedCount: 0,
@@ -174,7 +174,7 @@ export default function GbpReviewsPage() {
   const [loading, setLoading] = useState(true);
 
   const [selectedLocFilter, setSelectedLocFilter] = useState<string>('ALL');
-  const [replyFilter, setReplyFilter] = useState<'ALL' | 'UNREPLIED' | 'REPLIED'>('ALL');
+  const [replyFilter, setReplyFilter] = useState<'ALL' | 'UNREPLIED' | 'REPLIED'>('UNREPLIED');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Auto-Sync Sheet Config Modal
@@ -735,7 +735,9 @@ export default function GbpReviewsPage() {
         >
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f2942', margin: 0 }}>
-              รีวิวจาก Google Maps แยกแต่ละธุรกิจ (วันที่ใหม่สุดอยู่บน)
+              {replyFilter === 'UNREPLIED'
+                ? 'รีวิวจาก Google Maps ที่ยังไม่ได้ตอบ แยกแต่ละธุรกิจ (วันที่ใหม่สุดอยู่บน)'
+                : 'รีวิวจาก Google Maps แยกแต่ละธุรกิจ (วันที่ใหม่สุดอยู่บน)'}
             </h2>
             <p style={{ fontSize: '0.84rem', color: '#5a6f86', margin: '0.2rem 0 0' }}>
               {syncInfo?.porterSheetId
@@ -815,11 +817,14 @@ export default function GbpReviewsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {visibleLocations.map(loc => {
               const brand = BUSINESS_BRAND[loc.businessKey] || BUSINESS_BRAND.GFS;
-              const locLatest10 = reviews
+              const locSorted = reviews
                 .filter(r => r.locationId === loc.id)
-                .sort((a, b) => (b.reviewDate || '').localeCompare(a.reviewDate || ''))
-                .slice(0, MAX_PER_BUSINESS)
-                .filter(matchesReviewFilters);
+                .sort((a, b) => (b.reviewDate || '').localeCompare(a.reviewDate || ''));
+              // รอตอบกลับ: แสดงรีวิวที่ยังไม่ตอบทุกอัน ไม่จำกัดแค่ 10 อันใหม่สุด
+              const locLatest10 = (replyFilter === 'UNREPLIED'
+                ? locSorted
+                : locSorted.slice(0, MAX_PER_BUSINESS)
+              ).filter(matchesReviewFilters);
 
               return (
                 <section
@@ -856,7 +861,7 @@ export default function GbpReviewsPage() {
                           color: brand.color,
                         }}
                       >
-                        {locLatest10.length} รีวิว · ใหม่สุดก่อน
+                        {locLatest10.length} {replyFilter === 'UNREPLIED' ? 'รอตอบกลับ' : 'รีวิว'} · ใหม่สุดก่อน
                       </span>
                     </div>
                   </div>
@@ -873,7 +878,9 @@ export default function GbpReviewsPage() {
                         fontSize: '0.88rem',
                       }}
                     >
-                      ไม่พบรายการรีวิวที่ตรงกับเงื่อนไขการค้นหาสำหรับ {brand.shortTitle}
+                      {replyFilter === 'UNREPLIED' && !searchQuery.trim()
+                        ? `ไม่มีรีวิวที่รอตอบกลับสำหรับ ${brand.shortTitle}`
+                        : `ไม่พบรายการรีวิวที่ตรงกับเงื่อนไขการค้นหาสำหรับ ${brand.shortTitle}`}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

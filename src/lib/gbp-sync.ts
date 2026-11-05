@@ -75,7 +75,7 @@ export const DEFAULT_LOCATIONS: GbpLocationSummary[] = [
     businessKey: 'GFS',
     placeId: PLACE_IDS['loc-gfs'],
     address: '914/10-11 ถ.ลาซาล แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
-    owner: 'แต้ว + จ๋าย',
+    owner: 'แต้ว',
     rating: 4.9,
     totalReviews: 110,
     repliedCount: 0,
@@ -1123,7 +1123,8 @@ export async function loadGbpPageDataFast(): Promise<{
     const isOldMockup = dbLoc && (dbLoc.totalReviews === 48 || dbLoc.totalReviews === 62 || dbLoc.totalReviews === 115);
     return {
       ...def,
-      owner: dbLoc?.owner || def.owner,
+      // ผู้ดูแลกำหนดในโค้ด (ไม่มีหน้าแก้ในเว็บ) ค่าในฐานข้อมูลเป็นค่าเริ่มต้นเก่า
+      owner: def.owner || dbLoc?.owner || '',
       rating: liveStat?.rating ?? (!isOldMockup && dbLoc ? dbLoc.rating : def.rating),
       totalReviews: liveStat?.totalReviews ?? (!isOldMockup && dbLoc ? dbLoc.totalReviews : def.totalReviews),
       repliedCount: !isOldMockup && dbLoc ? dbLoc.repliedCount : 0,
