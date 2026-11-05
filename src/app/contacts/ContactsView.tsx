@@ -8,9 +8,9 @@ import { HiArrowPath, HiArrowUpTray, HiChatBubbleLeftRight, HiPhone, HiPresentat
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { change, daysInMonth, isMonthKey, monthLabel, shiftMonth, thaiMonthShort } from '@/lib/ads-data';
 import {
-  accountLines, CHANNEL_INFO, CHANNELS, COMPANIES, COMPANY_LABEL, companyChannelTable, dailyByChannel, isChannel, isCompany,
-  monthContacts, monthlyByChannel, monthNew, sum, summarizeCallLog, weekdayAverages,
-  type CallLogSummary, type Channel, type Company, type ContactData, type Filter,
+  accountLines, CHANNEL_INFO, CHANNELS, COMPANIES, COMPANY_LABEL, companyChannelTable, dailyByChannel, DATASET_INFO, DATASETS, isChannel, isCompany,
+  isDataset, monthContacts, monthlyByChannel, monthNew, sum, summarizeCallLog, weekdayAverages,
+  type CallLogSummary, type Channel, type Company, type ContactData, type Dataset, type Filter,
 } from '@/lib/contact-data';
 import styles from '../market/market.module.css';
 import own from './contacts.module.css';
@@ -102,9 +102,9 @@ function Tiles({ data, filter }: { data: ContactData; filter: Filter }) {
         notes={<span>นับ {upto} วันที่จบแล้ว</span>}
       />
       <Tile
-        label="ลูกค้าใหม่ (แชท)"
+        label={data.dataset === 'sheet' ? 'ลูกค้าใหม่ (ชีตแอดมิน)' : 'ลูกค้าใหม่ (แชท)'}
         value={count(fresh)}
-        notes={<span>{fresh === null ? 'ช่องทางนี้ไม่แยกลูกค้าใหม่' : 'ทักครั้งแรกในเดือนนี้ · LINE / FB / IG'}</span>}
+        notes={<span>{fresh === null ? 'ช่องทางนี้ไม่แยกลูกค้าใหม่' : data.dataset === 'sheet' ? 'ตามที่แอดมินบันทึกต่อวัน · GFS / MHL อาคาร (CAR ไม่แยก)' : 'ทักครั้งแรกในเดือนนี้ · LINE / FB / IG'}</span>}
       />
     </div>
   );
@@ -268,7 +268,7 @@ function AccountTable({ data, filter }: { data: ContactData; filter: Filter }) {
       {lines.length === 0 ? <p className={styles.foot}>ยังไม่มีข้อมูลเดือนนี้</p> : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>บัญชี</th><th>ช่องทาง</th><th>การติดต่อ</th><th>ลูกค้าใหม่</th><th>วันที่มีคนติดต่อ</th></tr></thead>
+            <thead><tr><th>บัญชี</th><th>ช่องทาง</th><th>การติดต่อ</th><th>{data.dataset === 'sheet' ? 'ลูกค้าใหม่ (ต่อบริษัท)' : 'ลูกค้าใหม่'}</th><th>วันที่มีคนติดต่อ</th></tr></thead>
             {groups.map(g => (
               <tbody key={g.company}>
                 <tr className={own.groupRow}>
@@ -283,7 +283,7 @@ function AccountTable({ data, filter }: { data: ContactData; filter: Filter }) {
                     <td className={own.indent}>{l.account}</td>
                     <td><i className={styles.swatch} style={{ background: CHANNEL_INFO[l.channel].color }} /> {CHANNEL_INFO[l.channel].label}</td>
                     <td>{count(l.contacts)}</td>
-                    <td>{count(l.newContacts)}</td>
+                    <td>{data.dataset === 'sheet' ? '—' : count(l.newContacts)}</td>
                     <td>{l.days}</td>
                   </tr>
                 ))}
@@ -394,7 +394,7 @@ function AdsCard({ data, filter }: { data: ContactData; filter: Filter }) {
         </table>
       </div>
       <p className={styles.foot}>
-        แชทจากโฆษณานับตามนิยามของ Meta (บทสนทนาที่เริ่มใหม่ภายใน 7 วันหลังเห็นโฆษณา) ส่วน FB Chat นับลูกค้าไม่ซ้ำต่อวันจาก GOOD CRM
+        แชทจากโฆษณานับตามนิยามของ Meta (บทสนทนาที่เริ่มใหม่ภายใน 7 วันหลังเห็นโฆษณา) ส่วน FB Chat {data.dataset === 'sheet' ? 'คือลีด FB ที่แอดมินบันทึกในชีต' : 'นับลูกค้าไม่ซ้ำต่อวันจาก GOOD CRM'}
         จึงเป็นสัดส่วนโดยประมาณ อาจเกิน 100% ได้ · GFS รวม B2B และ B2C
       </p>
     </section>
@@ -548,8 +548,10 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
   const month = isMonthKey(askedMonth) ? askedMonth : todayFallback.slice(0, 7);
   const askedCompany = search.get('company');
   const askedChannel = search.get('channel');
+  const askedDataset = search.get('dataset');
   const company: Company | 'all' = isCompany(askedCompany) ? askedCompany : 'all';
   const channel: Channel | 'all' = isChannel(askedChannel) ? askedChannel : 'all';
+  const dataset: Dataset = isDataset(askedDataset) ? askedDataset : 'live';
   const filter = useMemo<Filter>(() => ({ company, channel }), [company, channel]);
 
   const [data, setData] = useState<ContactData | null>(null);
@@ -563,7 +565,7 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
     let alive = true;
     setLoading(true);
     setError(null);
-    fetchWorkspace(`/api/contacts?month=${month}`)
+    fetchWorkspace(`/api/contacts?month=${month}&dataset=${dataset}`)
       .then(async res => {
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(res.status === 401 ? 'กรุณาเข้าสู่ระบบใหม่' : body.error || 'โหลดข้อมูลไม่สำเร็จ');
@@ -572,9 +574,9 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
       .catch(err => { if (alive) setError(err instanceof Error ? err.message : 'โหลดข้อมูลไม่สำเร็จ'); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [month, reload]);
+  }, [month, dataset, reload]);
 
-  const setParam = (key: 'month' | 'company' | 'channel', value: string | null) => {
+  const setParam = (key: 'month' | 'company' | 'channel' | 'dataset', value: string | null) => {
     const params = new URLSearchParams(search.toString());
     if (value) params.set(key, value); else params.delete(key);
     const query = params.toString();
@@ -593,9 +595,11 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
   };
 
   const query = search.toString() ? `?${search.toString()}` : '';
-  const ready = data && data.month === month ? data : null;
+  const ready = data && data.month === month && data.dataset === dataset ? data : null;
   const title = SUBNAV.find(s => s.mode === mode)?.label ?? 'ข้อมูลการติดต่อ';
   const crm = ready?.sync.find(s => s.source === 'goodcrm');
+  const sheets = ready?.sync.find(s => s.source === 'sheets');
+  const sheetMode = dataset === 'sheet';
 
   return (
     <div className={styles.page}>
@@ -604,7 +608,7 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
           <span className={styles.titleIcon} aria-hidden="true">{MODE_ICON[mode]}</span>
           <div>
             <h1>{title}</h1>
-            <p>ข้อมูลการติดต่อ · 1 การติดต่อ = ลูกค้า 1 คนต่อวันต่อบัญชี · {company === 'all' ? 'ทุกบริษัท' : COMPANY_LABEL[company]}</p>
+            <p>{mode === 'phone' ? 'ข้อมูลการติดต่อ · 1 การติดต่อ = ลูกค้า 1 คนต่อวันต่อบัญชี' : DATASET_INFO[dataset].definition} · {company === 'all' ? 'ทุกบริษัท' : COMPANY_LABEL[company]}</p>
           </div>
         </div>
         {mode !== 'phone' && (
@@ -615,6 +619,17 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
                 {monthOptions(ready, month, ready?.today ?? todayFallback).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
               </select>
             </label>
+            <div className={styles.brandGroup} role="group" aria-labelledby="dataset-filter-label">
+              <span id="dataset-filter-label">ชุดข้อมูล</span>
+              <div className={styles.chips}>
+                {DATASETS.map(d => (
+                  <button key={d} type="button" className={styles.chip} aria-pressed={dataset === d} title={DATASET_INFO[d].definition}
+                    onClick={() => setParam('dataset', d === 'live' ? null : d)}>
+                    {DATASET_INFO[d].label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className={styles.brandGroup} role="group" aria-labelledby="company-filter-label">
               <span id="company-filter-label">บริษัท</span>
               <div className={styles.chips}>
@@ -650,16 +665,27 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
 
       {mode === 'phone' ? <PhoneUpload data={data} onSaved={() => setReload(n => n + 1)} /> : ready && (
         <>
-          {!ready.configured && (
+          {!ready.configured && (sheetMode ? (
+            <div className={styles.notice}>
+              <strong>ยังไม่ได้เชื่อมชีตแอดมิน</strong>
+              ผู้ดูแลต้องตั้งค่า ADMIN_REPORT_SHEET_ID และ CAR_CRM_SHEET_ID (และ service account ของ Google) บน Vercel ก่อน ตัวเลขจากชีตจึงจะเข้ามา
+            </div>
+          ) : (
             <div className={styles.notice}>
               <strong>ยังไม่ได้เชื่อม GOOD CRM</strong>
               ผู้ดูแลต้องตั้งค่า GOOD_CRM_URL, GOOD_CRM_PUBLISHABLE_KEY และ GOOD_CRM_STATS_KEY บน Vercel ก่อน ตัวเลข LINE / FB / IG จึงจะเข้ามา
             </div>
-          )}
-          {crm?.lastOk === false && (
+          ))}
+          {!sheetMode && crm?.lastOk === false && (
             <div className={styles.notice}>
               <strong>ดึงข้อมูลจาก GOOD CRM รอบล่าสุดไม่สำเร็จ ({when(crm.lastRunAt)})</strong>
               {crm.lastMessage || 'ไม่ทราบสาเหตุ'} · ตัวเลข LINE / FB / IG เป็นข้อมูลถึงวันที่ {crm.latestDate ?? '—'}
+            </div>
+          )}
+          {sheetMode && sheets?.lastOk === false && (
+            <div className={styles.notice}>
+              <strong>อ่านชีตแอดมินรอบล่าสุดไม่สำเร็จ ({when(sheets.lastRunAt)})</strong>
+              {sheets.lastMessage || 'ไม่ทราบสาเหตุ'} · ตัวเลขเป็นข้อมูลถึงวันที่ {sheets.latestDate ?? '—'}
             </div>
           )}
 
@@ -686,17 +712,26 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
           <section className={`${styles.card} ${styles.foot}`}>
             <div className={styles.actions}>
               <button type="button" className="btn btn-secondary btn-sm" disabled={syncing || !ready.configured} onClick={() => void refresh()}>
-                <HiArrowPath aria-hidden="true" /> {syncing ? 'กำลังดึง…' : 'ดึงข้อมูลล่าสุดจาก GOOD CRM'}
+                <HiArrowPath aria-hidden="true" /> {syncing ? 'กำลังดึง…' : sheetMode ? 'อ่านชีตแอดมินใหม่' : 'ดึงข้อมูลล่าสุดจาก GOOD CRM'}
               </button>
               {syncNote && <span role="status">{syncNote}</span>}
             </div>
-            <ul>
-              <li>LINE OA / FB Chat / IG: ดึงจาก GOOD CRM ทุกคืนหลังเที่ยงคืน (ย้อน 7 วัน) · ข้อมูลถึง {crm?.latestDate ?? '—'} · ดึงสำเร็จล่าสุด {when(crm?.lastOkAt ?? null)}</li>
-              <li>โทร: จากไฟล์ประวัติการโทรที่อัปโหลด · ข้อมูลถึง {ready.sync.find(s => s.source === 'phone')?.latestDate ?? '—'} · <Link href={`/contacts/phone${query}`}>อัปโหลดไฟล์</Link></li>
-              <li>บัญชี: LINE @3mfilm, @goodfilm = GFS · @mhl1 = MHL อาคาร · @maholan = MHL CAR · FB และ IG ตามเพจของแต่ละบริษัท · TikTok ยังไม่ได้เชื่อม</li>
-              <li>LINE @maholan ตั้งแต่ 2 ต.ค. 2569 อ่านจากชีต CAR_Line_Daily (GOOD CRM ไม่ได้รับ @maholan ตั้งแต่ 4 ต.ค.) นับลูกค้าไม่ซ้ำต่อวันเหมือนกัน แต่ไม่แยกลูกค้าใหม่</li>
-              <li>ลูกค้าคนเดียวทักหลายช่องทาง นับแยกตามบัญชี · GOOD CRM เริ่มเก็บตั้งแต่ ก.ย. 2569 ข้อมูลก่อนหน้านั้นไม่มี</li>
-            </ul>
+            {sheetMode ? (
+              <ul>
+                <li>GFS / MHL อาคาร: ชีต คิวเชลล์_admin_report แท็บ #สถิตการติดต่อ ที่แอดมินคีย์รายวัน (โทร / LINE / FB / Walk-in / ลูกค้าใหม่) ตั้งแต่ พ.ย. 2566</li>
+                <li>MHL CAR: ชีต CAR_CRM แท็บ สถิตการติดต่อ (โทร / LINE / FB / TikTok / Walk-in) ตั้งแต่ พ.ย. 2566 · ถึง 5 ต.ค. 2569 พนักงานคีย์เอง ตั้งแต่ 6 ต.ค. 2569 นับอัตโนมัติจากชีต lead · บันทึกเฉพาะวันทำงาน</li>
+                <li>อ่านชีตใหม่ทั้งหมดทุกคืนหลังเที่ยงคืน (แก้ย้อนหลังในชีตแล้วเว็บตามให้) · ข้อมูลถึง {sheets?.latestDate ?? '—'} · อ่านสำเร็จล่าสุด {when(sheets?.lastOkAt ?? null)}</li>
+                <li>ตัวเลขชุดนี้คือลีดที่แอดมินคัดแล้ว จึงน้อยกว่าชุด GOOD CRM ที่นับทุกคนที่ทัก ใช้เทียบกันข้ามชุดไม่ได้ · IG ไม่มีในชีต</li>
+              </ul>
+            ) : (
+              <ul>
+                <li>LINE OA / FB Chat / IG: ดึงจาก GOOD CRM ทุกคืนหลังเที่ยงคืน (ย้อน 7 วัน) · ข้อมูลถึง {crm?.latestDate ?? '—'} · ดึงสำเร็จล่าสุด {when(crm?.lastOkAt ?? null)}</li>
+                <li>โทร: จากไฟล์ประวัติการโทรที่อัปโหลด · ข้อมูลถึง {ready.sync.find(s => s.source === 'phone')?.latestDate ?? '—'} · <Link href={`/contacts/phone${query}`}>อัปโหลดไฟล์</Link></li>
+                <li>บัญชี: LINE @3mfilm, @goodfilm = GFS · @mhl1 = MHL อาคาร · @maholan = MHL CAR · FB และ IG ตามเพจของแต่ละบริษัท · TikTok และ Walk-in มีเฉพาะชุดชีตแอดมิน</li>
+                <li>LINE @maholan ตั้งแต่ 2 ต.ค. 2569 อ่านจากชีต CAR_Line_Daily (GOOD CRM ไม่ได้รับ @maholan ตั้งแต่ 4 ต.ค.) นับลูกค้าไม่ซ้ำต่อวันเหมือนกัน แต่ไม่แยกลูกค้าใหม่</li>
+                <li>ลูกค้าคนเดียวทักหลายช่องทาง นับแยกตามบัญชี · GOOD CRM เริ่มเก็บตั้งแต่ ก.ย. 2569 ข้อมูลก่อนหน้านั้นดูได้ที่ชุด ชีตแอดมิน</li>
+              </ul>
+            )}
           </section>
         </>
       )}

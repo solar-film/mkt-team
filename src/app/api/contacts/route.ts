@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import { brandOf, isMonthKey, shiftMonth } from '@/lib/ads-data';
-import { isChannel, isCompany, type AdChatDay, type Company, type ContactData, type ContactSync } from '@/lib/contact-data';
-import { goodCrmConfigured } from '@/lib/contact-sync';
+import { DATASET_SOURCES, isChannel, isCompany, isDataset, type AdChatDay, type Company, type ContactData, type ContactSync } from '@/lib/contact-data';
+import { adminSheetsConfigured, goodCrmConfigured } from '@/lib/contact-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,19 +20,23 @@ const AD_COMPANY: Record<string, Company | null> = {
  */
 export async function GET(request: Request) {
   const today = bangkokDateKey(new Date());
-  const asked = new URL(request.url).searchParams.get('month');
+  const params = new URL(request.url).searchParams;
+  const asked = params.get('month');
   const month = isMonthKey(asked) ? asked : today.slice(0, 7);
   const compared = [month, shiftMonth(month, -1), shiftMonth(month, -12)];
+  // Live (GOOD CRM + call logs) and the admin lead sheets are different definitions: one dataset per answer.
+  const dataset = isDataset(params.get('dataset')) ? params.get('dataset') as 'live' | 'sheet' : 'live';
+  const source = { in: [...DATASET_SOURCES[dataset]] };
 
   try {
     const [rows, monthGroups, first, adGroups, runs, okRuns, latest] = await Promise.all([
-      prisma.contactDaily.findMany({ where: { month: { in: compared } }, orderBy: [{ date: 'asc' }, { channel: 'asc' }] }),
+      prisma.contactDaily.findMany({ where: { source, month: { in: compared } }, orderBy: [{ date: 'asc' }, { channel: 'asc' }] }),
       prisma.contactDaily.groupBy({
         by: ['month', 'channel', 'company'],
-        where: { month: { gte: shiftMonth(month, -12), lte: month } },
+        where: { source, month: { gte: shiftMonth(month, -12), lte: month } },
         _sum: { contacts: true },
       }),
-      prisma.contactDaily.findFirst({ orderBy: { date: 'asc' }, select: { month: true } }),
+      prisma.contactDaily.findFirst({ where: { source }, orderBy: { date: 'asc' }, select: { month: true } }),
       prisma.adDaily.groupBy({
         by: ['platform', 'accountName', 'campaignName', 'date'],
         where: { month: { in: compared.slice(0, 2) } },
@@ -56,20 +60,23 @@ export async function GET(request: Request) {
       ads.set(key, day);
     }
 
-    const sync: ContactSync[] = (['goodcrm', 'phone'] as const).map(source => {
-      const run = runs.find(r => r.source === source);
+    const latestOf = (sources: readonly string[]) =>
+      latest.filter(l => sources.includes(l.source)).map(l => l._max.date?.toISOString().slice(0, 10) ?? '').filter(Boolean).sort().at(-1) ?? null;
+    const sync: ContactSync[] = (['goodcrm', 'phone', 'sheets'] as const).map(name => {
+      const run = runs.find(r => r.source === name);
       return {
-        source,
+        source: name,
         lastRunAt: run?.startedAt.toISOString() ?? null,
         lastOk: run ? run.ok : null,
         lastMessage: run?.message ?? null,
-        lastOkAt: okRuns.find(r => r.source === source)?.finishedAt?.toISOString() ?? null,
-        latestDate: latest.find(l => l.source === source)?._max.date?.toISOString().slice(0, 10) ?? null,
+        lastOkAt: okRuns.find(r => r.source === name)?.finishedAt?.toISOString() ?? null,
+        latestDate: latestOf(name === 'sheets' ? DATASET_SOURCES.sheet : [name]),
       };
     });
 
     const data: ContactData = {
-      configured: goodCrmConfigured(),
+      configured: dataset === 'sheet' ? adminSheetsConfigured() : goodCrmConfigured(),
+      dataset,
       month,
       today,
       firstMonth: first?.month ?? null,

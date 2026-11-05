@@ -3,15 +3,39 @@
 import { shiftMonth } from './ads-data';
 
 /** Fixed order: it is also the chart colour order (validated categorical slots 1-4). */
-export const CHANNELS = ['line', 'facebook', 'instagram', 'phone'] as const;
+export const CHANNELS = ['line', 'facebook', 'instagram', 'phone', 'walkin', 'tiktok'] as const;
 export type Channel = (typeof CHANNELS)[number];
 
-export const CHANNEL_INFO: Record<Channel, { label: string; color: string; source: 'goodcrm' | 'phone' }> = {
+/** Where a channel's numbers come from in the live dataset; walk-in and TikTok exist only in the admin sheets. */
+export const CHANNEL_INFO: Record<Channel, { label: string; color: string; source: 'goodcrm' | 'phone' | 'sheet' }> = {
   line: { label: 'LINE OA', color: '#2a78d6', source: 'goodcrm' },
   facebook: { label: 'FB Chat', color: '#eb6834', source: 'goodcrm' },
   instagram: { label: 'IG', color: '#1baf7a', source: 'goodcrm' },
   phone: { label: 'โทร', color: '#eda100', source: 'phone' },
+  walkin: { label: 'Walk-in', color: '#8b5cf6', source: 'sheet' },
+  tiktok: { label: 'TikTok', color: '#334155', source: 'sheet' },
 };
+
+/**
+ * Two datasets with different definitions, never mixed on screen. `live` counts every customer who
+ * messaged or called (GOOD CRM, the CAR_Line_Daily sheet, uploaded call logs; since Sep 2026).
+ * `sheet` counts the leads the admins record by hand each day: #สถิตการติดต่อ in คิวเชลล์_admin_report
+ * (GFS / MHL อาคาร) and สถิตการติดต่อ in CAR_CRM (MHL CAR), both kept since Nov 2023.
+ */
+export const DATASETS = ['live', 'sheet'] as const;
+export type Dataset = (typeof DATASETS)[number];
+export const DATASET_INFO: Record<Dataset, { label: string; definition: string }> = {
+  live: { label: 'GOOD CRM', definition: 'ทุกคนที่ทักหรือโทรเข้า · 1 การติดต่อ = ลูกค้า 1 คนต่อวันต่อบัญชี' },
+  sheet: { label: 'ชีตแอดมิน', definition: 'ลีดที่แอดมินคัดและบันทึกในชีตสถิติการติดต่อ · นับต่อวันต่อช่องทาง' },
+};
+export const ADMIN_SHEET_SOURCE = 'admin_sheet';
+export const CAR_STATS_SOURCE = 'car_stats_sheet';
+/** ContactDaily.source values behind each dataset. */
+export const DATASET_SOURCES: Record<Dataset, readonly string[]> = {
+  live: ['goodcrm', 'car_line_sheet', 'phone'],
+  sheet: [ADMIN_SHEET_SOURCE, CAR_STATS_SOURCE],
+};
+export const isDataset = (value: unknown): value is Dataset => DATASETS.includes(value as Dataset);
 
 /** GOOD CRM keeps GFS as one company, so contacts use these three rather than the four ad brands. */
 export const COMPANIES = ['GFS', 'MHL', 'CAR'] as const;
@@ -38,7 +62,7 @@ export interface MonthTotal { month: string; channel: Channel; company: Company;
 export interface AdChatDay { date: string; company: Company; messages: number; spend: number }
 
 export interface ContactSync {
-  source: 'goodcrm' | 'phone';
+  source: 'goodcrm' | 'phone' | 'sheets';
   lastRunAt: string | null;
   lastOk: boolean | null;
   lastMessage: string | null;
@@ -48,6 +72,7 @@ export interface ContactSync {
 
 export interface ContactData {
   configured: boolean;
+  dataset: Dataset;
   month: string;
   today: string;
   firstMonth: string | null;
@@ -386,4 +411,128 @@ export function validatePhoneUpload(body: unknown): PhoneUpload | string {
     seen.add(key);
   }
   return { from, to, companies: companies as Company[], rows: rows as PhoneDayRow[] };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Admin lead sheets (dataset `sheet`): the daily lead counts the admins keep by hand, read with the
+// site's service account. Only count columns are requested; the sheets' customer data never is.
+
+export const ADMIN_SHEET_ACCOUNT = 'ชีตแอดมิน';
+export const CAR_STATS_ACCOUNT = 'ชีต CAR CRM';
+
+export interface SheetSummary { rows: ContactRow[]; from: string | null; to: string | null; duplicateDays: string[] }
+
+type DayCounts = { counts: Partial<Record<Channel, number>>; fresh: number | null; times: number };
+
+const squash = (value: unknown) => String(value ?? '').replace(/\s+/g, '').toLowerCase();
+
+function cellCount(value: unknown, where: string): number {
+  const text = String(value ?? '').replace(/,/g, '').trim();
+  if (!text) return 0;
+  const n = Number(text);
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${where}: "${text}" ไม่ใช่จำนวน`);
+  return n;
+}
+
+/** Adds a day's counts; the same day typed twice is summed and reported, never stored twice. */
+function collect(days: Map<string, DayCounts>, date: string, company: Company, counts: Partial<Record<Channel, number>>, fresh: number | null) {
+  const key = `${date}|${company}`;
+  const day = days.get(key) ?? { counts: {}, fresh: null, times: 0 };
+  for (const [channel, n] of Object.entries(counts) as [Channel, number][]) day.counts[channel] = (day.counts[channel] ?? 0) + n;
+  if (fresh !== null) day.fresh = (day.fresh ?? 0) + fresh;
+  day.times++;
+  days.set(key, day);
+}
+
+/**
+ * One row per channel with contacts. The sheets keep a single "new customers" figure per company and day,
+ * so it rides on the first channel row (chat first); the page shows it per company, not per line.
+ */
+function toSummary(days: Map<string, DayCounts>): SheetSummary {
+  const rows: ContactRow[] = [];
+  const duplicateDays = new Set<string>();
+  for (const [key, day] of days) {
+    const [date, company] = key.split('|') as [string, Company];
+    if (day.times > 1) duplicateDays.add(date);
+    const account = company === 'CAR' ? CAR_STATS_ACCOUNT : ADMIN_SHEET_ACCOUNT;
+    const lines = CHANNELS.filter(c => (day.counts[c] ?? 0) > 0)
+      .map((c): ContactRow => ({ date, channel: c, company, account, contacts: day.counts[c] ?? 0, newContacts: null }));
+    // A day with new customers but no channel count (a typing gap) keeps the figure on an empty LINE row.
+    if (!lines.length && day.fresh) lines.push({ date, channel: 'line', company, account, contacts: 0, newContacts: null });
+    if (lines.length && day.fresh !== null) lines[0].newContacts = day.fresh;
+    rows.push(...lines);
+  }
+  rows.sort((a, b) => a.date.localeCompare(b.date) || a.company.localeCompare(b.company) || a.channel.localeCompare(b.channel));
+  return { rows, from: rows[0]?.date ?? null, to: rows.at(-1)?.date ?? null, duplicateDays: [...duplicateDays].sort() };
+}
+
+/** Column indexes (0-based) in #สถิตการติดต่อ; checked against the header rows before any number is read. */
+const ADMIN_COLUMNS = {
+  GFS: { phone: 8, line: 6, facebook: 7, walkin: 49, fresh: 10 },
+  MHL: { phone: 17, line: 15, facebook: 16, walkin: 53, fresh: 19 },
+} as const;
+
+/**
+ * #สถิตการติดต่อ in คิวเชลล์_admin_report (range A1:BB): row 1 names the company blocks, row 2 the columns,
+ * then one row per day labelled like "วันพุธ  01/11/23" (dd/mm/yy). Rows after `upto` are pre-filled blanks.
+ */
+export function summarizeAdminSheet(values: unknown[][], upto: string): SheetSummary {
+  const [blocks = [], header = []] = values;
+  const expected: [unknown[], number, string][] = [
+    [blocks, 8, 'gfs'], [blocks, 17, 'mhl'], [blocks, 46, 'gfs'], [blocks, 50, 'mhl'],
+    [header, 0, 'วันที่'], [header, 6, 'line'], [header, 7, 'fb'], [header, 8, 'รวมโทร.'], [header, 10, 'ลค.ใหม่'],
+    [header, 15, 'line'], [header, 16, 'fb'], [header, 17, 'รวมโทร.'], [header, 19, 'ลค.ใหม่'], [header, 49, 'walkin'], [header, 53, 'walkin'],
+  ];
+  const wrong = expected.find(([row, index, label]) => squash(row[index]) !== label);
+  if (wrong) throw new Error(`#สถิตการติดต่อ: คอลัมน์ที่ ${wrong[1] + 1} ไม่ใช่ "${wrong[2]}" (ชีตอาจย้ายคอลัมน์)`);
+  const days = new Map<string, DayCounts>();
+  for (let i = 2; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const label = String(row[0] ?? '').trim();
+    if (!label) continue;
+    const match = /(\d{2})\/(\d{2})\/(\d{2})$/.exec(label);
+    const date = match ? `20${match[3]}-${match[2]}-${match[1]}` : '';
+    if (!isDateKey(date)) throw new Error(`#สถิตการติดต่อ แถวที่ ${i + 1}: อ่านวันที่ "${label}" ไม่ได้`);
+    if (date > upto) continue;
+    for (const company of ['GFS', 'MHL'] as const) {
+      const at = ADMIN_COLUMNS[company];
+      const where = `#สถิตการติดต่อ แถวที่ ${i + 1} ${company}`;
+      collect(days, date, company, {
+        phone: cellCount(row[at.phone], where), line: cellCount(row[at.line], where),
+        facebook: cellCount(row[at.facebook], where), walkin: cellCount(row[at.walkin], where),
+      }, cellCount(row[at.fresh], where));
+    }
+  }
+  return toSummary(days);
+}
+
+const CAR_HEADERS = { date: 'วันที่', phone: 'โทร', line: 'line', facebook: 'fb', tiktok: 'tiktok', walkin: 'walkin' } as const;
+
+/**
+ * สถิตการติดต่อ in CAR_CRM (range A:G): a header row, then one row per day ("1/11/2566", Buddhist year)
+ * with โทร / Line / FB / Tiktok / WalkIn counts. Typed by staff until 5 Oct 2026, counted from the lead sheet since.
+ */
+export function summarizeCarStatsSheet(values: unknown[][], upto: string): SheetSummary {
+  const header = (values[0] ?? []).map(squash);
+  const at = Object.fromEntries(Object.entries(CAR_HEADERS).map(([key, label]) => [key, header.indexOf(label)])) as Record<keyof typeof CAR_HEADERS, number>;
+  const missing = (Object.keys(CAR_HEADERS) as (keyof typeof CAR_HEADERS)[]).filter(key => at[key] < 0).map(key => CAR_HEADERS[key]);
+  if (missing.length) throw new Error(`สถิตการติดต่อ (CAR CRM): ไม่พบหัวคอลัมน์ ${missing.join(', ')}`);
+  const days = new Map<string, DayCounts>();
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const text = String(row[at.date] ?? '').trim();
+    if (!text) continue;
+    const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+    let year = match ? Number(match[3]) : 0;
+    if (year > 2400) year -= 543;
+    const date = match ? `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : '';
+    if (!isDateKey(date)) throw new Error(`สถิตการติดต่อ (CAR CRM) แถวที่ ${i + 1}: อ่านวันที่ "${text}" ไม่ได้`);
+    if (date > upto) continue;
+    const where = `สถิตการติดต่อ (CAR CRM) แถวที่ ${i + 1}`;
+    collect(days, date, 'CAR', {
+      phone: cellCount(row[at.phone], where), line: cellCount(row[at.line], where), facebook: cellCount(row[at.facebook], where),
+      tiktok: cellCount(row[at.tiktok], where), walkin: cellCount(row[at.walkin], where),
+    }, null);
+  }
+  return toSummary(days);
 }

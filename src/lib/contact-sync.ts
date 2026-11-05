@@ -1,6 +1,9 @@
 import { JWT } from 'google-auth-library';
 import { prisma } from './prisma';
-import { mergeCarLine, normalizeGoodCrmRows, summarizeCarLineDaily, type ContactRow, type PhoneUpload } from './contact-data';
+import {
+  ADMIN_SHEET_SOURCE, CAR_STATS_SOURCE, mergeCarLine, normalizeGoodCrmRows, summarizeAdminSheet, summarizeCarLineDaily, summarizeCarStatsSheet,
+  type ContactRow, type PhoneUpload, type SheetSummary,
+} from './contact-data';
 
 // GOOD CRM (a separate Supabase project) exposes public.mkt_contact_daily(p_key, p_from, p_to):
 // per day × platform × account counts only, guarded by GOOD_CRM_STATS_KEY (only its hash lives there).
@@ -46,15 +49,18 @@ async function fetchGoodCrm(from: string, to: string): Promise<{ rows: ContactRo
 // existing service account. The sheet id stays in the environment, out of this public repository.
 const CAR_LINE_SOURCE = 'car_line_sheet';
 
-const carLineConfigured = () =>
-  Boolean(process.env.CAR_LINE_SHEET_ID?.trim() && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
+const serviceAccountConfigured = () => Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
+
+const carLineConfigured = () => Boolean(process.env.CAR_LINE_SHEET_ID?.trim() && serviceAccountConfigured());
+
+const sheetsClient = () => new JWT({
+  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+});
 
 async function fetchCarLineSheet() {
-  const client = new JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  });
+  const client = sheetsClient();
   // Column C holds customer IDs and is skipped on purpose.
   const query = ["'CAR_Line_Daily'!A:A", "'CAR_Line_Daily'!D:E"].map(range => `ranges=${encodeURIComponent(range)}`).join('&');
   const response = await client.request<{ valueRanges?: { values?: unknown[][] }[] }>({
@@ -142,4 +148,70 @@ export async function savePhoneUpload(upload: PhoneUpload, fileName: string): Pr
     await prisma.contactSyncRun.update({ where: { id: run.id }, data: { ok: false, message: safeMessage(error), finishedAt: new Date() } }).catch(() => {});
     throw error;
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Admin lead sheets (dataset `sheet`). Sheet ids stay in the environment, out of this public repository:
+// ADMIN_REPORT_SHEET_ID = คิวเชลล์_admin_report (tab #สถิตการติดต่อ), CAR_CRM_SHEET_ID = CAR_CRM (tab สถิตการติดต่อ).
+
+const ADMIN_RANGE = "'#สถิตการติดต่อ'!A1:BB";
+const CAR_STATS_RANGE = "'สถิตการติดต่อ'!A:G";
+/** Both sheets start in November 2023. */
+const SHEETS_FROM = '2023-11-01';
+const SHEETS_SOURCE = 'sheets';
+
+export const adminSheetsConfigured = () =>
+  Boolean((process.env.ADMIN_REPORT_SHEET_ID?.trim() || process.env.CAR_CRM_SHEET_ID?.trim()) && serviceAccountConfigured());
+
+async function readRange(sheetId: string, range: string): Promise<unknown[][]> {
+  const response = await sheetsClient().request<{ values?: unknown[][] }>({
+    url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(range)}`,
+    timeout: 20_000,
+  });
+  return response.data.values ?? [];
+}
+
+/** Admins correct past days in the sheets, so every pull replaces that source's whole history. */
+async function replaceSource(source: string, rows: ContactRow[]) {
+  const data = rows.map(({ date, ...row }) => ({ ...row, date: isoDay(date), month: date.slice(0, 7), source }));
+  await prisma.$transaction(async tx => {
+    await tx.contactDaily.deleteMany({ where: { source } });
+    for (let i = 0; i < data.length; i += 2_000) await tx.contactDaily.createMany({ data: data.slice(i, i + 2_000) });
+  }, { timeout: 60_000 });
+}
+
+/**
+ * Copies both admin sheets into ContactDaily (sources admin_sheet / car_stats_sheet). Each sheet is read and
+ * replaced on its own, so one failing leaves the other's fresh copy and the failed one's previous numbers.
+ */
+export async function syncAdminSheets(to: string, trigger: 'cron' | 'member'): Promise<ContactSyncResult> {
+  const run = await prisma.contactSyncRun.create({ data: { source: SHEETS_SOURCE, trigger, dateFrom: isoDay(SHEETS_FROM), dateTo: isoDay(to) } });
+  const jobs: { id: string | undefined; range: string; source: string; label: string; parse: (values: unknown[][], upto: string) => SheetSummary }[] = [
+    { id: process.env.ADMIN_REPORT_SHEET_ID?.trim(), range: ADMIN_RANGE, source: ADMIN_SHEET_SOURCE, label: '#สถิตการติดต่อ (GFS/MHL)', parse: summarizeAdminSheet },
+    { id: process.env.CAR_CRM_SHEET_ID?.trim(), range: CAR_STATS_RANGE, source: CAR_STATS_SOURCE, label: 'สถิตการติดต่อ (CAR CRM)', parse: summarizeCarStatsSheet },
+  ];
+  const notes: string[] = [];
+  let rows = 0;
+  let failed = 0;
+  if (!serviceAccountConfigured()) { notes.push('ยังไม่ได้ตั้งค่า service account ของ Google'); failed = jobs.length; }
+  else {
+    for (const job of jobs) {
+      if (!job.id) { notes.push(`ยังไม่ได้ตั้งรหัสชีต ${job.label}`); failed++; continue; }
+      try {
+        const summary = job.parse(await readRange(job.id, job.range), to);
+        await replaceSource(job.source, summary.rows);
+        rows += summary.rows.length;
+        if (summary.duplicateDays.length) notes.push(`${job.label}: วันที่ซ้ำ ${summary.duplicateDays.slice(0, 3).join(', ')} รวมยอดทุกแถว`);
+      } catch (error) {
+        failed++;
+        const message = safeMessage(error);
+        console.error(`${job.label} sync failed:`, message);
+        notes.push(`${job.label}: ${message}`);
+      }
+    }
+  }
+  const ok = failed === 0;
+  const message = notes.length ? notes.join(' · ').slice(0, 300) : null;
+  await prisma.contactSyncRun.update({ where: { id: run.id }, data: { ok, rows, message, finishedAt: new Date() } }).catch(() => {});
+  return { ok, from: SHEETS_FROM, to, rows, message };
 }

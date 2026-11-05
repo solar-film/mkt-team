@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  accountLines, callDate, companyChannelTable, dailyByChannel, mergeCarLine, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
-  summarizeCallLog, summarizeCarLineDaily, validatePhoneUpload, weekdayAverages, type ContactRow,
+  accountLines, callDate, companyChannelTable, dailyByChannel, DATASET_SOURCES, mergeCarLine, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
+  summarizeAdminSheet, summarizeCallLog, summarizeCarLineDaily, summarizeCarStatsSheet, validatePhoneUpload, weekdayAverages, type ContactRow,
 } from '../src/lib/contact-data';
 
 // Made-up callers and figures; real numbers never enter this public repository.
@@ -141,4 +141,89 @@ test('CAR LINE from the sheet replaces GOOD CRM from its first full day, and nev
   const failed = mergeCarLine(crm, null, { from: '2026-09-01', to: '2026-10-31' }, new Set(['2026-10-02']));
   assert.equal(failed.sheet, null);
   assert.deepEqual(failed.goodcrm.map(r => `${r.date} ${r.channel}`), ['2026-10-01 line', '2026-10-02 facebook']);
+});
+
+// Admin lead sheets: made-up counts in the real column layout.
+const adminHeader = () => {
+  const blocks = Array<string>(54).fill('');
+  blocks[8] = 'GFS'; blocks[17] = 'MHL'; blocks[46] = 'GFS'; blocks[50] = 'MHL';
+  const header = Array<string>(54).fill('');
+  Object.assign(header, {
+    0: 'วันที่', 6: 'Line', 7: 'FB', 8: 'รวม\nโทร.', 9: 'รวมแชท', 10: 'ลค.ใหม่',
+    15: 'Line', 16: 'FB', 17: 'รวม\nโทร.', 18: 'รวมแชท', 19: 'ลค.ใหม่',
+    46: 'Tel', 47: 'Line', 48: 'FB', 49: 'Walk In', 50: 'Tel', 51: 'Line', 52: 'FB', 53: 'Walk In',
+  });
+  return [blocks, header];
+};
+const adminDay = (label: string, gfs: [string, string, string, string, string], mhl: [string, string, string, string, string]) => {
+  const row = Array<string>(54).fill('');
+  row[0] = label;
+  [row[8], row[6], row[7], row[49], row[10]] = gfs; // โทร, Line, FB, Walk In, ลค.ใหม่
+  [row[17], row[15], row[16], row[53], row[19]] = mhl;
+  return row;
+};
+
+test('admin sheet: one row per company and channel with contacts; new customers ride on the first chat row; blanks after today are skipped', () => {
+  const values = [
+    ...adminHeader(),
+    adminDay('วันพุธ  01/11/23', ['2', '11', '0', '', '3'], ['1', '20', '3', '1', '4']),
+    adminDay('วันพฤหัสบดี  02/11/23', ['0', '0', '0', '0', '0'], ['', '', '', '', '']), // nothing that day
+    adminDay('วันศุกร์  03/11/23', ['1,000', '', '', '', '0'], ['', '', '', '', '2']), // phone only; MHL new customers without a count
+    adminDay('วันจันทร์  06/11/23', ['5', '5', '5', '5', '5'], ['5', '5', '5', '5', '5']), // after upto: pre-filled, ignored
+    [],
+  ];
+  const summary = summarizeAdminSheet(values, '2023-11-05');
+  assert.deepEqual(summary.rows, [
+    { date: '2023-11-01', channel: 'line', company: 'GFS', account: 'ชีตแอดมิน', contacts: 11, newContacts: 3 },
+    { date: '2023-11-01', channel: 'phone', company: 'GFS', account: 'ชีตแอดมิน', contacts: 2, newContacts: null },
+    { date: '2023-11-01', channel: 'facebook', company: 'MHL', account: 'ชีตแอดมิน', contacts: 3, newContacts: null },
+    { date: '2023-11-01', channel: 'line', company: 'MHL', account: 'ชีตแอดมิน', contacts: 20, newContacts: 4 },
+    { date: '2023-11-01', channel: 'phone', company: 'MHL', account: 'ชีตแอดมิน', contacts: 1, newContacts: null },
+    { date: '2023-11-01', channel: 'walkin', company: 'MHL', account: 'ชีตแอดมิน', contacts: 1, newContacts: null },
+    { date: '2023-11-03', channel: 'phone', company: 'GFS', account: 'ชีตแอดมิน', contacts: 1000, newContacts: 0 },
+    { date: '2023-11-03', channel: 'line', company: 'MHL', account: 'ชีตแอดมิน', contacts: 0, newContacts: 2 },
+  ]);
+  assert.equal(summary.from, '2023-11-01');
+  assert.equal(summary.to, '2023-11-03');
+  assert.deepEqual(summary.duplicateDays, []);
+  assert.equal(monthNew(summary.rows, '2023-11', { company: 'all', channel: 'all' }), 9);
+});
+
+test('admin sheet refuses a moved column, an unreadable date or a non-number', () => {
+  const [blocks, header] = adminHeader();
+  const moved = [...header]; moved[49] = 'Tel';
+  assert.throws(() => summarizeAdminSheet([blocks, moved], '2026-12-31'), /คอลัมน์ที่ 50/);
+  assert.throws(() => summarizeAdminSheet([...adminHeader(), adminDay('รวมทั้งเดือน', ['1', '', '', '', ''], ['', '', '', '', ''])], '2026-12-31'), /แถวที่ 3/);
+  assert.throws(() => summarizeAdminSheet([...adminHeader(), adminDay('วันพุธ  01/11/23', ['x', '', '', '', ''], ['', '', '', '', ''])], '2026-12-31'), /ไม่ใช่จำนวน/);
+  assert.equal(summarizeAdminSheet(adminHeader(), '2026-12-31').rows.length, 0);
+});
+
+test('CAR CRM stats sheet: Buddhist dates, five channels, duplicated days summed and reported', () => {
+  const values = [
+    ['ST_ID', 'วันที่', 'โทร', 'Line', 'FB', 'Tiktok', 'WalkIn', 'หมายเหตุ', 'ผู้บันทึก', 'วันที่บันทึกรายการ'],
+    ['a', '1/9/2569', '2', '2', '15', '0', '1', '', 'staff', ''],
+    ['b', '1/9/2569', '5', '5', '20', '', '1', '', 'staff', ''],
+    ['c', '2/9/2569', '0', '8', '13', '1', '0', 'นับอัตโนมัติ', 'ระบบ', ''],
+    ['d', '', '', '', '', '', '', '', '', ''],
+    ['e', '3/9/2569', '9', '9', '9', '9', '9', '', '', ''], // after upto
+  ];
+  const summary = summarizeCarStatsSheet(values, '2026-09-02');
+  assert.deepEqual(summary.rows, [
+    { date: '2026-09-01', channel: 'facebook', company: 'CAR', account: 'ชีต CAR CRM', contacts: 35, newContacts: null },
+    { date: '2026-09-01', channel: 'line', company: 'CAR', account: 'ชีต CAR CRM', contacts: 7, newContacts: null },
+    { date: '2026-09-01', channel: 'phone', company: 'CAR', account: 'ชีต CAR CRM', contacts: 7, newContacts: null },
+    { date: '2026-09-01', channel: 'walkin', company: 'CAR', account: 'ชีต CAR CRM', contacts: 2, newContacts: null },
+    { date: '2026-09-02', channel: 'facebook', company: 'CAR', account: 'ชีต CAR CRM', contacts: 13, newContacts: null },
+    { date: '2026-09-02', channel: 'line', company: 'CAR', account: 'ชีต CAR CRM', contacts: 8, newContacts: null },
+    { date: '2026-09-02', channel: 'tiktok', company: 'CAR', account: 'ชีต CAR CRM', contacts: 1, newContacts: null },
+  ]);
+  assert.deepEqual(summary.duplicateDays, ['2026-09-01']);
+  assert.throws(() => summarizeCarStatsSheet([['ST_ID', 'วันที่', 'โทร']], '2026-12-31'), /ไม่พบหัวคอลัมน์ line, fb, tiktok, walkin/);
+  assert.throws(() => summarizeCarStatsSheet([values[0], ['x', '31/2/2569', '', '', '', '', '']], '2026-12-31'), /แถวที่ 2/);
+});
+
+test('the live and admin-sheet datasets never share a source', () => {
+  const shared = DATASET_SOURCES.live.filter(s => DATASET_SOURCES.sheet.includes(s));
+  assert.deepEqual(shared, []);
+  assert.ok(DATASET_SOURCES.live.includes('goodcrm') && DATASET_SOURCES.live.includes('phone') && DATASET_SOURCES.live.includes('car_line_sheet'));
 });
