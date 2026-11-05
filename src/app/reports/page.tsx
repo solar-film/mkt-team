@@ -83,8 +83,9 @@ export default function ReportsPage() {
   const promotionOf = (item: { id: string; promotion?: string | null }) => (item.id in promotionById ? promotionById[item.id] : item.promotion);
 
   const [memberFilter, setMemberFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  // ค่าเริ่มต้นตามที่พี่ออยกำหนด (5 พ.ย. 69): ดูคอนเทนต์ที่เสร็จแล้ว ของทุกคน ทุกแบรนด์ เดือนปัจจุบัน
+  const [typeFilter, setTypeFilter] = useState('content');
+  const [statusFilter, setStatusFilter] = useState('done');
   const [companyFilter, setCompanyFilter] = useState('all');
   
   const currentDate = new Date();
@@ -238,7 +239,7 @@ export default function ReportsPage() {
         </h1>
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', marginBottom: '1rem' }}>
+      <div style={{ backgroundColor: '#f2f7ff', borderRadius: '16px', padding: '1rem', border: '1px solid #dbe7fb', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', marginBottom: '1rem' }}>
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#334155' }}>
           <HiFunnel /> ตัวกรองข้อมูล
         </h3>
