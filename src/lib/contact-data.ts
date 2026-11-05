@@ -36,6 +36,8 @@ export const DATASET_SOURCES: Record<Dataset, readonly string[]> = {
   sheet: [ADMIN_SHEET_SOURCE, CAR_STATS_SOURCE],
 };
 export const isDataset = (value: unknown): value is Dataset => DATASETS.includes(value as Dataset);
+/** What the pages open on: the admin sheets reach back to Nov 2023, so year comparisons work from the first view. */
+export const DEFAULT_DATASET: Dataset = 'sheet';
 
 /** GOOD CRM keeps GFS as one company, so contacts use these three rather than the four ad brands. */
 export const COMPANIES = ['GFS', 'MHL', 'CAR'] as const;

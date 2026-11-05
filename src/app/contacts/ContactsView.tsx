@@ -8,7 +8,7 @@ import { HiArrowPath, HiArrowUpTray, HiChatBubbleLeftRight, HiPhone, HiPresentat
 import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { change, daysInMonth, isMonthKey, monthLabel, shiftMonth, thaiMonthShort } from '@/lib/ads-data';
 import {
-  accountLines, CHANNEL_INFO, CHANNELS, COMPANIES, COMPANY_LABEL, companyChannelTable, dailyByChannel, DATASET_INFO, DATASETS, isChannel, isCompany,
+  accountLines, CHANNEL_INFO, CHANNELS, COMPANIES, COMPANY_LABEL, companyChannelTable, dailyByChannel, DATASET_INFO, DATASETS, DEFAULT_DATASET, isChannel, isCompany,
   isDataset, monthContacts, monthlyByChannel, monthNew, sum, summarizeCallLog, weekdayAverages, yearOverYear,
   type CallLogSummary, type Channel, type Company, type ContactData, type Dataset, type Filter,
 } from '@/lib/contact-data';
@@ -644,7 +644,7 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
   const askedDataset = search.get('dataset');
   const company: Company | 'all' = isCompany(askedCompany) ? askedCompany : 'all';
   const channel: Channel | 'all' = isChannel(askedChannel) ? askedChannel : 'all';
-  const dataset: Dataset = isDataset(askedDataset) ? askedDataset : 'live';
+  const dataset: Dataset = isDataset(askedDataset) ? askedDataset : DEFAULT_DATASET;
   const filter = useMemo<Filter>(() => ({ company, channel }), [company, channel]);
 
   const [data, setData] = useState<ContactData | null>(null);
@@ -717,7 +717,7 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
               <div className={styles.chips}>
                 {DATASETS.map(d => (
                   <button key={d} type="button" className={styles.chip} aria-pressed={dataset === d} title={DATASET_INFO[d].definition}
-                    onClick={() => setParam('dataset', d === 'live' ? null : d)}>
+                    onClick={() => setParam('dataset', d === DEFAULT_DATASET ? null : d)}>
                     {DATASET_INFO[d].label}
                   </button>
                 ))}

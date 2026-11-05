@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { bangkokDateKey } from '@/lib/bangkok-date';
 import { brandOf, isMonthKey, shiftMonth } from '@/lib/ads-data';
-import { DATASET_SOURCES, isChannel, isCompany, isDataset, type AdChatDay, type Company, type ContactData, type ContactSync } from '@/lib/contact-data';
+import { DATASET_SOURCES, DEFAULT_DATASET, isChannel, isCompany, isDataset, type AdChatDay, type Company, type ContactData, type ContactSync } from '@/lib/contact-data';
 import { adminSheetsConfigured, goodCrmConfigured } from '@/lib/contact-sync';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const month = isMonthKey(asked) ? asked : today.slice(0, 7);
   const compared = [month, shiftMonth(month, -1), shiftMonth(month, -12)];
   // Live (GOOD CRM + call logs) and the admin lead sheets are different definitions: one dataset per answer.
-  const dataset = isDataset(params.get('dataset')) ? params.get('dataset') as 'live' | 'sheet' : 'live';
+  const dataset = isDataset(params.get('dataset')) ? params.get('dataset') as 'live' | 'sheet' : DEFAULT_DATASET;
   const source = { in: [...DATASET_SOURCES[dataset]] };
   // Monthly totals span the selected year and the one before: the 13-month series and the year comparison both fit.
   const year = Number(month.slice(0, 4));

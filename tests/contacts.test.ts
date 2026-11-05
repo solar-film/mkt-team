@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  accountLines, callDate, companyChannelTable, dailyByChannel, DATASET_SOURCES, mergeCarLine, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
+  accountLines, callDate, companyChannelTable, dailyByChannel, DATASET_SOURCES, DEFAULT_DATASET, mergeCarLine, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
   summarizeAdminSheet, summarizeCallLog, summarizeCarLineDaily, summarizeCarStatsSheet, validatePhoneUpload, weekdayAverages, yearOverYear,
   type ContactRow, type MonthTotal,
 } from '../src/lib/contact-data';
@@ -227,6 +227,8 @@ test('the live and admin-sheet datasets never share a source', () => {
   const shared = DATASET_SOURCES.live.filter(s => DATASET_SOURCES.sheet.includes(s));
   assert.deepEqual(shared, []);
   assert.ok(DATASET_SOURCES.live.includes('goodcrm') && DATASET_SOURCES.live.includes('phone') && DATASET_SOURCES.live.includes('car_line_sheet'));
+  // The pages open on the admin sheets, the only dataset with a previous year to compare against.
+  assert.equal(DEFAULT_DATASET, 'sheet');
 });
 
 test('year comparison lines up each month with the year before; months not started yet are null, filters apply', () => {
