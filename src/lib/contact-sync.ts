@@ -154,8 +154,12 @@ export async function savePhoneUpload(upload: PhoneUpload, fileName: string): Pr
 // Admin lead sheets (dataset `sheet`). Sheet ids stay in the environment, out of this public repository:
 // ADMIN_REPORT_SHEET_ID = คิวเชลล์_admin_report (tab #สถิตการติดต่อ), CAR_CRM_SHEET_ID = CAR_CRM (tab สถิตการติดต่อ).
 
-const ADMIN_RANGE = "'#สถิตการติดต่อ'!A1:BB";
+const ADMIN_TAB = '#สถิตการติดต่อ';
+/** Only the column groups summarizeAdminSheet reads (date, GFS and MHL totals, the Tel/Line/FB/Walk In block with its headers): 19 of the tab's 92 columns, each placed at its real index. */
+const ADMIN_COLUMNS: readonly (readonly [string, number])[] = [['A:A', 0], ['G:K', 6], ['P:T', 15], ['AU:BB', 46]];
 const CAR_STATS_RANGE = "'สถิตการติดต่อ'!A:G";
+/** The admin sheet is large and formula-heavy; the whole tab timed out at 20 s on the first live read. */
+const SHEET_TIMEOUT_MS = 40_000;
 /** Both sheets start in November 2023. */
 const SHEETS_FROM = '2023-11-01';
 const SHEETS_SOURCE = 'sheets';
@@ -166,9 +170,27 @@ export const adminSheetsConfigured = () =>
 async function readRange(sheetId: string, range: string): Promise<unknown[][]> {
   const response = await sheetsClient().request<{ values?: unknown[][] }>({
     url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(range)}`,
-    timeout: 20_000,
+    timeout: SHEET_TIMEOUT_MS,
   });
   return response.data.values ?? [];
+}
+
+/** Reads the admin tab's needed column groups in one batchGet and rebuilds rows with the original column indexes. */
+async function readAdminColumns(sheetId: string): Promise<unknown[][]> {
+  const query = ADMIN_COLUMNS.map(([cols]) => `ranges=${encodeURIComponent(`'${ADMIN_TAB}'!${cols}`)}`).join('&');
+  const response = await sheetsClient().request<{ valueRanges?: { values?: unknown[][] }[] }>({
+    url: `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values:batchGet?${query}`,
+    timeout: SHEET_TIMEOUT_MS,
+  });
+  const rows: unknown[][] = [];
+  (response.data.valueRanges ?? []).forEach((part, index) => {
+    const start = ADMIN_COLUMNS[index]?.[1] ?? 0;
+    (part.values ?? []).forEach((cells, r) => {
+      const row = rows[r] ?? (rows[r] = []);
+      cells.forEach((cell, c) => { row[start + c] = cell; });
+    });
+  });
+  return rows;
 }
 
 /** Admins correct past days in the sheets, so every pull replaces that source's whole history. */
@@ -186,19 +208,23 @@ async function replaceSource(source: string, rows: ContactRow[]) {
  */
 export async function syncAdminSheets(to: string, trigger: 'cron' | 'member'): Promise<ContactSyncResult> {
   const run = await prisma.contactSyncRun.create({ data: { source: SHEETS_SOURCE, trigger, dateFrom: isoDay(SHEETS_FROM), dateTo: isoDay(to) } });
-  const jobs: { id: string | undefined; range: string; source: string; label: string; parse: (values: unknown[][], upto: string) => SheetSummary }[] = [
-    { id: process.env.ADMIN_REPORT_SHEET_ID?.trim(), range: ADMIN_RANGE, source: ADMIN_SHEET_SOURCE, label: '#สถิตการติดต่อ (GFS/MHL)', parse: summarizeAdminSheet },
-    { id: process.env.CAR_CRM_SHEET_ID?.trim(), range: CAR_STATS_RANGE, source: CAR_STATS_SOURCE, label: 'สถิตการติดต่อ (CAR CRM)', parse: summarizeCarStatsSheet },
+  const jobs: { id: string | undefined; read: (id: string) => Promise<unknown[][]>; source: string; label: string; parse: (values: unknown[][], upto: string) => SheetSummary }[] = [
+    { id: process.env.ADMIN_REPORT_SHEET_ID?.trim(), read: readAdminColumns, source: ADMIN_SHEET_SOURCE, label: '#สถิตการติดต่อ (GFS/MHL)', parse: summarizeAdminSheet },
+    { id: process.env.CAR_CRM_SHEET_ID?.trim(), read: id => readRange(id, CAR_STATS_RANGE), source: CAR_STATS_SOURCE, label: 'สถิตการติดต่อ (CAR CRM)', parse: summarizeCarStatsSheet },
   ];
   const notes: string[] = [];
   let rows = 0;
   let failed = 0;
   if (!serviceAccountConfigured()) { notes.push('ยังไม่ได้ตั้งค่า service account ของ Google'); failed = jobs.length; }
   else {
-    for (const job of jobs) {
-      if (!job.id) { notes.push(`ยังไม่ได้ตั้งรหัสชีต ${job.label}`); failed++; continue; }
+    // Both sheets are fetched at once; the database is written one source at a time.
+    const reads = jobs.map(job => (job.id ? job.read(job.id).then(values => job.parse(values, to)) : Promise.reject(new Error(`ยังไม่ได้ตั้งรหัสชีต ${job.label}`))));
+    const settled = await Promise.allSettled(reads);
+    for (const [index, job] of jobs.entries()) {
+      const outcome = settled[index];
       try {
-        const summary = job.parse(await readRange(job.id, job.range), to);
+        if (outcome.status === 'rejected') throw outcome.reason;
+        const summary = outcome.value;
         await replaceSource(job.source, summary.rows);
         rows += summary.rows.length;
         if (summary.duplicateDays.length) notes.push(`${job.label}: วันที่ซ้ำ ${summary.duplicateDays.slice(0, 3).join(', ')} รวมยอดทุกแถว`);
