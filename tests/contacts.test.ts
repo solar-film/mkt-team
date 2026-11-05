@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   accountLines, callDate, companyChannelTable, dailyByChannel, DATASET_SOURCES, mergeCarLine, monthContacts, monthNew, normalizeGoodCrmRows, parseCsv,
-  summarizeAdminSheet, summarizeCallLog, summarizeCarLineDaily, summarizeCarStatsSheet, validatePhoneUpload, weekdayAverages, type ContactRow,
+  summarizeAdminSheet, summarizeCallLog, summarizeCarLineDaily, summarizeCarStatsSheet, validatePhoneUpload, weekdayAverages, yearOverYear,
+  type ContactRow, type MonthTotal,
 } from '../src/lib/contact-data';
 
 // Made-up callers and figures; real numbers never enter this public repository.
@@ -226,4 +227,25 @@ test('the live and admin-sheet datasets never share a source', () => {
   const shared = DATASET_SOURCES.live.filter(s => DATASET_SOURCES.sheet.includes(s));
   assert.deepEqual(shared, []);
   assert.ok(DATASET_SOURCES.live.includes('goodcrm') && DATASET_SOURCES.live.includes('phone') && DATASET_SOURCES.live.includes('car_line_sheet'));
+});
+
+test('year comparison lines up each month with the year before; months not started yet are null, filters apply', () => {
+  const monthly: MonthTotal[] = [
+    { month: '2025-01', channel: 'line', company: 'GFS', contacts: 10 },
+    { month: '2025-01', channel: 'phone', company: 'MHL', contacts: 5 },
+    { month: '2025-11', channel: 'line', company: 'GFS', contacts: 7 },
+    { month: '2026-01', channel: 'line', company: 'GFS', contacts: 12 },
+    { month: '2026-10', channel: 'facebook', company: 'CAR', contacts: 3 },
+    { month: '2026-11', channel: 'line', company: 'GFS', contacts: 1 }, // the month in progress
+  ];
+  const points = yearOverYear(monthly, 2026, '2026-11-05', { company: 'all', channel: 'all' });
+  assert.equal(points.length, 12);
+  assert.deepEqual(points[0], { month: 1, key: '2026-01', lastKey: '2025-01', now: 12, before: 15 });
+  assert.deepEqual([points[9].now, points[9].before], [3, 0]);
+  assert.deepEqual([points[10].now, points[10].before], [1, 7]);
+  assert.deepEqual([points[11].now, points[11].before], [null, 0]); // December has not started
+  const gfs = yearOverYear(monthly, 2026, '2026-11-05', { company: 'GFS', channel: 'line' });
+  assert.deepEqual([gfs[0].now, gfs[0].before, gfs[9].now], [12, 10, 0]);
+  // A past year is complete on both sides.
+  assert.ok(yearOverYear(monthly, 2025, '2026-11-05', { company: 'all', channel: 'all' }).every(p => p.now !== null));
 });

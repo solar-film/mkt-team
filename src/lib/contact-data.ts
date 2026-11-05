@@ -78,7 +78,7 @@ export interface ContactData {
   firstMonth: string | null;
   /** Daily rows for the month, the month before and the same month last year. */
   rows: ContactRow[];
-  /** Monthly totals for the 13 months up to `month`. */
+  /** Monthly totals for the year of `month` and the year before (so both the 13-month series and the year comparison are covered). */
   monthly: MonthTotal[];
   /** Facebook ad chats and all ad spend per company and day, for the month and the month before. */
   ads: AdChatDay[];
@@ -169,6 +169,23 @@ export function monthlyByChannel(monthly: MonthTotal[], month: string, filter: F
     }
     point.total = sum(CHANNELS.map(c => Number(point[c])));
     return point;
+  });
+}
+
+export interface YearMonthPoint { month: number; key: string; lastKey: string; now: number | null; before: number | null }
+
+/**
+ * Month by month of `year` against the year before, totals under the filter. Months of `year` that have not
+ * started yet are null (no bar, "—" in the table) rather than 0, so a year in progress is not read as a collapse.
+ */
+export function yearOverYear(monthly: MonthTotal[], year: number, today: string, filter: Filter): YearMonthPoint[] {
+  const total = (key: string) => sum(monthly.filter(t => t.month === key && matches(t, filter)).map(t => t.contacts));
+  const current = today.slice(0, 7);
+  return Array.from({ length: 12 }, (_, i) => {
+    const mm = String(i + 1).padStart(2, '0');
+    const key = `${year}-${mm}`;
+    const lastKey = `${year - 1}-${mm}`;
+    return { month: i + 1, key, lastKey, now: key > current ? null : total(key), before: lastKey > current ? null : total(lastKey) };
   });
 }
 

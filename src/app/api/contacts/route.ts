@@ -27,13 +27,16 @@ export async function GET(request: Request) {
   // Live (GOOD CRM + call logs) and the admin lead sheets are different definitions: one dataset per answer.
   const dataset = isDataset(params.get('dataset')) ? params.get('dataset') as 'live' | 'sheet' : 'live';
   const source = { in: [...DATASET_SOURCES[dataset]] };
+  // Monthly totals span the selected year and the one before: the 13-month series and the year comparison both fit.
+  const year = Number(month.slice(0, 4));
+  const monthlyRange = { gte: `${year - 1}-01`, lte: `${year}-12` };
 
   try {
     const [rows, monthGroups, first, adGroups, runs, okRuns, latest] = await Promise.all([
       prisma.contactDaily.findMany({ where: { source, month: { in: compared } }, orderBy: [{ date: 'asc' }, { channel: 'asc' }] }),
       prisma.contactDaily.groupBy({
         by: ['month', 'channel', 'company'],
-        where: { source, month: { gte: shiftMonth(month, -12), lte: month } },
+        where: { source, month: monthlyRange },
         _sum: { contacts: true },
       }),
       prisma.contactDaily.findFirst({ where: { source }, orderBy: { date: 'asc' }, select: { month: true } }),

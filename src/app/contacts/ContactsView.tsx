@@ -9,7 +9,7 @@ import { fetchWorkspace } from '@/lib/workspace-fetch';
 import { change, daysInMonth, isMonthKey, monthLabel, shiftMonth, thaiMonthShort } from '@/lib/ads-data';
 import {
   accountLines, CHANNEL_INFO, CHANNELS, COMPANIES, COMPANY_LABEL, companyChannelTable, dailyByChannel, DATASET_INFO, DATASETS, isChannel, isCompany,
-  isDataset, monthContacts, monthlyByChannel, monthNew, sum, summarizeCallLog, weekdayAverages,
+  isDataset, monthContacts, monthlyByChannel, monthNew, sum, summarizeCallLog, weekdayAverages, yearOverYear,
   type CallLogSummary, type Channel, type Company, type ContactData, type Dataset, type Filter,
 } from '@/lib/contact-data';
 import styles from '../market/market.module.css';
@@ -211,6 +211,98 @@ function YearChart({ data, filter }: { data: ContactData; filter: Filter }) {
         </ResponsiveContainer>
       </div>
       <p className={styles.foot}>เริ่มมีข้อมูลตั้งแต่ {data.firstMonth ? monthLabel(data.firstMonth) : '—'} · เดือนก่อนหน้านั้นยังไม่ได้เก็บ จึงเป็น 0</p>
+    </section>
+  );
+}
+
+/** Year-comparison pair: last year in warm brown, this year in the page's blue (validated as a categorical pair, light and dark). */
+const YEAR_COLORS = { before: '#b45309', now: '#2a78d6' } as const;
+const buddhistYear = (year: number) => String(year + 543);
+
+function CompareTooltip({ active, payload, label }: { active?: boolean; payload?: { dataKey?: string | number; value?: number | string }[]; label?: string | number }) {
+  if (!active || !payload?.length || label === undefined) return null;
+  const pick = (key: string) => payload.find(p => p.dataKey === key)?.value;
+  const before = pick('before');
+  const now = pick('now');
+  const point = (payload[0] as { payload?: { beforeLabel?: string; nowLabel?: string; nowKnown?: boolean } }).payload ?? {};
+  return (
+    <div className={own.tooltip}>
+      <strong>{String(label)}</strong>
+      <span><i className={styles.swatch} style={{ background: YEAR_COLORS.before }} />{point.beforeLabel} <b>{count(Number(before ?? 0))}</b></span>
+      <span><i className={styles.swatch} style={{ background: YEAR_COLORS.now }} />{point.nowLabel} <b>{point.nowKnown ? count(Number(now ?? 0)) : '—'}</b></span>
+      {point.nowKnown && <span className={own.tooltipTotal}><Delta now={Number(now ?? 0)} before={Number(before ?? 0)} label="เปลี่ยน" /></span>}
+    </div>
+  );
+}
+
+/** Each month of the selected year beside the same month a year earlier, with a like-for-like year-to-date line. */
+function YearCompareCard({ data, filter }: { data: ContactData; filter: Filter }) {
+  const year = Number(data.month.slice(0, 4));
+  const points = yearOverYear(data.monthly, year, data.today, filter);
+  const labels = { before: buddhistYear(year - 1), now: buddhistYear(year) };
+  const chart = points.map(p => ({
+    name: thaiMonthShort(p.month), before: p.before ?? 0, now: p.now ?? 0, nowKnown: p.now !== null, beforeLabel: labels.before, nowLabel: labels.now,
+  }));
+  const hasBefore = points.some(p => (p.before ?? 0) > 0);
+  // Finished months only, so a month in progress never drags the year-to-date figure down.
+  const done = points.filter(p => p.now !== null && p.key < data.today.slice(0, 7));
+  const ytdNow = sum(done.map(p => p.now ?? 0));
+  const ytdBefore = sum(done.map(p => p.before ?? 0));
+  const span = done.length === 12 ? `ทั้งปี ${labels.now}` : done.length ? `ม.ค.–${thaiMonthShort(done.length)} ${labels.now}` : '';
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <h2>เทียบรายเดือน · ปี {labels.now} กับ {labels.before}</h2>
+        <div className={styles.legend}>
+          <span><i className={styles.swatch} style={{ background: YEAR_COLORS.before }} />{labels.before}</span>
+          <span><i className={styles.swatch} style={{ background: YEAR_COLORS.now }} />{labels.now}</span>
+        </div>
+      </div>
+      {!hasBefore ? (
+        <p className={styles.foot}>
+          ยังไม่มีข้อมูลปี {labels.before} ให้เทียบ{data.dataset === 'live' ? ' · ชุด GOOD CRM เริ่มเก็บ ก.ย. 2569 — เลือกชุด ชีตแอดมิน เพื่อเทียบย้อนหลัง' : ''}
+        </p>
+      ) : (
+        <>
+          <div className={styles.chart} role="img" aria-label={`จำนวนการติดต่อรายเดือน ปี ${labels.now} เทียบปี ${labels.before}`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chart} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barGap={2} barCategoryGap="28%">
+                <CartesianGrid vertical={false} stroke="#eef0f3" />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} width={40} />
+                <Tooltip cursor={{ fill: 'rgba(15,23,42,0.04)' }} content={<CompareTooltip />} />
+                <Bar dataKey="before" name={labels.before} fill={YEAR_COLORS.before} radius={[4, 4, 0, 0]} maxBarSize={18} />
+                <Bar dataKey="now" name={labels.now} fill={YEAR_COLORS.now} radius={[4, 4, 0, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className={styles.foot}>
+            {span ? <>{span} รวม <b>{count(ytdNow)}</b> เทียบ {count(ytdBefore)} ในปี {labels.before} · <Delta now={ytdNow} before={ytdBefore} label="เปลี่ยน" /> · </> : 'ยังไม่มีเดือนที่จบในปีนี้ · '}
+            นับเฉพาะเดือนที่จบแล้ว เดือนปัจจุบันยังไม่ครบจึงไม่รวม
+          </p>
+          <details className={styles.foot}>
+            <summary>ดูเป็นตาราง</summary>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>เดือน</th><th>ปี {labels.before}</th><th>ปี {labels.now}</th><th>เปลี่ยน</th></tr></thead>
+                <tbody>
+                  {points.map(p => (
+                    <tr key={p.key}>
+                      <td>{thaiMonthShort(p.month)}</td>
+                      <td>{count(p.before)}</td>
+                      <td>{count(p.now)}</td>
+                      <td>{p.now === null || p.before === null ? '—' : <>{p.now - p.before >= 0 ? '+' : ''}{count(p.now - p.before)} <Delta now={p.now} before={p.before} label="" /></>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr><td>{span || 'ยังไม่มีเดือนที่จบ'}</td><td>{count(ytdBefore)}</td><td>{count(ytdNow)}</td><td>{done.length ? <Delta now={ytdNow} before={ytdBefore} label="" /> : '—'}</td></tr>
+                </tfoot>
+              </table>
+            </div>
+          </details>
+        </>
+      )}
     </section>
   );
 }
@@ -705,6 +797,7 @@ export default function ContactsView({ mode }: { mode: ContactsMode }) {
               <DailyChart data={ready} filter={filter} />
               <CompanyTable data={ready} filter={filter} />
               <YearChart data={ready} filter={filter} />
+              <YearCompareCard data={ready} filter={filter} />
               <AccountTable data={ready} filter={filter} />
             </>
           )}
