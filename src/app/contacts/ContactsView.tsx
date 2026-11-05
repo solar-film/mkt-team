@@ -249,8 +249,9 @@ function YearCompareCard({ data, filter }: { data: ContactData; filter: Filter }
   const ytdNow = sum(done.map(p => p.now ?? 0));
   const ytdBefore = sum(done.map(p => p.before ?? 0));
   const span = done.length === 12 ? `ทั้งปี ${labels.now}` : done.length ? `ม.ค.–${thaiMonthShort(done.length)} ${labels.now}` : '';
+  // goodUp: more contacts is the good direction, so a drop reads as a warning here as it does on the tiles.
   return (
-    <section className={styles.card}>
+    <section className={`${styles.card} ${styles.goodUp}`}>
       <div className={styles.cardHead}>
         <h2>เทียบรายเดือน · ปี {labels.now} กับ {labels.before}</h2>
         <div className={styles.legend}>
