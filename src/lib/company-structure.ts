@@ -61,9 +61,9 @@ export const BUSINESSES: Business[] = [
     key: 'b2c', name: 'GFS B2C', short: 'ฟิล์มบ้าน/อาคาร', summary: 'ฟิล์มบ้านและอาคาร GOODFILM',
     aim: 'ขายและติดตั้งฟิล์มอาคาร 3M ในฐานะตัวแทนอย่างเป็นทางการ ให้บ้าน คอนโด สำนักงาน ทั่วประเทศ',
     logo: 'gfs', color: '#034aad', soft: '#e3eeff', company: 'บริษัท กู๊ดฟิล์ม จำกัด (สำนักงานใหญ่)',
-    owner: 'แต้ว + จ๋าย', websiteCount: 1, channelCount: 8, info: GFS_INFO,
+    owner: 'แต้ว + จ๋าย', websiteCount: 1, channelCount: 7, info: GFS_INFO,
     websites: ['goodfilmshop.com'],
-    channels: ['Call Center 02-096-3424', 'มือถือ 097-097-2103', '062-747-1234 · 090-979-3760', 'LINE @goodfilm · lin.ee/Xwo0pdm', ...GFS_EMAILS],
+    channels: ['Call Center 02-096-3424', '062-747-1234 · 090-979-3760', 'LINE @goodfilm · lin.ee/Xwo0pdm', ...GFS_EMAILS],
     socials: ['Facebook: facebook.com/goodfilm3M', 'Instagram: @goodfilm.shop', 'TikTok: @goodfilm3m', 'YouTube: youtube.com/@goodfilm3M'],
     people: ['จ๋าย · ผู้ดูแลคอนเทนต์', 'แต้ว · ช่วยอนุมัติงานจ๋าย'],
   },
@@ -114,7 +114,7 @@ export const SHARED_ROLES: [string, string][] = [
 /** Rows of the "ช่องทาง & เว็บ" table; cells follow BUSINESSES order. "—" means none. */
 export const CHANNEL_ROWS: { label: string; cells: string[][] }[] = [
   { label: 'เว็บไซต์', cells: [['3m-goodfilm.com', 'goodfilm.co.th · มีแผนพัฒนา'], ['goodfilmshop.com'], ['maholanfilm.com', 'maxtechfilm.com'], ['mhlcarfilm.com']] },
-  { label: 'โทรศัพท์', cells: [['092-905-8519 (เฮียปอ)'], ['02-096-3424', '097-097-2103', '062-747-1234', '090-979-3760'], ['02-055-6886 กด 1', '094-998-1234', '097-292-9488'], ['02-055-6886 กด 2', '095-953-3949', '099-456-2259']] },
+  { label: 'โทรศัพท์', cells: [['092-905-8519 (เฮียปอ)'], ['02-096-3424', '062-747-1234', '090-979-3760'], ['02-055-6886 กด 1', '094-998-1234', '097-292-9488'], ['02-055-6886 กด 2', '095-953-3949', '099-456-2259']] },
   { label: 'LINE OA', cells: [['@3mfilm', 'lin.ee/646JMY6'], ['@goodfilm', 'lin.ee/Xwo0pdm'], ['@MHL1', 'lin.ee/oTPhSQC'], ['@maholan', 'lin.ee/xPpPOQM']] },
   { label: 'อีเมล', cells: [GFS_EMAILS, GFS_EMAILS, ['maholanfilm@gmail.com'], ['mhlcarfilm@gmail.com']] },
   { label: 'Facebook', cells: [['facebook.com/3MGoodfilm', 'เพจขายส่งและตัวแทนจำหน่าย'], ['facebook.com/goodfilm3M', 'รับติดตั้งทั่วประเทศ'], ['facebook.com/filmmaholan', 'ศูนย์ให้บริการติดฟิล์มบ้าน คอนโด ออฟฟิศ ครบวงจร'], ['facebook.com/MHLcarfilm', 'ศูนย์ติดตั้งฟิล์มรถยนต์ ครบวงจร บางนา-ลาซาล']] },
